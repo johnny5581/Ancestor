@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 
-namespace Ancestor.DataAccess.SqlMapper
+namespace Ancestor.DataAccess.DBAction.Mapper
 {
     partial class DynamicParameters
     {

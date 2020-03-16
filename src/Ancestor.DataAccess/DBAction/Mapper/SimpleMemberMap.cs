@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Reflection;
 
-namespace Ancestor.DataAccess.SqlMapper
+namespace Ancestor.DataAccess.DBAction.Mapper
 {
     /// <summary>
     /// Represents simple member map for one of target parameter or property or field to source DataReader column

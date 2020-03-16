@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 
 #if !COREFX
-namespace Ancestor.DataAccess.SqlMapper
+namespace Ancestor.DataAccess.DBAction.Mapper
 {
     sealed class SqlDataRecordHandler : SqlMapper.ITypeHandler
     {

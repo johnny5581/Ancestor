@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace Ancestor.DataAccess.SqlMapper
+namespace Ancestor.DataAccess.DBAction.Mapper
 {
     /// <summary>
     /// Represents default type mapping strategy used by Dapper

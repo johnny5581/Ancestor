@@ -23,7 +23,7 @@ using System.Xml.Linq;
 using DataException = System.InvalidOperationException;
 #endif
 
-namespace Ancestor.DataAccess.SqlMapper
+namespace Ancestor.DataAccess.DBAction.Mapper
 {
 
     /// <summary>
@@ -38,7 +38,7 @@ namespace Ancestor.DataAccess.SqlMapper
                 int max = length < 0 ? reader.FieldCount : startBound + length;
                 int hash = (-37 * startBound) + max;
                 for (int i = startBound; i < max; i++)
-                {   
+                {
                     object tmp = reader.GetName(i);
                     hash = -79 * ((hash * 31) + (tmp?.GetHashCode() ?? 0)) + (reader.GetFieldType(i)?.GetHashCode() ?? 0);
                 }
@@ -122,7 +122,7 @@ namespace Ancestor.DataAccess.SqlMapper
         }
 
         /// <summary>
-        /// Return a count of all the cached queries by Dapper
+        /// Return a count of all the cached queries by dapper
         /// </summary>
         /// <returns></returns>
         public static int GetCachedSQLCount()
@@ -131,7 +131,7 @@ namespace Ancestor.DataAccess.SqlMapper
         }
 
         /// <summary>
-        /// Return a list of all the queries cached by Dapper
+        /// Return a list of all the queries cached by dapper
         /// </summary>
         /// <param name="ignoreHitCountAbove"></param>
         /// <returns></returns>
@@ -173,45 +173,45 @@ namespace Ancestor.DataAccess.SqlMapper
         static SqlMapper()
         {
             typeMap = new Dictionary<Type, DbType>
-                      {
-                          [typeof(byte)] = DbType.Byte,
-                          [typeof(sbyte)] = DbType.SByte,
-                          [typeof(short)] = DbType.Int16,
-                          [typeof(ushort)] = DbType.UInt16,
-                          [typeof(int)] = DbType.Int32,
-                          [typeof(uint)] = DbType.UInt32,
-                          [typeof(long)] = DbType.Int64,
-                          [typeof(ulong)] = DbType.UInt64,
-                          [typeof(float)] = DbType.Single,
-                          [typeof(double)] = DbType.Double,
-                          [typeof(decimal)] = DbType.Decimal,
-                          [typeof(bool)] = DbType.Boolean,
-                          [typeof(string)] = DbType.String,
-                          [typeof(char)] = DbType.StringFixedLength,
-                          [typeof(Guid)] = DbType.Guid,
-                          [typeof(DateTime)] = DbType.DateTime,
-                          [typeof(DateTimeOffset)] = DbType.DateTimeOffset,
-                          [typeof(TimeSpan)] = DbType.Time,
-                          [typeof(byte[])] = DbType.Binary,
-                          [typeof(byte?)] = DbType.Byte,
-                          [typeof(sbyte?)] = DbType.SByte,
-                          [typeof(short?)] = DbType.Int16,
-                          [typeof(ushort?)] = DbType.UInt16,
-                          [typeof(int?)] = DbType.Int32,
-                          [typeof(uint?)] = DbType.UInt32,
-                          [typeof(long?)] = DbType.Int64,
-                          [typeof(ulong?)] = DbType.UInt64,
-                          [typeof(float?)] = DbType.Single,
-                          [typeof(double?)] = DbType.Double,
-                          [typeof(decimal?)] = DbType.Decimal,
-                          [typeof(bool?)] = DbType.Boolean,
-                          [typeof(char?)] = DbType.StringFixedLength,
-                          [typeof(Guid?)] = DbType.Guid,
-                          [typeof(DateTime?)] = DbType.DateTime,
-                          [typeof(DateTimeOffset?)] = DbType.DateTimeOffset,
-                          [typeof(TimeSpan?)] = DbType.Time,
-                          [typeof(object)] = DbType.Object
-                      };
+            {
+                [typeof(byte)] = DbType.Byte,
+                [typeof(sbyte)] = DbType.SByte,
+                [typeof(short)] = DbType.Int16,
+                [typeof(ushort)] = DbType.UInt16,
+                [typeof(int)] = DbType.Int32,
+                [typeof(uint)] = DbType.UInt32,
+                [typeof(long)] = DbType.Int64,
+                [typeof(ulong)] = DbType.UInt64,
+                [typeof(float)] = DbType.Single,
+                [typeof(double)] = DbType.Double,
+                [typeof(decimal)] = DbType.Decimal,
+                [typeof(bool)] = DbType.Boolean,
+                [typeof(string)] = DbType.String,
+                [typeof(char)] = DbType.StringFixedLength,
+                [typeof(Guid)] = DbType.Guid,
+                [typeof(DateTime)] = DbType.DateTime,
+                [typeof(DateTimeOffset)] = DbType.DateTimeOffset,
+                [typeof(TimeSpan)] = DbType.Time,
+                [typeof(byte[])] = DbType.Binary,
+                [typeof(byte?)] = DbType.Byte,
+                [typeof(sbyte?)] = DbType.SByte,
+                [typeof(short?)] = DbType.Int16,
+                [typeof(ushort?)] = DbType.UInt16,
+                [typeof(int?)] = DbType.Int32,
+                [typeof(uint?)] = DbType.UInt32,
+                [typeof(long?)] = DbType.Int64,
+                [typeof(ulong?)] = DbType.UInt64,
+                [typeof(float?)] = DbType.Single,
+                [typeof(double?)] = DbType.Double,
+                [typeof(decimal?)] = DbType.Decimal,
+                [typeof(bool?)] = DbType.Boolean,
+                [typeof(char?)] = DbType.StringFixedLength,
+                [typeof(Guid?)] = DbType.Guid,
+                [typeof(DateTime?)] = DbType.DateTime,
+                [typeof(DateTimeOffset?)] = DbType.DateTimeOffset,
+                [typeof(TimeSpan?)] = DbType.Time,
+                [typeof(object)] = DbType.Object
+            };
             ResetTypeHandlers(false);
         }
 
@@ -236,6 +236,8 @@ namespace Ancestor.DataAccess.SqlMapper
             AddTypeHandlerImpl(typeof(XmlDocument), new XmlDocumentHandler(), clone);
             AddTypeHandlerImpl(typeof(XDocument), new XDocumentHandler(), clone);
             AddTypeHandlerImpl(typeof(XElement), new XElementHandler(), clone);
+
+            allowedCommandBehaviors = DefaultAllowedCommandBehaviors;
         }
 #if !COREFX
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -281,10 +283,10 @@ namespace Ancestor.DataAccess.SqlMapper
             if (type == null) throw new ArgumentNullException(nameof(type));
 
             Type secondary = null;
-            if(type.IsValueType())
+            if (type.IsValueType())
             {
                 var underlying = Nullable.GetUnderlyingType(type);
-                if(underlying == null)
+                if (underlying == null)
                 {
                     secondary = typeof(Nullable<>).MakeGenericType(type); // the Nullable<T>
                     // type is already the T
@@ -304,7 +306,7 @@ namespace Ancestor.DataAccess.SqlMapper
 
 #pragma warning disable 618
             typeof(TypeHandlerCache<>).MakeGenericType(type).GetMethod(nameof(TypeHandlerCache<int>.SetHandler), BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { handler });
-            if(secondary != null)
+            if (secondary != null)
             {
                 typeof(TypeHandlerCache<>).MakeGenericType(secondary).GetMethod(nameof(TypeHandlerCache<int>.SetHandler), BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { handler });
             }
@@ -317,7 +319,7 @@ namespace Ancestor.DataAccess.SqlMapper
             else
             {
                 newCopy[type] = handler;
-                if(secondary != null) newCopy[secondary] = handler;
+                if (secondary != null) newCopy[secondary] = handler;
             }
             typeHandlers = newCopy;
         }
@@ -402,7 +404,7 @@ namespace Ancestor.DataAccess.SqlMapper
                     return DbType.Object;
             }
 #endif
-            if(demand)
+            if (demand)
                 throw new NotSupportedException($"The member {name} of type {type.FullName} cannot be used as a parameter value");
             return DbType.Object;
 
@@ -488,7 +490,7 @@ namespace Ancestor.DataAccess.SqlMapper
                     !(param is string ||
                       param is IEnumerable<KeyValuePair<string, object>> ||
                       param is IDynamicParameters)
-                ) ? (IEnumerable) param : null;
+                ) ? (IEnumerable)param : null;
         }
 
         private static int ExecuteImpl(this IDbConnection cnn, ref CommandDefinition command)
@@ -534,7 +536,8 @@ namespace Ancestor.DataAccess.SqlMapper
                         }
                     }
                     command.OnCompleted();
-                } finally
+                }
+                finally
                 {
                     if (wasClosed) cnn.Close();
                 }
@@ -744,7 +747,7 @@ namespace Ancestor.DataAccess.SqlMapper
         )
         {
             if (type == null) throw new ArgumentNullException(nameof(type));
-            var command = new CommandDefinition(sql, param, transaction, commandTimeout, commandType,  CommandFlags.None);
+            var command = new CommandDefinition(sql, param, transaction, commandTimeout, commandType, CommandFlags.None);
             return QueryRowImpl<object>(cnn, Row.First, ref command, type);
         }
         /// <summary>
@@ -910,7 +913,7 @@ namespace Ancestor.DataAccess.SqlMapper
             }
             catch (ArgumentException ex)
             { // thanks, Sqlite!
-                if (Settings.DisableCommandBehaviorOptimizations(behavior, ex))
+                if (DisableCommandBehaviorOptimizations(behavior, ex))
                 {
                     // we can retry; this time it will have different flags
                     return cmd.ExecuteReader(GetBehavior(wasClosed, behavior));
@@ -945,7 +948,7 @@ namespace Ancestor.DataAccess.SqlMapper
                     if (reader.FieldCount == 0) //https://code.google.com/p/dapper-dot-net/issues/detail?id=57
                         yield break;
                     tuple = info.Deserializer = new DeserializerState(hash, GetDeserializer(effectiveType, reader, 0, -1, false));
-                    if(command.AddToCache) SetQueryCache(identity, info);
+                    if (command.AddToCache) SetQueryCache(identity, info);
                 }
 
                 var func = tuple.Func;
@@ -953,9 +956,12 @@ namespace Ancestor.DataAccess.SqlMapper
                 while (reader.Read())
                 {
                     object val = func(reader);
-					if (val == null || val is T) {
+                    if (val == null || val is T)
+                    {
                         yield return (T)val;
-                    } else {
+                    }
+                    else
+                    {
                         yield return (T)Convert.ChangeType(val, convertToType, CultureInfo.InvariantCulture);
                     }
                 }
@@ -1288,10 +1294,10 @@ namespace Ancestor.DataAccess.SqlMapper
                 int hash = GetColumnHash(reader);
                 if ((deserializer = cinfo.Deserializer).Func == null || (otherDeserializers = cinfo.OtherDeserializers) == null || hash != deserializer.Hash)
                 {
-                    var deserializers = GenerateDeserializers(new [] { typeof(TFirst), typeof(TSecond), typeof(TThird), typeof(TFourth), typeof(TFifth), typeof(TSixth), typeof(TSeventh) }, splitOn, reader);
+                    var deserializers = GenerateDeserializers(new[] { typeof(TFirst), typeof(TSecond), typeof(TThird), typeof(TFourth), typeof(TFifth), typeof(TSixth), typeof(TSeventh) }, splitOn, reader);
                     deserializer = cinfo.Deserializer = new DeserializerState(hash, deserializers[0]);
                     otherDeserializers = cinfo.OtherDeserializers = deserializers.Skip(1).ToArray();
-                    if(command.AddToCache) SetQueryCache(identity, cinfo);
+                    if (command.AddToCache) SetQueryCache(identity, cinfo);
                 }
 
                 Func<IDataReader, TReturn> mapIt = GenerateMapper<TFirst, TSecond, TThird, TFourth, TFifth, TSixth, TSeventh, TReturn>(deserializer.Func, otherDeserializers, map);
@@ -1302,7 +1308,7 @@ namespace Ancestor.DataAccess.SqlMapper
                     {
                         yield return mapIt(reader);
                     }
-                    if(finalize)
+                    if (finalize)
                     {
                         while (reader.NextResult()) { }
                         command.OnCompleted();
@@ -1322,10 +1328,25 @@ namespace Ancestor.DataAccess.SqlMapper
                 }
             }
         }
-
+        const CommandBehavior DefaultAllowedCommandBehaviors = ~((CommandBehavior)0);
+        static CommandBehavior allowedCommandBehaviors = DefaultAllowedCommandBehaviors;
+        private static bool DisableCommandBehaviorOptimizations(CommandBehavior behavior, Exception ex)
+        {
+            if (allowedCommandBehaviors == DefaultAllowedCommandBehaviors
+                && (behavior & (CommandBehavior.SingleResult | CommandBehavior.SingleRow)) != 0)
+            {
+                if (ex.Message.Contains(nameof(CommandBehavior.SingleResult))
+                    || ex.Message.Contains(nameof(CommandBehavior.SingleRow)))
+                { // some providers just just allow these, so: try again without them and stop issuing them
+                    allowedCommandBehaviors = ~(CommandBehavior.SingleResult | CommandBehavior.SingleRow);
+                    return true;
+                }
+            }
+            return false;
+        }
         private static CommandBehavior GetBehavior(bool close, CommandBehavior @default)
         {
-            return (close ? (@default | CommandBehavior.CloseConnection) : @default) & Settings.AllowedCommandBehaviors;
+            return (close ? (@default | CommandBehavior.CloseConnection) : @default) & allowedCommandBehaviors;
         }
         static IEnumerable<TReturn> MultiMapImpl<TReturn>(this IDbConnection cnn, CommandDefinition command, Type[] types, Func<object[], TReturn> map, string splitOn, IDataReader reader, Identity identity, bool finalize)
         {
@@ -1433,7 +1454,7 @@ namespace Ancestor.DataAccess.SqlMapper
         {
             var deserializers = new List<Func<IDataReader, object>>();
             var splits = splitOn.Split(',').Select(s => s.Trim()).ToArray();
-                bool isMultiSplit = splits.Length > 1;
+            bool isMultiSplit = splits.Length > 1;
             if (types.First() == typeof(object))
             {
                 // we go left to right for dynamic multi-mapping so that the madness of TestMultiMappingVariations
@@ -1469,7 +1490,7 @@ namespace Ancestor.DataAccess.SqlMapper
                 for (var typeIdx = types.Length - 1; typeIdx >= 0; --typeIdx)
                 {
                     var type = types[typeIdx];
-                    if (type == typeof (DontMap))
+                    if (type == typeof(DontMap))
                     {
                         continue;
                     }
@@ -1540,7 +1561,7 @@ namespace Ancestor.DataAccess.SqlMapper
             CacheInfo info;
             if (!TryGetQueryCache(identity, out info))
             {
-                if(GetMultiExec(exampleParameters) != null)
+                if (GetMultiExec(exampleParameters) != null)
                 {
                     throw new InvalidOperationException("An enumerable sequence of parameters (arrays, lists, etc) is not allowed in this context");
                 }
@@ -1565,7 +1586,7 @@ namespace Ancestor.DataAccess.SqlMapper
                         var literals = GetLiteralTokens(identity.sql);
                         reader = CreateParamInfoGenerator(identity, false, true, literals);
                     }
-                    if((identity.commandType == null || identity.commandType == CommandType.Text) && ShouldPassByPosition(identity.sql))
+                    if ((identity.commandType == null || identity.commandType == CommandType.Text) && ShouldPassByPosition(identity.sql))
                     {
                         var tail = reader;
                         reader = (cmd, obj) =>
@@ -1576,7 +1597,7 @@ namespace Ancestor.DataAccess.SqlMapper
                     }
                     info.ParamReader = reader;
                 }
-                if(addToCache) SetQueryCache(identity, info);
+                if (addToCache) SetQueryCache(identity, info);
             }
             return info;
         }
@@ -1592,7 +1613,7 @@ namespace Ancestor.DataAccess.SqlMapper
 
             Dictionary<string, IDbDataParameter> parameters = new Dictionary<string, IDbDataParameter>(StringComparer.Ordinal);
 
-            foreach(IDbDataParameter param in cmd.Parameters)
+            foreach (IDbDataParameter param in cmd.Parameters)
             {
                 if (!string.IsNullOrEmpty(param.ParameterName)) parameters[param.ParameterName] = param;
             }
@@ -1608,7 +1629,7 @@ namespace Ancestor.DataAccess.SqlMapper
                 }
                 else if (parameters.TryGetValue(key, out param))
                 {
-                    if(firstMatch)
+                    if (firstMatch)
                     {
                         firstMatch = false;
                         cmd.Parameters.Clear(); // only clear if we are pretty positive that we've found this pattern successfully
@@ -1638,7 +1659,7 @@ namespace Ancestor.DataAccess.SqlMapper
             }
             Type underlyingType = null;
             if (!(typeMap.ContainsKey(type) || type.IsEnum() || type.FullName == LinqBinary ||
-                (type.IsValueType()  && (underlyingType = Nullable.GetUnderlyingType(type)) != null && underlyingType.IsEnum())))
+                (type.IsValueType() && (underlyingType = Nullable.GetUnderlyingType(type)) != null && underlyingType.IsEnum())))
             {
                 ITypeHandler handler;
                 if (typeHandlers.TryGetValue(type, out handler))
@@ -1658,9 +1679,11 @@ namespace Ancestor.DataAccess.SqlMapper
         private static Exception MultiMapException(IDataRecord reader)
         {
             bool hasFields = false;
-            try {
+            try
+            {
                 hasFields = reader != null && reader.FieldCount != 0;
-            } catch { }
+            }
+            catch { }
             if (hasFields)
                 return new ArgumentException("When using the multi-mapping APIs ensure you set the splitOn param if you have keys other than Id", "splitOn");
             else
@@ -1762,41 +1785,6 @@ namespace Ancestor.DataAccess.SqlMapper
             return s[0];
         }
 
-        /// <summary>
-        /// Internal use only
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-#if !COREFX
-        [Browsable(false)]
-#endif
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete(ObsoleteInternalUsageOnly, false)]
-        public static Guid ReadGuid(object value)
-        {
-            if (value == null || value is DBNull) throw new ArgumentNullException(nameof(value));
-
-            if (value is byte[]) return new Guid((byte[])value);
-            if (value is string) return Guid.Parse((string)value);
-            return (Guid)value;
-        }
-
-        /// <summary>
-        /// Internal use only
-        /// </summary>
-#if !COREFX
-        [Browsable(false)]
-#endif
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete(ObsoleteInternalUsageOnly, false)]
-        public static Guid? ReadNullableGuid(object value)
-        {
-            if (value == null || value is DBNull) return null;
-
-            if (value is byte[]) return new Guid((byte[])value);
-            if (value is string) return Guid.Parse((string)value);
-            return (Guid)value;
-        }
 
         /// <summary>
         /// Internal use only
@@ -1824,7 +1812,7 @@ namespace Ancestor.DataAccess.SqlMapper
 
         internal static int GetListPaddingExtraCount(int count)
         {
-            switch(count)
+            switch (count)
             {
                 case 0:
                 case 1:
@@ -1892,7 +1880,7 @@ namespace Ancestor.DataAccess.SqlMapper
                     {
                         if (++count == 1) // first item: fetch some type info
                         {
-                            if(item == null)
+                            if (item == null)
                             {
                                 throw new NotSupportedException("The first item in a list-expansion cannot be null");
                             }
@@ -1940,7 +1928,7 @@ namespace Ancestor.DataAccess.SqlMapper
                             count++;
                             var padParam = command.CreateParameter();
                             padParam.ParameterName = namePrefix + count.ToString();
-                            if(isString) padParam.Size = DbString.DefaultLength;
+                            if (isString) padParam.Size = DbString.DefaultLength;
                             padParam.DbType = dbType;
                             padParam.Value = lastValue;
                             command.Parameters.Add(padParam);
@@ -1948,8 +1936,8 @@ namespace Ancestor.DataAccess.SqlMapper
                     }
                 }
 
-                
-                if(viaSplit)
+
+                if (viaSplit)
                 {
                     // already done
                 }
@@ -1963,8 +1951,8 @@ namespace Ancestor.DataAccess.SqlMapper
                             var variableName = match.Groups[1].Value;
                             if (match.Groups[2].Success)
                             {
-                            // looks like an optimize hint; leave it alone!
-                            return match.Value;
+                                // looks like an optimize hint; leave it alone!
+                                return match.Value;
                             }
                             else
                             {
@@ -1983,8 +1971,8 @@ namespace Ancestor.DataAccess.SqlMapper
                             var variableName = match.Groups[1].Value;
                             if (match.Groups[2].Success)
                             {
-                            // looks like an optimize hint; expand it
-                            var suffix = match.Groups[2].Value;
+                                // looks like an optimize hint; expand it
+                                var suffix = match.Groups[2].Value;
 
                                 var sb = GetStringBuilder().Append(variableName).Append(1).Append(suffix);
                                 for (int i = 2; i <= count; i++)
@@ -1997,7 +1985,7 @@ namespace Ancestor.DataAccess.SqlMapper
                             {
 
                                 var sb = GetStringBuilder().Append('(').Append(variableName);
-                                if(!byPosition) sb.Append(1);
+                                if (!byPosition) sb.Append(1);
                                 for (int i = 2; i <= count; i++)
                                 {
                                     sb.Append(',').Append(variableName);
@@ -2019,7 +2007,7 @@ namespace Ancestor.DataAccess.SqlMapper
             if (list is IEnumerable<long>) return TryStringSplit<long>(ref list, splitAt, namePrefix, command, "bigint", byPosition,
                 (sb, i) => sb.Append(i.ToString(CultureInfo.InvariantCulture)));
             if (list is IEnumerable<short>) return TryStringSplit<short>(ref list, splitAt, namePrefix, command, "smallint", byPosition,
-                (sb, i) => sb.Append(i.ToString(CultureInfo.InvariantCulture)));            
+                (sb, i) => sb.Append(i.ToString(CultureInfo.InvariantCulture)));
             if (list is IEnumerable<byte>) return TryStringSplit<byte>(ref list, splitAt, namePrefix, command, "tinyint", byPosition,
                 (sb, i) => sb.Append(i.ToString(CultureInfo.InvariantCulture)));
             return false;
@@ -2027,14 +2015,14 @@ namespace Ancestor.DataAccess.SqlMapper
         private static bool TryStringSplit<T>(ref IEnumerable list, int splitAt, string namePrefix, IDbCommand command, string colType, bool byPosition,
             Action<StringBuilder, T> append)
         {
-            ICollection<T> typed = list as ICollection<T>; 
-            if(typed == null)
+            ICollection<T> typed = list as ICollection<T>;
+            if (typed == null)
             {
                 typed = ((IEnumerable<T>)list).ToList();
                 list = typed; // because we still need to be able to iterate it, even if we fail here
             }
             if (typed.Count < splitAt) return false;
-            
+
             string varName = null;
             var regexIncludingUnknown = GetInListRegex(namePrefix, byPosition);
             var sql = Regex.Replace(command.CommandText, regexIncludingUnknown, match =>
@@ -2061,11 +2049,11 @@ namespace Ancestor.DataAccess.SqlMapper
             string val;
             using (var iter = typed.GetEnumerator())
             {
-                if(iter.MoveNext())
+                if (iter.MoveNext())
                 {
                     var sb = GetStringBuilder();
                     append(sb, iter.Current);
-                    while(iter.MoveNext())
+                    while (iter.MoveNext())
                     {
                         append(sb.Append(','), iter.Current);
                     }
@@ -2115,13 +2103,13 @@ namespace Ancestor.DataAccess.SqlMapper
         }
         private static IEnumerable<PropertyInfo> FilterParameters(IEnumerable<PropertyInfo> parameters, string sql)
         {
-            return parameters.Where(p => Regex.IsMatch(sql, @"[?@:]" + p.Name + @"([^\p{L}\p{N}_]+|$)", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant));
+            return parameters.Where(p => Regex.IsMatch(sql, @"[?@:]" + p.Name + "([^a-z0-9_]+|$)", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant));
         }
 
         // look for ? / @ / : *by itself*
-        static readonly Regex smellsLikeOleDb = new Regex(@"(?<![\p{L}\p{N}@_])[?@:](?![\p{L}\p{N}@_])", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled),
-            literalTokens = new Regex(@"(?<![\p{L}\p{N}_])\{=([\p{L}\p{N}_]+)\}", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled),
-            pseudoPositional = new Regex(@"\?([\p{L}_][\p{L}\p{N}_]*)\?", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        static readonly Regex smellsLikeOleDb = new Regex(@"(?<![a-z0-9@_])[?@:](?![a-z0-9@_])", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled),
+            literalTokens = new Regex(@"(?<![a-z0-9_])\{=([a-z0-9_]+)\}", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled),
+            pseudoPositional = new Regex(@"\?([a-z_][a-z0-9_]*)\?", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
 
 
@@ -2179,13 +2167,13 @@ namespace Ancestor.DataAccess.SqlMapper
                         return ((decimal)value).ToString(CultureInfo.InvariantCulture);
                     default:
                         var multiExec = GetMultiExec(value);
-                        if(multiExec != null)
+                        if (multiExec != null)
                         {
                             StringBuilder sb = null;
                             bool first = true;
                             foreach (object subval in multiExec)
                             {
-                                if(first)
+                                if (first)
                                 {
                                     sb = GetStringBuilder().Append('(');
                                     first = false;
@@ -2196,7 +2184,7 @@ namespace Ancestor.DataAccess.SqlMapper
                                 }
                                 sb.Append(Format(subval));
                             }
-                            if(first)
+                            if (first)
                             {
                                 return "(select null where 1=0)";
                             }
@@ -2233,10 +2221,10 @@ namespace Ancestor.DataAccess.SqlMapper
             var matches = literalTokens.Matches(sql);
             var found = new HashSet<string>(StringComparer.Ordinal);
             List<LiteralToken> list = new List<LiteralToken>(matches.Count);
-            foreach(Match match in matches)
+            foreach (Match match in matches)
             {
                 string token = match.Value;
-                if(found.Add(match.Value))
+                if (found.Add(match.Value))
                 {
                     list.Add(new LiteralToken(token, match.Groups[1].Value));
                 }
@@ -2301,14 +2289,15 @@ namespace Ancestor.DataAccess.SqlMapper
                         break;
                     }
                 }
-                if(ok)
+                if (ok)
                 {
                     // pre-sorted; the reflection gods have smiled upon us
                     props = propsArr;
                 }
-                else { // might still all be accounted for; check the hard way
-                    var positionByName = new Dictionary<string,int>(StringComparer.OrdinalIgnoreCase);
-                    foreach(var param in ctorParams)
+                else
+                { // might still all be accounted for; check the hard way
+                    var positionByName = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var param in ctorParams)
                     {
                         positionByName[param.Name] = param.Position;
                     }
@@ -2334,7 +2323,7 @@ namespace Ancestor.DataAccess.SqlMapper
                     }
                 }
             }
-            if(props == null) props = propsArr.OrderBy(x => x.Name);
+            if (props == null) props = propsArr.OrderBy(x => x.Name);
             if (filterParams)
             {
                 props = FilterParameters(props, identity.sql);
@@ -2420,10 +2409,10 @@ namespace Ancestor.DataAccess.SqlMapper
                     var propType = prop.PropertyType;
                     var nullType = Nullable.GetUnderlyingType(propType);
                     bool callSanitize = false;
-                    
-                    if((nullType ?? propType).IsEnum())
+
+                    if ((nullType ?? propType).IsEnum())
                     {
-                        if(nullType != null)
+                        if (nullType != null)
                         {
                             // Nullable<SomeEnum>; we want to box as the underlying type; that's just *hard*; for
                             // simplicity, box as Nullable<SomeEnum> and call SanitizeParameterValue
@@ -2444,7 +2433,7 @@ namespace Ancestor.DataAccess.SqlMapper
                                 case TypeCode.UInt32: propType = typeof(uint); break;
                                 case TypeCode.UInt64: propType = typeof(ulong); break;
                             }
-                        }                        
+                        }
                     }
                     else
                     {
@@ -2457,7 +2446,8 @@ namespace Ancestor.DataAccess.SqlMapper
                         il.EmitCall(OpCodes.Call, typeof(SqlMapper).GetMethod(nameof(SanitizeParameterValue)), null);
                         // stack is [parameters] [[parameters]] [parameter] [parameter] [boxed-value]
                     }
-                } else
+                }
+                else
                 {
                     checkForNull = true; // if not a value-type, need to check
                 }
@@ -2547,7 +2537,7 @@ namespace Ancestor.DataAccess.SqlMapper
             // stack is currently [parameters]
             il.Emit(OpCodes.Pop); // stack is now empty
 
-            if(literals.Count != 0 && propsArr != null)
+            if (literals.Count != 0 && propsArr != null)
             {
                 il.Emit(OpCodes.Ldarg_0); // command
                 il.Emit(OpCodes.Ldarg_0); // command, command
@@ -2560,13 +2550,13 @@ namespace Ancestor.DataAccess.SqlMapper
                     // find the best member, preferring case-sensitive
                     PropertyInfo exact = null, fallback = null;
                     string huntName = literal.Member;
-                    for(int i = 0; i < propsArr.Length;i++)
+                    for (int i = 0; i < propsArr.Length; i++)
                     {
                         string thisName = propsArr[i].Name;
-                        if(string.Equals(thisName, huntName, StringComparison.OrdinalIgnoreCase))
+                        if (string.Equals(thisName, huntName, StringComparison.OrdinalIgnoreCase))
                         {
                             fallback = propsArr[i];
-                            if(string.Equals(thisName, huntName, StringComparison.Ordinal))
+                            if (string.Equals(thisName, huntName, StringComparison.Ordinal))
                             {
                                 exact = fallback;
                                 break;
@@ -2575,7 +2565,7 @@ namespace Ancestor.DataAccess.SqlMapper
                     }
                     var prop = exact ?? fallback;
 
-                    if(prop != null)
+                    if (prop != null)
                     {
                         il.Emit(OpCodes.Ldstr, literal.Token);
                         il.Emit(OpCodes.Ldloc_0); // command, sql, typed parameter
@@ -2693,7 +2683,7 @@ namespace Ancestor.DataAccess.SqlMapper
             {
                 cmd = command.SetupCommand(cnn, paramReader);
                 if (wasClosed) cnn.Open();
-                result =cmd.ExecuteScalar();
+                result = cmd.ExecuteScalar();
                 command.OnCompleted();
             }
             finally
@@ -2758,14 +2748,6 @@ namespace Ancestor.DataAccess.SqlMapper
             {
                 return r => ReadNullableChar(r.GetValue(index));
             }
-            if (type == typeof(Guid))
-            { // this *does* need special handling, though
-                return r => ReadGuid(r.GetValue(index));
-            }
-            if (type == typeof(Guid?))
-            {
-                return r => ReadNullableGuid(r.GetValue(index));
-            }
             if (type.FullName == LinqBinary)
             {
                 return r => Activator.CreateInstance(type, r.GetValue(index));
@@ -2777,7 +2759,7 @@ namespace Ancestor.DataAccess.SqlMapper
                 return r =>
                 {
                     var val = r.GetValue(index);
-                    if(val is float || val is double || val is decimal)
+                    if (val is float || val is double || val is decimal)
                     {
                         val = Convert.ChangeType(val, Enum.GetUnderlyingType(effectiveType), CultureInfo.InvariantCulture);
                     }
@@ -2785,7 +2767,7 @@ namespace Ancestor.DataAccess.SqlMapper
                 };
             }
             ITypeHandler handler;
-            if(typeHandlers.TryGetValue(type, out handler))
+            if (typeHandlers.TryGetValue(type, out handler))
             {
                 return r =>
                 {
@@ -2832,7 +2814,7 @@ namespace Ancestor.DataAccess.SqlMapper
         /// Gets type-map for the given type
         /// </summary>
         /// <returns>Type map instance, default is to create new instance of DefaultTypeMap</returns>
-        public static Func<Type, ITypeMap> TypeMapProvider = ( Type type ) => new DefaultTypeMap( type );
+        public static Func<Type, ITypeMap> TypeMapProvider = (Type type) => new DefaultTypeMap(type);
 
         /// <summary>
         /// Gets type-map for the given type
@@ -2851,7 +2833,7 @@ namespace Ancestor.DataAccess.SqlMapper
 
                     if (map == null)
                     {
-                        map = TypeMapProvider( type );
+                        map = TypeMapProvider(type);
                         _typeMaps[type] = map;
                     }
                 }
@@ -2924,6 +2906,35 @@ namespace Ancestor.DataAccess.SqlMapper
             }
             return found;
         }
+        private static string[] GetClearNames(string[] names)
+        {
+            var newNames = new string[names.Length];
+            Array.Copy(names, 0, newNames, 0, names.Length);
+            var regexPattern = @"^(?<name>\D*)(?<index>\d*)";            
+            var map = new Dictionary<string, int>();
+            for (int index = 0; index < names.Length; index++)
+            {
+                var match = Regex.Match(names[index], regexPattern);
+                var name = match.Groups["name"].Value;
+                int nameCnt;
+                if(!map.TryGetValue(name, out nameCnt))
+                {
+                    newNames[index] = name;
+                    map.Add(name, 1);
+                }
+                else
+                {
+                    string tmpName = null;
+                    do
+                    {
+                        tmpName = name + nameCnt++;
+                    } while (newNames.Contains(tmpName));
+                    map[name] = nameCnt;
+                    newNames[index] = tmpName;
+                }
+            }
+            return newNames;
+        }
         private static Func<IDataReader, object> GetTypeDeserializerImpl(
             Type type, IDataReader reader, int startBound = 0, int length = -1, bool returnNullIfFirstMissing = false
         )
@@ -2947,6 +2958,9 @@ namespace Ancestor.DataAccess.SqlMapper
             }
 
             var names = Enumerable.Range(startBound, length).Select(i => reader.GetName(i)).ToArray();
+
+            // modify: ignore override field name by replace for index
+            names = GetClearNames(names);
 
             ITypeMap typeMap = GetTypeMap(type);
 
@@ -2975,9 +2989,9 @@ namespace Ancestor.DataAccess.SqlMapper
                 if (explicitConstr != null)
                 {
                     var consPs = explicitConstr.GetParameters();
-                    foreach(var p in consPs)
+                    foreach (var p in consPs)
                     {
-                        if(!p.ParameterType.IsValueType())
+                        if (!p.ParameterType.IsValueType())
                         {
                             il.Emit(OpCodes.Ldnull);
                         }
@@ -3071,11 +3085,6 @@ namespace Ancestor.DataAccess.SqlMapper
                         il.EmitCall(OpCodes.Call, typeof(SqlMapper).GetMethod(
                             memberType == typeof(char) ? nameof(SqlMapper.ReadChar) : nameof(SqlMapper.ReadNullableChar), BindingFlags.Static | BindingFlags.Public), null); // stack is now [target][target][typed-value]
                     }
-                    else if (memberType == typeof(Guid) || memberType == typeof(Guid?))
-                    {
-                        il.EmitCall(OpCodes.Call, typeof(SqlMapper).GetMethod(
-                            memberType == typeof(Guid) ? nameof(SqlMapper.ReadGuid) : nameof(SqlMapper.ReadNullableGuid), BindingFlags.Static | BindingFlags.Public), null); // stack is now [target][target][typed-value]
-                    }
                     else
                     {
                         il.Emit(OpCodes.Dup); // stack is now [target][target][value][value]
@@ -3090,7 +3099,7 @@ namespace Ancestor.DataAccess.SqlMapper
                         if (unboxType.IsEnum())
                         {
                             Type numericType = Enum.GetUnderlyingType(unboxType);
-                            if(colType == typeof(string))
+                            if (colType == typeof(string))
                             {
                                 if (enumDeclareLocal == -1)
                                 {
@@ -3134,7 +3143,7 @@ namespace Ancestor.DataAccess.SqlMapper
                                 }
                                 else
                                 {
-                                     il.Emit(OpCodes.Unbox_Any, unboxType); // stack is now [target][target][typed-value]
+                                    il.Emit(OpCodes.Unbox_Any, unboxType); // stack is now [target][target][typed-value]
                                 }
                             }
                             else
@@ -3179,7 +3188,7 @@ namespace Ancestor.DataAccess.SqlMapper
                             il.Emit(OpCodes.Ldnull);
                         }
                     }
-                    else if(applyNullSetting && (!memberType.IsValueType() || Nullable.GetUnderlyingType(memberType) != null))
+                    else if (applyNullSetting && (!memberType.IsValueType() || Nullable.GetUnderlyingType(memberType) != null))
                     {
                         il.Emit(OpCodes.Pop); // stack is now [target][target]
                         // can load a null with this value
@@ -3263,11 +3272,11 @@ namespace Ancestor.DataAccess.SqlMapper
         private static void FlexibleConvertBoxedFromHeadOfStack(ILGenerator il, Type from, Type to, Type via)
         {
             MethodInfo op;
-            if(from == (via ?? to))
+            if (from == (via ?? to))
             {
                 il.Emit(OpCodes.Unbox_Any, to); // stack is now [target][target][typed-value]
             }
-            else if ((op = GetOperator(from,to)) != null)
+            else if ((op = GetOperator(from, to)) != null)
             {
                 // this is handy for things like decimal <===> double
                 il.Emit(OpCodes.Unbox_Any, from); // stack is now [target][target][data-typed-value]
@@ -3564,7 +3573,7 @@ namespace Ancestor.DataAccess.SqlMapper
         {
             if (obj == null) return "";
             var s = obj.ToString();
-            if(perThreadStringBuilderCache == null)
+            if (perThreadStringBuilderCache == null)
             {
                 perThreadStringBuilderCache = obj;
             }

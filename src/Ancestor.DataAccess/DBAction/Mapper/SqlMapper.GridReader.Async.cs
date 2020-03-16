@@ -1,4 +1,4 @@
-﻿#if ASYNC
+﻿#if NETSTANDARD2_0
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -7,7 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Ancestor.DataAccess.SqlMapper
+namespace Ancestor.DataAccess.DBAction.Mapper
 {
     partial class SqlMapper
     {

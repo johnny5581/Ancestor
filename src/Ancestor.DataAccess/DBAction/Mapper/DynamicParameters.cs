@@ -10,7 +10,7 @@ using System.Reflection.Emit;
 using ApplicationException = System.InvalidOperationException;
 #endif
 
-namespace Ancestor.DataAccess.SqlMapper
+namespace Ancestor.DataAccess.DBAction.Mapper
 {
 
     /// <summary>

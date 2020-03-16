@@ -2,7 +2,7 @@
 using System.Data;
 using System.Threading;
 
-namespace Ancestor.DataAccess.SqlMapper
+namespace Ancestor.DataAccess.DBAction.Mapper
 {
     partial class SqlMapper
     {

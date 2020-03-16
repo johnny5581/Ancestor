@@ -1,69 +1,58 @@
-﻿using System;
+﻿using Ancestor.Core;
+using Ancestor.DataAccess.DAO;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Ancestor.Core;
-using Ancestor.DataAccess.DAO;
-using Ancestor.DataAccess.Interface;
 
 namespace Ancestor.DataAccess.Factory
 {
-    public class DAOFactory : DAOFactoryBase, IDAOFactory
+    public class DAOFactory : IDAOFactory
     {
-        public DAOFactory (DBObject _dbObject)
+        private DBObject _dbObject;
+        private IDataAccessObject _daoCache;
+        public DAOFactory(DBObject dbObject)
         {
-            DbObject = _dbObject;
+            _dbObject = dbObject;
+        }
+
+        public DBObject DbObject
+        {
+            get { return _dbObject; }
+            set
+            {
+                if(_daoCache != null)
+                {
+                    _daoCache.Dispose();
+                    _daoCache = null;
+                }
+                _dbObject = value;
+            }
         }
 
         public IDataAccessObject GetDataAccessObjectFactory()
         {
-            var resource = new DataObjectAccessResource(DbObject).DataObjectAccessResources.FirstOrDefault(x => x.Database == DbObject.DataBaseType);
-            if (resource != null && resource.IDAOobject != null)
+            if (_dbObject == null)
+                throw new NullReferenceException("no DBObject found");
+
+            if(_daoCache == null)
             {
-                resource.IDAOobject.GetActionFactory();
-                return resource.IDAOobject;
-            }
-            throw new NullReferenceException("Suitable Connection isn't existed");
-        }
-
-
-    }
-
-    internal class DataObjectAccessResource
-    {
-        private Lazy<IDataAccessObject> _daobject;
-        private List<DataObjectAccessResource> _DataObjectAccessResources;
-        internal IDataAccessObject IDAOobject { get { return _daobject.Value; } }
-        internal DBObject DbObject { get; set; }
-        internal DBObject.DataBase Database { get; private set; }
-        internal List<DataObjectAccessResource> DataObjectAccessResources
-        {
-            get
-            {
-                if (_DataObjectAccessResources == null)
+                switch (_dbObject.DataBaseType)
                 {
-                    GetConnections(DbObject);
+                    case DBObject.DataBase.Oracle:
+                    case DBObject.DataBase.ManagedOracle:
+                        _daoCache = new OracleDao(_dbObject);
+                        break;
+                    case DBObject.DataBase.MSSQL:
+                    case DBObject.DataBase.MySQL:
+                    case DBObject.DataBase.Access:
+                    case DBObject.DataBase.SQLlite:
+                    case DBObject.DataBase.Sybase:
+                    default:
+                        throw new NotImplementedException("database not implement: " + _dbObject.DataBaseType);
                 }
-                return _DataObjectAccessResources;
             }
-        }
-        internal DataObjectAccessResource(DBObject _DbObject)
-        {
-            DbObject = _DbObject;
-        }
-        private DataObjectAccessResource(DBObject.DataBase _DataBase, Lazy<IDataAccessObject> _Connection)
-        {
-            Database = _DataBase;
-            _daobject = _Connection;
-        }
-        private void GetConnections(DBObject dbOBject)
-        {
-            _DataObjectAccessResources = new List<DataObjectAccessResource>();
-            _DataObjectAccessResources.Add(new DataObjectAccessResource(DBObject.DataBase.Oracle, new Lazy<IDataAccessObject>(() => new OracleDao(dbOBject))));
-            _DataObjectAccessResources.Add(new DataObjectAccessResource(DBObject.DataBase.MSSQL, new Lazy<IDataAccessObject>(() => new MSSqlDao(dbOBject))));//20181105 error MSSqlDao not MySqlDao
-            _DataObjectAccessResources.Add(new DataObjectAccessResource(DBObject.DataBase.MySQL, new Lazy<IDataAccessObject>(() => new MySqlDao(dbOBject))));
-            _DataObjectAccessResources.Add(new DataObjectAccessResource(DBObject.DataBase.Access, new Lazy<IDataAccessObject>(() => new OleDao(dbOBject))));
-            _DataObjectAccessResources.Add(new DataObjectAccessResource(DBObject.DataBase.ManagedOracle, new Lazy<IDataAccessObject>(() => new ManagedOracleDao(dbOBject))));
+            return _daoCache; 
         }
     }
 }

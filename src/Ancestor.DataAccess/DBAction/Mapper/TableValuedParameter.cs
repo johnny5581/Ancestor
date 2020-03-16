@@ -3,7 +3,7 @@ using System.Data;
 using System.Reflection;
 
 #if !COREFX
-namespace Ancestor.DataAccess.SqlMapper
+namespace Ancestor.DataAccess.DBAction.Mapper
 {
     /// <summary>
     /// Used to pass a DataTable as a TableValuedParameter

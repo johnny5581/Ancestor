@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Data;
 #if !COREFX
-namespace Ancestor.DataAccess.SqlMapper
+namespace Ancestor.DataAccess.DBAction.Mapper
 {
     sealed class DataTableHandler : SqlMapper.ITypeHandler
     {

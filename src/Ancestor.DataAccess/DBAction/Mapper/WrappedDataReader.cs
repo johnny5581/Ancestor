@@ -1,6 +1,6 @@
 ﻿using System.Data;
 
-namespace Ancestor.DataAccess.SqlMapper
+namespace Ancestor.DataAccess.DBAction.Mapper
 {
     /// <summary>
     /// Describes a reader that controls the lifetime of both a command and a reader,

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Reflection;
 
-namespace Ancestor.DataAccess.SqlMapper
+namespace Ancestor.DataAccess.DBAction.Mapper
 {
     partial class SqlMapper
     {

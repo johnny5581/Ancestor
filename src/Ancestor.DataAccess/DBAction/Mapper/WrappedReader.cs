@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Data;
 
-namespace Ancestor.DataAccess.SqlMapper
+namespace Ancestor.DataAccess.DBAction.Mapper
 {
     internal class WrappedReader : IDataReader, IWrappedDataReader
     {

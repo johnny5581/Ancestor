@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Globalization;
-namespace Ancestor.DataAccess.SqlMapper
+namespace Ancestor.DataAccess.DBAction.Mapper
 {
     partial class SqlMapper
     {
@@ -215,9 +215,6 @@ namespace Ancestor.DataAccess.SqlMapper
                     typeof(TSixth),
                     typeof(TSeventh)
                 }, gridIndex);
-
-                IsConsumed = true;
-
                 try
                 {
                     foreach (var r in MultiMapImpl<TFirst, TSecond, TThird, TFourth, TFifth, TSixth, TSeventh, TReturn>(null, default(CommandDefinition), func, splitOn, reader, identity, false))

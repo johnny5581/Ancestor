@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Ancestor.DataAccess.SqlMapper
+namespace Ancestor.DataAccess.DBAction.Mapper
 {
 
     /// <summary>

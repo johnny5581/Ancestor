@@ -240,6 +240,7 @@ ModelManifest.xml
 
 # FAKE - F# Make
 .fake/
+.local/
 /Ancestor-LocalTest.sln
 /locals/*
 LocalDemo.sln

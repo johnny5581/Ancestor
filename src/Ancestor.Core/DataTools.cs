@@ -8,11 +8,12 @@ using System.Text;
 
 namespace Ancestor.Core
 {
+    [Obsolete("please use AncestorHelper instead")]
     public static class DataTools
     {
         const string HEX = "ABCDEFabcdef0123456789";
         public static DataTable ToDataTable<TResult>(this IEnumerable<TResult> ListValue, bool useDisplayName = false) where TResult : class, new()
-        {            
+        {
             //建立一個回傳用的 DataTable
             DataTable dt = new DataTable();
 
@@ -114,14 +115,14 @@ namespace Ancestor.Core
             if (source.Count == 0)
                 return result;
 
-
             var enumerableType = source[0].GetType();
             var properties = from sp in enumerableType.GetProperties()
                              from dp in typeof(T).GetProperties()
                              where sp.Name.Equals(dp.Name, StringComparison.OrdinalIgnoreCase) && dp.CanWrite && sp.CanRead && dp.PropertyType.IsAssignableFrom(sp.PropertyType)
                              select new { Source = sp, Destination = dp };
             T t;
-            foreach (var src in source) {
+            foreach (var src in source)
+            {
                 t = new T();
                 properties.ToList().ForEach(p =>
                 {
@@ -165,6 +166,10 @@ namespace Ancestor.Core
                              .ToArray();
         }
 
+        public static string GetHardWord(string hex)
+        {
+            return Encoding.GetEncoding("Big5").GetString(StringToByteArray(hex));
+        }
 
     }
 }
