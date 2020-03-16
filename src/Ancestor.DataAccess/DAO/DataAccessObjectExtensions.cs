@@ -1,11 +1,12 @@
 ﻿using Ancestor.Core;
+using Ancestor.DataAccess.DAO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 
-namespace Ancestor.DataAccess.DAO
+namespace System
 {
     /// <summary>
     /// Extension methods for <see cref="IDataAccessObject"/>

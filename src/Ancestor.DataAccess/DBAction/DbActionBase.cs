@@ -339,7 +339,10 @@ namespace Ancestor.DataAccess.DBAction
         }
         protected void Log(string action, string sql, IEnumerable<DBParameter> parameters)
         {
-            var message = string.Format("sql=\"{1}\" args=[{2}]", action, sql, string.Join(",", parameters));
+            string args = null;
+            if (parameters != null)
+                args = string.Join(",", parameters);
+            var message = string.Format("action={0} sql=\"{1}\" args=[{2}]", action, sql, args);
             GlobalSetting.Log(_dao, GetType().Name, action, message);
         }
         private void OpenConnection()
