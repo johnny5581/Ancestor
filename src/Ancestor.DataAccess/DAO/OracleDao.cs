@@ -78,6 +78,37 @@ namespace Ancestor.DataAccess.DAO
             {
                 return new OracleExpressionResolver((OracleDao)dao, reference);
             }
+
+
+            protected override Expression VisitStaticMethodCall(MethodCallExpression node)
+            {
+                switch(node.Method.Name)
+                {
+                    case "NotNull":
+                        Write("Nvl(");
+                        Visit(node.Arguments[0]);
+                        Write(",");
+                        if (node.Arguments.Count > 1)
+                            Visit(node.Arguments[1]);
+                        else
+                            Write("'!EMPTY!'");
+                        Write(")");
+                        return node;
+                    case "Plus":
+                        Visit(node.Arguments[0]);
+                        Write("(+)");
+                        return node;
+                }
+                return base.VisitStaticMethodCall(node);
+            }
+
+            protected override void ProcessTruncateMethodCall(Expression nodeObject)
+            {
+                Write("Trunc(");
+                Visit(nodeObject);
+                Write(")");
+            }
+
             protected override void ProcessBinaryCoalesce(Expression left, Expression right)
             {
                 Write("Nvl(");
@@ -107,9 +138,45 @@ namespace Ancestor.DataAccess.DAO
                 switch (node.Member.Name)
                 {
                     case "Now":
+                        object now;
+                        if (TryResolveValue(node, out now))
+                            ProcessConstant(now);
+                        throw new InvalidOperationException("can not resolve Server.Now");
+                    case "SysDate":
                         Write(DataAccessObject.GetServerTime());
+                        break;
+                }
+            }
+            protected override void ProcessDateTimeMethodCall(Expression objectNode, MethodInfo method, ReadOnlyCollection<Expression> args)
+            {
+                switch(method.Name)
+                {
+                    case "AddYears":
+                    case "AddMonths":
+                        Write("Add_Months(");
+                        Visit(objectNode);
+                        Write(", ");
+                        Visit(args[0]);
+                        if (method.Name == "AddYears")
+                            Write(" * 12");
+                        Write(")");
+                        return;
+                    case "AddDays":                        
+                    case "AddHours":
+                    case "AddMinutes":
+                    case "AddSeconds":
+                        Visit(objectNode);
+                        Write(" + ");
+                        Visit(args[0]);
+                        if (method.Name == "AddHours")
+                            Write(" / 24");
+                        else if (method.Name == "AddMinutes")
+                            Write(" / 1440");
+                        else if (method.Name == "AddSeconds")
+                            Write(" / 86400");
                         return;
                 }
+                base.ProcessDateTimeMethodCall(objectNode, method, args);
             }
 
             protected override void ProcessConvertToString(Type fromType, Expression objectNode, ReadOnlyCollection<Expression> args)

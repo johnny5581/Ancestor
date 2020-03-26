@@ -1098,7 +1098,11 @@ namespace Ancestor.DataAccess.DAO
             }
             protected virtual Expression VisitStaticMethodCall(MethodCallExpression node)
             {
-                if (node.Method.DeclaringType == typeof(Enumerable))
+                if (node.Method.DeclaringType == typeof(Math))
+                {
+                    return VisitMathStaticMethodCall(node);
+                }
+                else if (node.Method.DeclaringType == typeof(Enumerable))
                 {
                     return VisitCollectionStaticMethodCall(node);
                 }
@@ -1110,6 +1114,27 @@ namespace Ancestor.DataAccess.DAO
                 {
                     return VisitQueryableStaticMethodCall(node);
                 }
+                else if (node.Method.Name == "Parse")
+                {
+                    ProcessTypeConvert(node.Arguments[0].Type, node.Method.DeclaringType, node.Arguments[0], CreateReadOnlyCollection(node.Arguments.Skip(1)));
+                }
+                else if (node.Method.Name == "Between")
+                {
+                    ProcessBetweenMethodCall(node.Arguments[0], node.Arguments[1], node.Arguments[2]);
+                }
+                else if (node.Method.Name == "Truncate")
+                {
+                    ProcessTruncateMethodCall(node.Arguments[0]);
+                }
+                else if (node.Method.Name == "SelectAll")
+                {
+                    var parameterType = node.Arguments[0].Type;
+                    object origin;
+                    _proxyMap.TryGetValue(parameterType, out origin);
+                    var info = DataAccessObject.GetReferenceInfo(null, null, parameterType, origin);
+                    var command = DataAccessObject.CreateSelectCommand(info);
+                    Write(command);
+                }
                 else
                 {
                     object value;
@@ -1117,6 +1142,20 @@ namespace Ancestor.DataAccess.DAO
                         WriteParameter(value);
                 }
 
+                return node;
+            }
+
+            protected virtual Expression VisitMathStaticMethodCall(MethodCallExpression node)
+            {
+                Write(node.Method.Name.ToUpper());
+                Write("(");
+                Visit(node.Arguments[0]);
+                foreach (var args in node.Arguments.Skip(1))
+                {
+                    Write(",");
+                    Visit(args);
+                }
+                Write(")");
                 return node;
             }
 
@@ -1281,6 +1320,16 @@ namespace Ancestor.DataAccess.DAO
                 }
             }
 
+            protected virtual void ProcessBetweenMethodCall(Expression nodeObject, Expression from, Expression to)
+            {
+                Visit(nodeObject);
+                Write("Between");
+                Visit(from);
+                Write("And");
+                Visit(to);
+            }
+            protected abstract void ProcessTruncateMethodCall(Expression nodeObject);
+
             protected virtual void ProcessCollectionMethodCall(Expression objectNode, MethodInfo method, ReadOnlyCollection<Expression> args)
             {
                 switch (method.Name)
@@ -1439,7 +1488,10 @@ namespace Ancestor.DataAccess.DAO
                 {
                     var hd = HardWordManager.Get(property);
                     if (hd != null)
+                    {
                         value = _dao.ConvertFromHardWord(value, hd);
+                        value = value + " AS " + memberName;
+                    }
                 }
                 Write(value);
             }
@@ -1501,7 +1553,7 @@ namespace Ancestor.DataAccess.DAO
             {
                 object value;
                 if (!TryResolveValue(node, out value))
-                    throw new InvalidOperationException("can not resolve DateTime member" + node);
+                    throw new InvalidOperationException("can not resolve DateTime member: " + node);
                 ProcessConstant(value);
             }
 
@@ -1541,14 +1593,21 @@ namespace Ancestor.DataAccess.DAO
 
             protected virtual bool TryResolveValue(Expression node, out object value)
             {
+                Exception error;
+                return TryResolveValue(node, out value, out error);
+            }
+            protected virtual bool TryResolveValue(Expression node, out object value, out Exception error)
+            {
                 try
                 {
                     value = ResolveValue(node);
+                    error = null;
                     return true;
                 }
-                catch
+                catch (Exception ex)
                 {
                     value = null;
+                    error = ex;
                     return false;
                 }
             }
@@ -1568,9 +1627,6 @@ namespace Ancestor.DataAccess.DAO
                 {
                     ProcessNewObject(node.Type);
                 }
-
-
-
                 return node;
             }
 
@@ -1579,12 +1635,21 @@ namespace Ancestor.DataAccess.DAO
             /// </summary>            
             protected override Expression VisitNewArray(NewArrayExpression node)
             {
-                return base.VisitNewArray(node);
+                var flag = false;
+                foreach (var expression in node.Expressions)
+                {
+                    if (flag)
+                        Write(", ");
+                    else
+                        flag = true;
+                    Visit(expression);
+                }
+                return node;
             }
 
             protected virtual void ProcessNewObject(Type type)
             {
-
+                throw new NotImplementedException();
             }
 
             protected virtual void ProcessNewAnonymousObject(NewExpression node)
