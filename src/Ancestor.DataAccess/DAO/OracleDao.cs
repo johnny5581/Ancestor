@@ -32,6 +32,7 @@ namespace Ancestor.DataAccess.DAO
                 case DBObject.DataBase.Oracle:
                     return new OracleAction(this, dbObject);
                 case DBObject.DataBase.ManagedOracle:
+                    return new ManagedOracleAction(this, dbObject);
                 default:
                     return null;
             }            

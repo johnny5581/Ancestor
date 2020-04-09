@@ -20,8 +20,12 @@
 
   <ItemGroup Condition="'$(targetframework)' == 'net40'">
     <Reference Include="System.Data.OracleClient" />
+    <PackageReference Include="Oracle.ManagedDataAccess" Version="12.2.1100" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="Oracle.ManagedDataAccess.Core">
+      <Version>2.19.60</Version>
+    </PackageReference>
     <PackageReference Include="System.Data.SqlClient">
       <Version>4.8.0</Version>
     </PackageReference>
