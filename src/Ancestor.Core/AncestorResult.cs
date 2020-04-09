@@ -66,10 +66,11 @@ namespace Ancestor.Core
     /// </summary>
     public class AncestorResult : IAncestorResult
     {
+        private string _errorMessage;
         private Exception _error;
-        private  string _command;
-        private  DBParameterCollection _parameters;
-        private  object _option;
+        private string _command;
+        private DBParameterCollection _parameters;
+        private object _option;
 
         private static bool _enableSaveCommand = false;
         /// <summary>
@@ -80,7 +81,10 @@ namespace Ancestor.Core
             get { return _enableSaveCommand; }
             set { _enableSaveCommand = value; }
         }
-        
+        public AncestorResult()
+        {
+        }
+
 
         protected AncestorResult(bool success)
         {
@@ -90,6 +94,7 @@ namespace Ancestor.Core
             : this(false)
         {
             _error = exception;
+            _errorMessage = exception.Message;
         }
         public AncestorResult(IList list)
             : this(true)
@@ -135,12 +140,8 @@ namespace Ancestor.Core
         public int EffectRows { get; set; }
         public string Message
         {
-            get
-            {
-                if (_error != null)
-                    return _error.Message;
-                return null;
-            }
+            get { return _errorMessage; }
+            set { _errorMessage = value; }
         }
 
         internal Exception InnerException

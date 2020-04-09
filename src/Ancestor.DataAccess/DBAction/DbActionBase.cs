@@ -43,6 +43,7 @@ namespace Ancestor.DataAccess.DBAction
         private bool _disposed;
         protected readonly object Locker = new object();
         private readonly DataAccessObjectBase _dao;
+        private string _lastSqlCommand;
         private bool _autoCloseConnection = true;
 
         public DbActionBase(DataAccessObjectBase dao, DBObject dbObject)
@@ -68,6 +69,10 @@ namespace Ancestor.DataAccess.DBAction
         {
             get { return _autoCloseConnection; }
             set { _autoCloseConnection = value; }
+        }
+        internal IDbTransaction Transaction
+        {
+            get { return _transaction; }
         }
         #endregion Property
 
@@ -112,6 +117,10 @@ namespace Ancestor.DataAccess.DBAction
         {
             CloseConnection(_connection, _transaction);
             _autoCloseConnection = true;
+        }
+        public IDbConnection Connection
+        {
+            get { return _connection; }
         }
 
 
@@ -343,6 +352,7 @@ namespace Ancestor.DataAccess.DBAction
             if (parameters != null)
                 args = string.Join(",", parameters);
             var message = string.Format("action={0} sql=\"{1}\" args=[{2}]", action, sql, args);
+            _lastSqlCommand = sql;
             GlobalSetting.Log(_dao, GetType().Name, action, message);
         }
         private void OpenConnection()

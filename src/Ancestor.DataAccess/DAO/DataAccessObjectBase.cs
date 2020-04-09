@@ -15,7 +15,7 @@ namespace Ancestor.DataAccess.DAO
     /// <summary>
     /// DataAccessObject base class
     /// </summary>
-    public abstract class DataAccessObjectBase : IDataAccessObject, IIdentifiable
+    public abstract class DataAccessObjectBase : IDataAccessObjectEx, IIdentifiable
     {
         private readonly Guid _id = Guid.NewGuid();
         private readonly DBObject _dbObject;
@@ -49,6 +49,8 @@ namespace Ancestor.DataAccess.DAO
         {
             get { return " 1 <> 1 "; }
         }
+
+
         /// <summary>
         /// Update mode setting
         /// </summary>
@@ -62,7 +64,19 @@ namespace Ancestor.DataAccess.DAO
             set { _raiseExp = value; }
         }
 
-        IDbConnection IDataAccessObject.DBConnection { get; }
+        internal IDbConnection DbConnection
+        {
+            get { return _dbAction.Connection; }
+        }
+        internal DBObject DbObject
+        {
+            get { return _dbObject; }
+        }
+        internal IDbAction DbAction
+        {
+            get { return _dbAction; }
+        }
+        
         #endregion Property
 
 

@@ -13,7 +13,7 @@ namespace Ancestor.DataAccess.DBAction
     {
         bool IsTransacting { get; }
         bool AutoCloseConnection { get; set; }
-
+        IDbConnection Connection { get; }
         void BeginTransaction();
         void BeginTransaction(IsolationLevel isolationLevel);
         void Commit();

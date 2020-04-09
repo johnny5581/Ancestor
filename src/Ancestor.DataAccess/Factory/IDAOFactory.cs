@@ -8,6 +8,6 @@ namespace Ancestor.DataAccess.Factory
 {
     public interface IDAOFactory
     {
-        IDataAccessObject GetDataAccessObjectFactory();
+        IDataAccessObjectEx GetDataAccessObjectFactory();
     }
 }

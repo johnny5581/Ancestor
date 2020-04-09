@@ -37,7 +37,7 @@ namespace Ancestor.DataAccess.DAO
         /// </summary>
         public static void InitializeServerTime(DBObject dbObject)
         {
-            using (var dao = new Factory.DAOFactory(dbObject).GetDataAccessObjectFactory())
+            using (var dao = new Factory.DAOFactoryEx(dbObject).GetDataAccessObjectFactory())
             {
                 var res = dao.ExecuteScalar("SELECT SYSDATE FROM DUAL", null, null);
                 if (res.IsSuccess)
