@@ -46,7 +46,7 @@ namespace Ancestor.DataAccess.Factory
         }
         IDbConnection IDataAccessObject.DBConnection
         {
-            get { return _dao.DbConnection; }
+            get { return ((IDataAccessObjectEx)_dao).DBConnection; }
         }
 
         IDbTransaction IDataAccessObject.BeginTransaction()

@@ -49,8 +49,6 @@ namespace Ancestor.DataAccess.DAO
         {
             get { return " 1 <> 1 "; }
         }
-
-
         /// <summary>
         /// Update mode setting
         /// </summary>
@@ -64,19 +62,19 @@ namespace Ancestor.DataAccess.DAO
             set { _raiseExp = value; }
         }
 
-        internal IDbConnection DbConnection
+        IDbConnection IDataAccessObjectEx.DBConnection
         {
             get { return _dbAction.Connection; }
         }
-        internal DBObject DbObject
-        {
-            get { return _dbObject; }
-        }
-        internal IDbAction DbAction
+        public IDbAction DbAction
         {
             get { return _dbAction; }
         }
-        
+        public DBObject DbObject
+        {
+            get { return _dbObject; }
+        }
+
         #endregion Property
 
 
@@ -196,7 +194,9 @@ namespace Ancestor.DataAccess.DAO
             return TryCatch(() =>
             {
                 var dbParameters = CreateDBParameters(parameter);
-                var dbOpts = CreateDbOptions(options);
+                if (options == null)
+                    options = new AncestorOptions { HasRowId = false };
+                var dbOpts = CreateDbOptions(options);                
                 return InternalQuery(sql, dbParameters, dataType, firstOnly, dbOpts);
             }, ReturnAncestorResult);
         }
@@ -432,6 +432,7 @@ namespace Ancestor.DataAccess.DAO
             else
             {
                 var dic = parameterObject as IDictionary<string, object>;
+                collection = new DBParameterCollection();
                 if (dic != null) // is dictionary 
                     CreateDBParameterFromDictionary(dic, ref collection);
                 else if (parameterObject != null)

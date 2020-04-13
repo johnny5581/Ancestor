@@ -1,5 +1,4 @@
 ﻿using Ancestor.Core;
-using Ancestor.DataAccess.DBAction;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -13,10 +12,11 @@ namespace Ancestor.DataAccess.DAO
 {
     public interface IDataAccessObjectEx : IDisposable
     {
-        //IDbAction DbAction { get; }
-        //IDbConnection DbConnection { get; }
-        //DBObject DbObject { get; }
-
+        #region Property
+        [Browsable(false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        IDbConnection DBConnection { get; }
+        #endregion Property
 
         #region Connection
         void BeginTransaction();

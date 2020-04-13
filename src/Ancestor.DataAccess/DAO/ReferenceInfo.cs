@@ -49,6 +49,8 @@ namespace Ancestor.DataAccess.DAO
             ReferenceStruct value;
             if (_referenceMap.TryGetValue(sourceKey, out value))
                 return value.ReferenceType;
+            else if (_referenceMap.Count == 1)
+                return _referenceMap.First().Value.ReferenceType;
             return null;
         }
         public string GetReferenceName(Type sourceType = null)
