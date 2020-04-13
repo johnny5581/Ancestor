@@ -12,6 +12,11 @@ namespace Ancestor.Core
 {
     public static class AncestorResultHelper
     {
+        public static IList MakeList(IList list, Type type)
+        {
+            var listType = typeof(List<>).MakeGenericType(type);
+            return (IList) Activator.CreateInstance(listType, list);
+        }
         public static object ResultFirst(IAncestorResult result, Type dataType, Delegate objectFactory, ResultListMode mode)
         {
             var list = InternalResultList(result, dataType, objectFactory, true, mode);

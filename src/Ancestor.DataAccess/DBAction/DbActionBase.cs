@@ -130,8 +130,10 @@ namespace Ancestor.DataAccess.DBAction
             {
                 Log("QueryList", sql, dbParameters);
                 var dynamicParameter = CreateDynamicParameters(dbParameters);
-                var list = _connection.Query(dataType, sql, dynamicParameter, _transaction).ToList();
-                return (IList)list;
+                IList list = _connection.Query(dataType, sql, dynamicParameter, _transaction).ToList();
+                if (dataType != null)
+                    list = AncestorResultHelper.MakeList(list, dataType);
+                return list;
             }, sql, dbParameters, options);
         }
 
