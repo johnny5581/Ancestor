@@ -2909,29 +2909,17 @@ namespace Ancestor.DataAccess.DBAction.Mapper
         private static string[] GetClearNames(string[] names)
         {
             var newNames = new string[names.Length];
-            Array.Copy(names, 0, newNames, 0, names.Length);
-            var regexPattern = @"^(?<name>\D*)(?<index>\d*)";            
-            var map = new Dictionary<string, int>();
+            var hash = new HashSet<string>();
             for (int index = 0; index < names.Length; index++)
             {
-                var match = Regex.Match(names[index], regexPattern);
-                var name = match.Groups["name"].Value;
-                int nameCnt;
-                if(!map.TryGetValue(name, out nameCnt))
+                int nameIndex = 1;
+                var name = names[index];
+                while(hash.Contains(name))
                 {
-                    newNames[index] = name;
-                    map.Add(name, 1);
+                    name = names[index] + nameIndex++;
                 }
-                else
-                {
-                    string tmpName = null;
-                    do
-                    {
-                        tmpName = name + nameCnt++;
-                    } while (newNames.Contains(tmpName));
-                    map[name] = nameCnt;
-                    newNames[index] = tmpName;
-                }
+                hash.Add(name);
+                newNames[index] = name;
             }
             return newNames;
         }
@@ -2959,6 +2947,7 @@ namespace Ancestor.DataAccess.DBAction.Mapper
 
             var names = Enumerable.Range(startBound, length).Select(i => reader.GetName(i)).ToArray();
 
+            // author: nagi
             // modify: ignore override field name by replace for index
             names = GetClearNames(names);
 

@@ -15,7 +15,11 @@ namespace Ancestor.Core
         public static IList MakeList(IList list, Type type)
         {
             var listType = typeof(List<>).MakeGenericType(type);
-            return (IList) Activator.CreateInstance(listType, list);
+            var addItemMethod = listType.GetMethod("Add");
+            var genericList = Activator.CreateInstance(listType, list.Count);
+            foreach (var item in list)
+                addItemMethod.Invoke(genericList, new object[] { item });
+            return (IList)genericList;
         }
         public static object ResultFirst(IAncestorResult result, Type dataType, Delegate objectFactory, ResultListMode mode)
         {
