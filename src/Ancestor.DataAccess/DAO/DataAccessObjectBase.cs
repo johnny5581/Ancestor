@@ -846,7 +846,7 @@ namespace Ancestor.DataAccess.DAO
                 return result;
             }
 
-            private void Continue(ExpressionResolveResult result) 
+            private void Continue(ExpressionResolveResult result)
             {
                 _index += result.Parameters.Count;
             }
@@ -956,7 +956,7 @@ namespace Ancestor.DataAccess.DAO
             {
                 using (var scope = CreateScope())
                 {
-                    var subResolver = CreateInstance(_dao, _refernece);                    
+                    var subResolver = CreateInstance(_dao, _refernece);
                     var result = subResolver.ResolveContinue(collectionNode, _index);
                     Continue(result);
                     if (result.Parameters.Count > 0 || result.Sql.Length > 0)
@@ -1291,45 +1291,7 @@ namespace Ancestor.DataAccess.DAO
                         break;
                     case "Compare":
                     case "CompareTo":
-                        object src, arg;
-                        var srcFlag = TryResolveValue(objectNode, out src);
-                        var argFlag = TryResolveValue(args[0], out arg);
-                        string lastSrc = null, lastArg = null;
-
-                        using (var scope = CreateScope())
-                        {
-                            Write("Case");
-                            Write("When");
-                            if (srcFlag)
-                            {
-                                ProcessConstant(src);
-                                lastSrc = GetLastParameterName(true);
-                            }
-                            else
-                                Visit(objectNode);
-                            Write("=");
-                            if (argFlag)
-                            {
-                                ProcessConstant(arg);
-                                lastArg = GetLastParameterName(true);
-                            }
-                            else
-                                Visit(args[0]);
-                            Write("Then 0");
-
-                            Write("When");
-                            if (srcFlag)
-                                Write(lastSrc);
-                            else
-                                Visit(objectNode);
-                            Write("<");
-                            if (argFlag)
-                                Write(lastArg);
-                            else
-                                Visit(args[0]);
-                            Write("Then -1");
-                            Write("Else 1 End");
-                        }
+                        ProcessCompareTo(objectNode, args[0]);
                         break;
                     case "IsNullOrEmpty":
                         var resolver = CreateInstance(_dao, _refernece);
@@ -1388,6 +1350,9 @@ namespace Ancestor.DataAccess.DAO
                     case "ToString":
                         ProcessTypeConvert(typeof(DateTime), typeof(string), objectNode, args);
                         break;
+                    case "CompareTo":
+                        ProcessCompareTo(objectNode, args[0]);
+                        break;
                     default:
                         break;
                 }
@@ -1402,6 +1367,48 @@ namespace Ancestor.DataAccess.DAO
                     default:
 
                         break;
+                }
+            }
+            protected virtual void ProcessCompareTo(Expression objectNode, Expression comparisonNode)
+            {
+                object src, arg;
+                var srcFlag = TryResolveValue(objectNode, out src);
+                var argFlag = TryResolveValue(comparisonNode, out arg);
+                string lastSrc = null, lastArg = null;
+
+                using (var scope = CreateScope())
+                {
+                    Write("Case");
+                    Write("When");
+                    if (srcFlag)
+                    {
+                        ProcessConstant(src);
+                        lastSrc = GetLastParameterName(true);
+                    }
+                    else
+                        Visit(objectNode);
+                    Write("=");
+                    if (argFlag)
+                    {
+                        ProcessConstant(arg);
+                        lastArg = GetLastParameterName(true);
+                    }
+                    else
+                        Visit(comparisonNode);
+                    Write("Then 0");
+
+                    Write("When");
+                    if (srcFlag)
+                        Write(lastSrc);
+                    else
+                        Visit(objectNode);
+                    Write("<");
+                    if (argFlag)
+                        Write(lastArg);
+                    else
+                        Visit(comparisonNode);
+                    Write("Then -1");
+                    Write("Else 1 End");
                 }
             }
             protected virtual void ProcessTypeConvert(Type fromType, Type toType, Expression objectNode, ReadOnlyCollection<Expression> args)
@@ -1730,7 +1737,7 @@ namespace Ancestor.DataAccess.DAO
             }
             protected virtual ParameterInfo GetParameter(object value)
             {
-                var name = (_index + 1).ToString();
+                var name = _index.ToString();
                 var parameter = DataAccessObject.CreateParameter(value, name, true);
                 if (!parameter.IsSysDateConverted)
                     MoveNextParameter();
@@ -1934,6 +1941,8 @@ namespace Ancestor.DataAccess.DAO
                             _sb.Append(")");
                             StringBuilder sb = IsRoot ? _resolver._sb : Parent.StringBuilder;
                             var text = _sb.ToString();
+                            if (sb.Length != 0 && sb[sb.Length - 1] != ' ')
+                                sb.Append(" ");
                             sb.Append(text);
                             _resolver._scope = !IsRoot ? Parent : null;
                         }
