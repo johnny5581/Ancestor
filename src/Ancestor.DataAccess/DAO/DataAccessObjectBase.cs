@@ -22,14 +22,30 @@ namespace Ancestor.DataAccess.DAO
         private IDbAction _dbAction;
         private bool _disposed = false;
         private bool? _raiseExp;
-        public static string ParameterPrefix = "P_";
-        public static string UpdateParameterPrefix = "PU_";
+        public const string DefaultParameterPrefix = "P_";
+        public const string DefaultUpdateParameterPrefix = "PU_";
+
+
         public DataAccessObjectBase(DBObject dbObject)
         {
             _dbObject = dbObject;
             _dbAction = CreateDbAction(dbObject);
         }
         #region Property
+        //private string _parameterPrefix;
+        //private string _updateParameterPrefix;
+        //public string ParameterPrefix
+        //{
+        //    get { return _parameterPrefix ?? DefaultParameterPrefix; }
+        //    set { _parameterPrefix = value; }
+        //}
+
+        //public string UpdateParameterPrefix
+        //{
+        //    get { return _updateParameterPrefix ?? DefaultUpdateParameterPrefix; }
+        //}
+
+
         Guid IIdentifiable.Guid
         {
             get { return _id; }
@@ -196,7 +212,7 @@ namespace Ancestor.DataAccess.DAO
                 var dbParameters = CreateDBParameters(parameter);
                 if (options == null)
                     options = new AncestorOptions { HasRowId = false };
-                var dbOpts = CreateDbOptions(options);                
+                var dbOpts = CreateDbOptions(options);
                 return InternalQuery(sql, dbParameters, dataType, firstOnly, dbOpts);
             }, ReturnAncestorResult);
         }
@@ -426,19 +442,21 @@ namespace Ancestor.DataAccess.DAO
         }
         protected virtual DBParameterCollection CreateDBParameters(object parameterObject)
         {
-            DBParameterCollection collection = null;
-            if (parameterObject is DBParameterCollection)
-                collection = parameterObject as DBParameterCollection;
-            else
-            {
-                var dic = parameterObject as IDictionary<string, object>;
-                collection = new DBParameterCollection();
-                if (dic != null) // is dictionary 
-                    CreateDBParameterFromDictionary(dic, ref collection);
-                else if (parameterObject != null)
-                    CreateDBParameterFromProperty(parameterObject, ref collection);
-            }
-            return collection;
+            var parameters = parameterObject as DBParameterCollection;
+            if (parameters != null)
+                return parameters;
+
+            var parameterEnumerable = parameterObject as IEnumerable<DBParameter>;
+            if (parameterEnumerable != null)
+                return new DBParameterCollection(parameterEnumerable);
+
+            parameters = new DBParameterCollection();
+            var parameterDictionary = parameterObject as IDictionary<string, object>;
+            if (parameterDictionary != null) // is dictionary 
+                CreateDBParameterFromDictionary(parameterDictionary, ref parameters);
+            else if (parameterObject != null)
+                CreateDBParameterFromProperty(parameterObject, ref parameters);
+            return parameters;
         }
 
 
@@ -617,7 +635,7 @@ namespace Ancestor.DataAccess.DAO
 
                 if (value != null)
                 {
-                    var parameter = CreateParameter(value, fname, true, UpdateParameterPrefix, hd);
+                    var parameter = CreateParameter(value, fname, true, DefaultUpdateParameterPrefix, hd);
                     fieldMap.Add(fname, parameter.ValueName);
                     if (!parameter.IsSysDateConverted)
                         parameters.Add(parameter.ValueName, parameter.Value);
@@ -650,7 +668,7 @@ namespace Ancestor.DataAccess.DAO
         }
         private string CreateParameterName(string name, bool symbol, string prefix = null)
         {
-            return string.Format("{1}{2}{0}", name, symbol ? ParameterSymbol : "", prefix ?? ParameterPrefix);
+            return string.Format("{1}{2}{0}", name, symbol ? ParameterSymbol : "", prefix ?? DefaultParameterPrefix);
         }
         private DbActionResult InternalQuery(string sql, DBParameterCollection dbParameters, Type dataType, bool firstOnly, DbActionOptions options)
         {
@@ -826,6 +844,10 @@ namespace Ancestor.DataAccess.DAO
                 return result;
             }
 
+            private void Continue(ExpressionResolveResult result) 
+            {
+                _index += result.Parameters.Count;
+            }
 
 
             protected ExpressionResolveResult ResolveContinue(Expression expression, int parameterIndex)
@@ -858,7 +880,7 @@ namespace Ancestor.DataAccess.DAO
                         return node;
                     case ExpressionType.Convert:
                     case ExpressionType.ConvertChecked:
-                        if (node.Type == typeof(object))
+                        if (node.Type == typeof(object) || Nullable.GetUnderlyingType(node.Type) == null || node.Type != typeof(string))
                             Visit(node.Operand);
                         else
                             ProcessTypeConvert(node.Operand.Type, node.Type, operand, null);
@@ -889,7 +911,7 @@ namespace Ancestor.DataAccess.DAO
                     // Enumerable.Contains() extends method
                     if (node.Method.DeclaringType == typeof(Enumerable) && node.Method.Name == "Contains")
                     {
-                        ProcessCollectionContains(node.Arguments[0], node.Arguments[1], true);
+                        ProcessCollectionContains(node.Arguments[0], node.Arguments[1], false);
                     }
                     else if (node.Method.DeclaringType == typeof(string))
                     {
@@ -932,15 +954,16 @@ namespace Ancestor.DataAccess.DAO
             {
                 using (var scope = CreateScope())
                 {
-                    var resolver = CreateInstance(_dao, _refernece);
-                    var result = resolver.ResolveContinue(collectionNode, _index);
+                    var subResolver = CreateInstance(_dao, _refernece);                    
+                    var result = subResolver.ResolveContinue(collectionNode, _index);
+                    Continue(result);
                     if (result.Parameters.Count > 0 || result.Sql.Length > 0)
                     {
                         Visit(parameterNode);
                         if (!positive)
                             Write(" NOT");
                         Write(" IN ");
-                        Visit(collectionNode);
+                        Write(result);
                     }
                     else
                     {
@@ -1349,6 +1372,9 @@ namespace Ancestor.DataAccess.DAO
             {
                 switch (method.Name)
                 {
+                    case "Contains":
+                        ProcessCollectionContains(objectNode, args[0]);
+                        break;
                     default:
                         break;
                 }
@@ -1687,6 +1713,7 @@ namespace Ancestor.DataAccess.DAO
             {
                 return new ReadOnlyCollection<Expression>(expressions.ToList());
             }
+
             protected virtual void Write(string text)
             {
                 var sb = StringBuilder;
@@ -1706,6 +1733,11 @@ namespace Ancestor.DataAccess.DAO
                 if (!parameter.IsSysDateConverted)
                     MoveNextParameter();
                 return parameter;
+            }
+            protected virtual void Write(ExpressionResolveResult result)
+            {
+                Write(result.Sql);
+                _dbParameters.AddRange(result.Parameters);
             }
             protected virtual DBParameter WriteParameter(object value)
             {
@@ -1730,7 +1762,7 @@ namespace Ancestor.DataAccess.DAO
             }
             protected virtual void WriteParameters(object[] values)
             {
-                var parameters = values.Select(v => GetParameter(v));
+                var parameters = values.Select(v => GetParameter(v)).ToArray();
                 var appendTexts = string.Join(", ", parameters.Select(p => p.ValueName));
                 if (appendTexts.Length > 0)
                 {
