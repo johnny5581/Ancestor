@@ -23,6 +23,8 @@ namespace Ancestor.DataAccess.DAO
         private bool _disposed = false;
         private bool? _raiseExp;
         public const string DefaultParameterPrefix = "P_";
+        public const string DefaultParameterPostfix = "_P";
+
         public const string DefaultUpdateParameterPrefix = "PU_";
 
 
@@ -666,9 +668,9 @@ namespace Ancestor.DataAccess.DAO
                 }
             }
         }
-        private string CreateParameterName(string name, bool symbol, string prefix = null)
+        private string CreateParameterName(string name, bool symbol, string prefix = null, string postfix = null)
         {
-            return string.Format("{1}{2}{0}", name, symbol ? ParameterSymbol : "", prefix ?? DefaultParameterPrefix);
+            return string.Format("{1}{2}{0}{3}", name, symbol ? ParameterSymbol : "", prefix ?? DefaultParameterPrefix, postfix ?? DefaultParameterPostfix);
         }
         private DbActionResult InternalQuery(string sql, DBParameterCollection dbParameters, Type dataType, bool firstOnly, DbActionOptions options)
         {
