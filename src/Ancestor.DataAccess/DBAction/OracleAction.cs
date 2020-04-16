@@ -177,6 +177,8 @@ namespace Ancestor.DataAccess.DBAction
                 var oracleString = (OracleString)dbValue;
                 if (!oracleString.IsNull)
                     return oracleString.Value;
+                if (GlobalSetting.UseOracleStringParameter)
+                    return oracleString.ToString();
             }
             return null;
         }

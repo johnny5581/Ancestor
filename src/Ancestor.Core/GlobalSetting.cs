@@ -26,6 +26,7 @@ namespace Ancestor.Core
             if (handler != null)
                 handler(sender, new LoggingEventArgs(sender.Guid, tag, name, message));
         }
+        public static bool UseOracleStringParameter { get; set; }
     }
     public delegate void LoggingEventHandler(object sender, LoggingEventArgs e);
     public class LoggingEventArgs : EventArgs
