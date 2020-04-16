@@ -158,6 +158,7 @@ namespace Ancestor.Core
     public sealed class DBParameterCollection : KeyedCollection<string, DBParameter>
     {
         private int _index = 0;
+        private string _returnValueParameterName;
         public DBParameterCollection() : base(StringComparer.OrdinalIgnoreCase)
         {
         }
@@ -178,7 +179,25 @@ namespace Ancestor.Core
         {
             return item.Name;
         }
-
+        public new DBParameter this[string key]
+        {
+            get
+            {
+                if (key == _returnValueParameterName && _returnValueParameterName != null)
+                    return base[""];
+                return base[key];
+            }
+        }
+        public new void Add(DBParameter item)
+        {
+            // clear return value's parameter name
+            if (item.ParameterDirection == ParameterDirection.ReturnValue)
+            {
+                _returnValueParameterName = item.Name;
+                item.Name = "";
+            }
+            base.Add(item);
+        }
         public void AddRange(IEnumerable<DBParameter> collection)
         {
             foreach (var item in collection)

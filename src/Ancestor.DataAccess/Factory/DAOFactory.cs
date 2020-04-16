@@ -310,5 +310,10 @@ namespace Ancestor.DataAccess.Factory
         {
             return _dao.UpdateAll(valueObject, predicate, name);
         }
+
+        IDataAccessObjectEx IDataAccessObject.GetDataAccessObjectEx()
+        {
+            return _dao;
+        }
     }
 }

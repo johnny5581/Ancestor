@@ -16,6 +16,9 @@ namespace Ancestor.DataAccess.DAO
         [Browsable(false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         IDbConnection DBConnection { get; }
+
+        string ParameterPrefix { get; set; }
+        string ParameterPostfix { get; set; }
         #endregion Property
 
         #region Connection

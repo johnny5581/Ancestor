@@ -108,6 +108,7 @@ namespace Ancestor.DataAccess.DAO
         void Commit();
         void Rollback();
 
+        IDataAccessObjectEx GetDataAccessObjectEx();
     }
 
 }

@@ -24,29 +24,41 @@ namespace Ancestor.DataAccess.DAO
         private bool? _raiseExp;
         public const string DefaultParameterPrefix = "P_";
         public const string DefaultParameterPostfix = "_P";
-
-        public const string DefaultUpdateParameterPrefix = "PU_";
-
-
+        public const string DefaultUpdateParameterPrefix = "U_";
+        public const string DefaultMergeParameterPostfix = "_R";
+        private string _parameterPrefix;
+        private string _updateParameterPrefix;
+        private string _parameterPostfix;
+        private string _mergeParameterPostfix;
         public DataAccessObjectBase(DBObject dbObject)
         {
             _dbObject = dbObject;
+            ParameterPrefix = dbObject.ParameterPrefix;
+            ParameterPostfix = dbObject.ParameterPostfix;
             _dbAction = CreateDbAction(dbObject);
         }
         #region Property
-        //private string _parameterPrefix;
-        //private string _updateParameterPrefix;
-        //public string ParameterPrefix
-        //{
-        //    get { return _parameterPrefix ?? DefaultParameterPrefix; }
-        //    set { _parameterPrefix = value; }
-        //}
 
-        //public string UpdateParameterPrefix
-        //{
-        //    get { return _updateParameterPrefix ?? DefaultUpdateParameterPrefix; }
-        //}
-
+        public string ParameterPrefix
+        {
+            get { return _parameterPrefix ?? DefaultParameterPrefix; }
+            set { _parameterPrefix = value; }
+        }
+        public string UpdateParameterPrefix
+        {
+            get { return _updateParameterPrefix ?? DefaultUpdateParameterPrefix; }
+            set { _updateParameterPrefix = value; }
+        }
+        public string ParameterPostfix
+        {
+            get { return _parameterPostfix ?? DefaultParameterPostfix; }
+            set { _parameterPostfix = value; }
+        }
+        public string MergeParameterPostfix
+        {
+            get { return _mergeParameterPostfix ?? DefaultMergeParameterPostfix; }
+            set { _mergeParameterPostfix = value; }
+        }
 
         Guid IIdentifiable.Guid
         {
@@ -462,9 +474,9 @@ namespace Ancestor.DataAccess.DAO
         }
 
 
-        protected ParameterInfo CreateParameter(object value, string parameterNameSeed, bool symbol, string prefix = null, HardWordAttribute hardWord = null)
+        protected ParameterInfo CreateParameter(object value, string parameterNameSeed, bool symbol, string prefix = null, string postfix = null, HardWordAttribute hardWord = null)
         {
-            var pname = CreateParameterName(parameterNameSeed, symbol, prefix);
+            var pname = CreateParameterName(parameterNameSeed, symbol, prefix, postfix);
             var sysDate = false;
             if (value is DateTime && value != null && (DateTime)value == Server.SysDate)
             {
@@ -637,7 +649,7 @@ namespace Ancestor.DataAccess.DAO
 
                 if (value != null)
                 {
-                    var parameter = CreateParameter(value, fname, true, DefaultUpdateParameterPrefix, hd);
+                    var parameter = CreateParameter(value, fname, true, UpdateParameterPrefix, null, hd);
                     fieldMap.Add(fname, parameter.ValueName);
                     if (!parameter.IsSysDateConverted)
                         parameters.Add(parameter.ValueName, parameter.Value);
@@ -670,7 +682,7 @@ namespace Ancestor.DataAccess.DAO
         }
         private string CreateParameterName(string name, bool symbol, string prefix = null, string postfix = null)
         {
-            return string.Format("{1}{2}{0}{3}", name, symbol ? ParameterSymbol : "", prefix ?? DefaultParameterPrefix, postfix ?? DefaultParameterPostfix);
+            return string.Format("{1}{2}{0}{3}", name, symbol ? ParameterSymbol : "", prefix ?? ParameterPrefix, postfix ?? ParameterPostfix);
         }
         private DbActionResult InternalQuery(string sql, DBParameterCollection dbParameters, Type dataType, bool firstOnly, DbActionOptions options)
         {
@@ -1772,7 +1784,7 @@ namespace Ancestor.DataAccess.DAO
             protected virtual void WriteParameters(object[] values)
             {
                 var parameters = values.Select(v => GetParameter(v)).ToArray();
-                var appendTexts = string.Join(", ", parameters.Select(p => p.ValueName));
+                var appendTexts = string.Join(" , ", parameters.Select(p => p.ValueName));
                 if (appendTexts.Length > 0)
                 {
                     var dbParameters = parameters.Where(p => !p.IsSysDateConverted).Select(p => new DBParameter(p.ValueName, p.Value));
@@ -1848,14 +1860,13 @@ namespace Ancestor.DataAccess.DAO
                 {
                     var extraSql = result2.Sql;
                     var extraParameters = result2.Parameters;
-                    var postfix = "_R";
-                    var symbol = result2.Dao.ParameterSymbol;
+                    var postfix = result2.Dao.MergeParameterPostfix;
                     for (int i = 0; i < extraParameters.Count; i++)
                     {
                         var name = extraParameters[i].Name;
                         name += postfix;
                         if (extraSql != null)
-                            extraSql = extraSql.Replace(extraParameters[i].Name, name);
+                            extraSql = extraSql.Replace(extraParameters[i].Name + " ", name + " ");
                         extraParameters[i].Name = name;
                     }
                     merged.Sql2 = extraSql;
@@ -1901,6 +1912,8 @@ namespace Ancestor.DataAccess.DAO
                 private StringBuilder _sb = new StringBuilder().Append("(");
                 private bool _disposed = false;
 
+                
+
                 public ExpressionScope(ExpressionResolver resolver)
                 {
                     _resolver = resolver;
@@ -1938,12 +1951,13 @@ namespace Ancestor.DataAccess.DAO
                     {
                         if (disposing)
                         {
-                            _sb.Append(")");
+                            AppendText(")");                            
                             StringBuilder sb = IsRoot ? _resolver._sb : Parent.StringBuilder;
                             var text = _sb.ToString();
-                            if (sb.Length != 0 && sb[sb.Length - 1] != ' ')
-                                sb.Append(" ");
-                            sb.Append(text);
+                            //if (sb.Length != 0 && sb[sb.Length - 1] != ' ')
+                            //    sb.Append(" ");
+                            //sb.Append(text);
+                            AppendText(sb, text);
                             _resolver._scope = !IsRoot ? Parent : null;
                         }
                         _disposed = true;
@@ -1953,6 +1967,16 @@ namespace Ancestor.DataAccess.DAO
                 public string GetText()
                 {
                     return _sb.ToString() + ")";
+                }
+                private void AppendText(StringBuilder sb, string text)
+                {
+                    if (sb.Length > 0 && sb[sb.Length - 1] != ' ' && !text.StartsWith(" "))
+                        sb.Append(" ");
+                    sb.Append(text);
+                }
+                private void AppendText(string text)
+                {
+                    AppendText(_sb, text);
                 }
             }
 

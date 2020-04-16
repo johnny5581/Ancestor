@@ -74,7 +74,14 @@ namespace Ancestor.Core
             DSN,
             TNSNAME,
         }
-
+        /// <summary>
+        /// Parameter prefix string
+        /// </summary>
+        public string ParameterPrefix { get; set; }
+        /// <summary>
+        /// Parameter postfix string
+        /// </summary>
+        public string ParameterPostfix { get; set; }
     }
     /// <summary>
     /// Extra connection string interface
