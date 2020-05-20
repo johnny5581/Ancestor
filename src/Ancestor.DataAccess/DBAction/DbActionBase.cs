@@ -79,11 +79,13 @@ namespace Ancestor.DataAccess.DBAction
         #region Public 
         public void BeginTransaction()
         {
+            OpenConnection();
             _transaction = _connection.BeginTransaction();
         }
 
         public void BeginTransaction(IsolationLevel isolationLevel)
         {
+            OpenConnection();
             _transaction = _connection.BeginTransaction(isolationLevel);
         }
 
@@ -374,7 +376,7 @@ namespace Ancestor.DataAccess.DBAction
         }
         private static void CloseConnection(IDbConnection connection, IDbTransaction transaction)
         {
-            if (transaction != null)
+            if (transaction == null)
             {
                 if (connection.State.HasFlag(ConnectionState.Open))
                     connection.Close();

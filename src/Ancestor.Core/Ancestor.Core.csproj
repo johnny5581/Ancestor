@@ -3,12 +3,8 @@
   <PropertyGroup>
     <TargetFrameworks>net40;netstandard2.0</TargetFrameworks>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Include="..\AssemblyVersion.cs" Link="Properties\AssemblyVersion.cs" />
-  </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net40'">
     <Reference Include="System.Data.Linq" />
@@ -19,5 +15,9 @@
       <Version>4.7.0</Version>
     </PackageReference>
   </ItemGroup>
+
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <Exec Command="if &quot;$(ConfigurationName)&quot; == &quot;Debug&quot; (&#xD;&#xA;  del /s /f $(OutDir)..\*.nupkg&#xD;&#xA;)" />
+  </Target>
 
 </Project>

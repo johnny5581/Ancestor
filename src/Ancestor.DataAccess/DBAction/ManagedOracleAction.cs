@@ -21,6 +21,26 @@ namespace Ancestor.DataAccess.DBAction
            {
                 { "BYTE[]", OracleDbType.Blob },
                 { "CHAR[]", OracleDbType.Clob },
+                { "NUMBER", OracleDbType.Decimal },
+                { "VARCHAR2", OracleDbType.Varchar2 },
+                { "SYSTEM.STRING", OracleDbType.Varchar2 },
+                { "STRING", OracleDbType.Varchar2 },
+                { "SYSTEM.DATETIME", OracleDbType.Date },
+                { "DATETIME", OracleDbType.Date },
+                { "DATE", OracleDbType.Date },
+                { "INT64", OracleDbType.Int64 },
+                { "INT32", OracleDbType.Int32 },
+                { "INT16", OracleDbType.Int16 },
+                { "BYTE", OracleDbType.Byte },
+                { "DECIMAL", OracleDbType.Decimal },
+                { "FLOAT", OracleDbType.Single },
+                { "DOUBLE", OracleDbType.Double },
+                { "CHAR", OracleDbType.Char },
+                { "TIMESTAMP", OracleDbType.TimeStamp },
+                { "REFCURSOR", OracleDbType.RefCursor },
+                { "CLOB", OracleDbType.Clob },
+                { "LONG", OracleDbType.Long }
+
            };
         public ManagedOracleAction(DataAccessObjectBase dao, DBObject dbObject) : base(dao, dbObject)
         {

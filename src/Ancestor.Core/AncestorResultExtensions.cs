@@ -20,12 +20,13 @@ namespace Ancestor.Core
         public static IList<T> ResultList<T>(this IAncestorResult result, Func<T> objectFactory, ResultListMode? mode = null)
         {
             var m = mode ?? (objectFactory != null ? ResultListMode.Value : ResultListMode.All);
-            return (IList<T>)AncestorResultHelper.InternalResultList(result, typeof(T), objectFactory, false, m);
+            return (IList<T>)AncestorResultHelper.ResultList(result, typeof(T), objectFactory, m);
         }
 
-
-
-
-
+        public static T ResultFirst<T>(this IAncestorResult result, Func<T> objectFactory, ResultListMode? mode = null)
+        {
+            var m = mode ?? (objectFactory != null ? ResultListMode.Value : ResultListMode.All);
+            return (T)AncestorResultHelper.ResultFirst(result, typeof(T), objectFactory, m);
+        }
     }
 }

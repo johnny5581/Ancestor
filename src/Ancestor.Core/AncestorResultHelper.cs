@@ -26,6 +26,8 @@ namespace Ancestor.Core
             var list = InternalResultList(result, dataType, objectFactory, true, mode);
             return list.Count == 0 ? null : list[0];
         }
+
+        
         public static IList ResultList(IAncestorResult result, Type dataType, Delegate objectFactory, ResultListMode mode)
         {
             return InternalResultList(result, dataType, objectFactory, false, mode);            

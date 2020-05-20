@@ -1,0 +1,12 @@
+<Project>
+ <PropertyGroup>
+   <Deterministic>true</Deterministic>
+	 <Authors>Ancestor Team</Authors>
+   <VersionPrefix>1.5</VersionPrefix>   
+   <Copyright>Copyright © Ancestor Team 2020</Copyright>
+   <PackageReleaseNotes>Last release version</PackageReleaseNotes>
+ </PropertyGroup>
+ <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+  <VersionSuffix>b$([System.DateTime]::Now.ToString("yyyyMMdd-HHmm"))</VersionSuffix>
+ </PropertyGroup>
+</Project>

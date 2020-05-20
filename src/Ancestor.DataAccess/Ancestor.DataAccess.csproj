@@ -1,13 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net40;netstandard2.0</TargetFrameworks>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Include="..\AssemblyVersion.cs" Link="Properties\AssemblyVersion.cs" />
-  </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Properties\" />
@@ -19,11 +15,12 @@
 
   <ItemGroup Condition="'$(targetframework)' == 'net40'">
     <Reference Include="System.Data.OracleClient" />
-    <PackageReference Include="Oracle.ManagedDataAccess" Version="12.2.1100" />
+    <PackageReference Include="Oracle.ManagedDataAccess" Version="12.2.1100" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="Oracle.ManagedDataAccess.Core">
       <Version>2.19.60</Version>
+      <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="System.Data.SqlClient">
       <Version>4.8.0</Version>
@@ -75,5 +72,7 @@
       <SpecificVersion>false</SpecificVersion>
     </Reference>
   </ItemGroup>
-
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <Exec Command="if &quot;$(ConfigurationName)&quot; == &quot;Debug&quot; (&#xD;&#xA;  del /s /f $(OutDir)..\*.nupkg&#xD;&#xA;)" />
+  </Target>
 </Project>
