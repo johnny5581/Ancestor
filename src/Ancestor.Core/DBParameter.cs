@@ -14,6 +14,7 @@ namespace Ancestor.Core
     [DebuggerDisplay("{Name}: {Value} ({ParameterType})")]
     public class DBParameter : IEquatable<DBParameter>
     {
+        public const string ReturnValueName = "R_RETVAL";
         private DBParameterType _parameterType;
         public DBParameter()
         {
@@ -154,7 +155,7 @@ namespace Ancestor.Core
             get { return Code != 999; }
         }
     }
-
+    [Serializable]
     public sealed class DBParameterCollection : KeyedCollection<string, DBParameter>
     {
         private int _index = 0;
@@ -194,7 +195,7 @@ namespace Ancestor.Core
             if (item.ParameterDirection == ParameterDirection.ReturnValue)
             {
                 _returnValueParameterName = item.Name;
-                item.Name = "";
+                item.Name = DBParameter.ReturnValueName;
             }
             base.Add(item);
         }

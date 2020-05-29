@@ -35,18 +35,23 @@ namespace Ancestor.DataAccess.DAO
         /// <summary>
         /// Initialize <see cref="Server.DateTime"/> object
         /// </summary>
-        public static void InitializeServerTime(DBObject dbObject)
+        public static bool InitializeServerTime(DBObject dbObject)
         {
             using (var dao = new Factory.DAOFactoryEx(dbObject).GetDataAccessObjectFactory())
             {
                 var res = dao.ExecuteScalar("SELECT SYSDATE FROM DUAL", null, null);
                 if (res.IsSuccess)
-                {
+                {                    
                     var time = res.GetValue<DateTime>();
-                    _TimeOffset = time - DateTime.Now;
-                    _TimeOffsetFlag = true;
+                    if (time.HasValue)
+                    {
+                        _TimeOffset = time.Value - DateTime.Now;
+                        _TimeOffsetFlag = true;
+                        return true;
+                    }
                 }
             }
+            return false;
         }
     }
 }

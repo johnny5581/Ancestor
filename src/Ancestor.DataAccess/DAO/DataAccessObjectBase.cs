@@ -115,8 +115,42 @@ namespace Ancestor.DataAccess.DAO
         }
         protected abstract DbActionOptions CreateDbOptions(AncestorOptions options, DbActionOptions dbOptions);
         protected abstract ExpressionResolver CreateExpressionResolver(ReferenceInfo reference);
+        protected TResult TryCatch<T, TResult>(Func<T> action, Func<object, TResult> resultFactory, int exceptRows) where TResult : AncestorResult
+        {
+            try
+            {
+                object data = action();
+                if(exceptRows != -1)
+                {
+                    int actualRows = -1;
+                    if (data is int)
+                        actualRows = (int)data;
+                    else if (data is DbActionResult<int>)
+                        actualRows = ((DbActionResult<int>)data).Result;
 
-        protected TResult TryCatch<T, TResult>(Func<T> action, Func<T, TResult> resultFactory) where TResult : AncestorResult
+                    if (actualRows != exceptRows)
+                        throw new AncestorException(90001, "effect rows(" + data + ") not except(" + exceptRows + ")");
+                }
+                return resultFactory(data);
+            }
+            catch (AncestorException ex)
+            {
+                var code = ex.Code;
+                var innerException = ex.InnerException;
+                if (RaiseException)
+                    throw innerException;
+                var result = (TResult)Activator.CreateInstance(typeof(TResult), code, innerException);
+                result.QueryParameter = QueryParameter.Parse(ex.Data["QueryParameter"]);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                if (RaiseException)
+                    throw;
+                return (TResult)Activator.CreateInstance(typeof(TResult), ex);
+            }
+        }
+        protected TResult TryCatch<T, TResult>(Func<T> action, Func<object, TResult> resultFactory) where TResult : AncestorResult
         {
             try
             {
@@ -125,10 +159,13 @@ namespace Ancestor.DataAccess.DAO
             }
             catch (AncestorException ex)
             {
-                var innerException = ex.Exception;
+                var code = ex.Code;
+                var innerException = ex.InnerException;
                 if (RaiseException)
                     throw innerException;
-                return (TResult)Activator.CreateInstance(typeof(TResult), innerException, ex.CommandText, ex.Parameters, ex.Options);
+                var result = (TResult)Activator.CreateInstance(typeof(TResult), code, innerException);
+                result.QueryParameter = QueryParameter.Parse(ex.Data["QueryParameter"]);
+                return result;
             }
             catch (Exception ex)
             {
@@ -139,56 +176,46 @@ namespace Ancestor.DataAccess.DAO
         }
         protected AncestorResult ReturnAncestorResult(object result)
         {
-            string commandText = null;
-            DBParameterCollection parameters = null;
-            object option = null;
-
+            QueryParameter parameters = new QueryParameter();
             var dbResult = result as DbActionResult;
             if (dbResult != null)
             {
-                commandText = dbResult.Command;
-                parameters = dbResult.Parameters;
-                option = dbResult.Options;
                 result = dbResult.Result;
+                parameters = dbResult.Parameter;
             }
 
             var list = result as IList;
             if (list != null)
-                return new AncestorResult(list, commandText, parameters, option);
+                return new AncestorResult(list) { QueryParameter = parameters };
 
             var table = result as DataTable;
             if (table != null)
-                return new AncestorResult(table, commandText, parameters, option);
+                return new AncestorResult(table) { QueryParameter = parameters };
 
             if (result is int)
-                return new AncestorResult((int)result, commandText, parameters, option);
+                return new AncestorResult((int)result) { QueryParameter = parameters };
 
             if (result != null)
             {
                 var anonymousList = Activator.CreateInstance(typeof(List<>).MakeGenericType(result.GetType())) as IList;
                 anonymousList.Add(result);
-                return new AncestorResult(anonymousList, commandText, parameters, option);
+                return new AncestorResult(anonymousList) { QueryParameter = parameters };
             }
             throw new InvalidOperationException("can not get AncestorResult");
         }
         protected AncestorExecuteResult ReturnAncestorExecuteResult(object result)
         {
-            string commandText = null;
-            DBParameterCollection parameters = null;
-            object option = null;
-
+            QueryParameter parameters = new QueryParameter();
             var dbResult = result as DbActionResult;
             if (dbResult != null)
-            {
-                commandText = dbResult.Command;
-                parameters = dbResult.Parameters;
-                option = dbResult.Options;
+            {                
                 result = dbResult.Result;
+                parameters = dbResult.Parameter;
             }
             if (result is int)
-                return new AncestorExecuteResult((int)result, commandText, parameters, option);
+                return new AncestorExecuteResult((int)result, parameters.Parameters) { QueryParameter = parameters };
 
-            return new AncestorExecuteResult(result, commandText, parameters, option);
+            return new AncestorExecuteResult(result, parameters.Parameters) { QueryParameter = parameters };
         }
         public void BeginTransaction()
         {
@@ -346,10 +373,10 @@ namespace Ancestor.DataAccess.DAO
                         _dbAction.AutoCloseConnection = connCloseFlag;
                     }
                 }
-                return (object)successed;
+                return successed;
             }, ReturnAncestorExecuteResult);
         }
-        public AncestorExecuteResult UpdateEntity(object model, object whereObject, UpdateMode mode, object origin, AncestorOptions options)
+        public AncestorExecuteResult UpdateEntity(object model, object whereObject, UpdateMode mode, object origin, int exceptRows, AncestorOptions options)
         {
             return TryCatch(() =>
             {
@@ -363,9 +390,9 @@ namespace Ancestor.DataAccess.DAO
                 var whereCommand = CreateWhereCommand(whereObject, null, ignoreNull, dbParameters);
                 var sql = string.Format("Update {0} Set {1} {2}", name, updateCommand, whereCommand);
                 return _dbAction.ExecuteNonQuery(sql, dbParameters);
-            }, ReturnAncestorExecuteResult);
+            }, ReturnAncestorExecuteResult, exceptRows);
         }
-        public AncestorExecuteResult UpdateEntity(object model, LambdaExpression predicate, UpdateMode mode, object origin, AncestorOptions options)
+        public AncestorExecuteResult UpdateEntity(object model, LambdaExpression predicate, UpdateMode mode, object origin, int exceptRows, AncestorOptions options)
         {
             return TryCatch(() =>
             {
@@ -386,10 +413,10 @@ namespace Ancestor.DataAccess.DAO
                 var whereCommand = result != null ? "Where " + result.Sql : "";
                 var sql = string.Format("Update {0} Set {1} {2}", name, updateCommand, whereCommand);
                 return _dbAction.ExecuteNonQuery(sql, dbParameters);
-            }, ReturnAncestorExecuteResult);
+            }, ReturnAncestorExecuteResult, exceptRows);
         }
         // TODO
-        public AncestorExecuteResult DeleteEntity(object whereObject, object origin, AncestorOptions options)
+        public AncestorExecuteResult DeleteEntity(object whereObject, object origin, int exceptRows, AncestorOptions options)
         {
             return TryCatch(() =>
             {
@@ -402,9 +429,9 @@ namespace Ancestor.DataAccess.DAO
                 var whereCommand = CreateWhereCommand(whereObject, null, ignoreNull, dbParameters);
                 var sql = string.Format("Delete From {0} {1}", tableName, whereCommand);
                 return _dbAction.ExecuteNonQuery(sql, dbParameters);
-            }, ReturnAncestorExecuteResult);
+            }, ReturnAncestorExecuteResult,exceptRows );
         }
-        public AncestorExecuteResult DeleteEntity(LambdaExpression predicate, object origin, AncestorOptions options)
+        public AncestorExecuteResult DeleteEntity(LambdaExpression predicate, object origin, int exceptRows, AncestorOptions options)
         {
             return TryCatch(() =>
             {
@@ -424,16 +451,16 @@ namespace Ancestor.DataAccess.DAO
                 var whereCommand = result != null ? "Where " + result.Sql : "";
                 var sql = string.Format("Delete From {0} {1}", name, whereCommand);
                 return _dbAction.ExecuteNonQuery(sql, dbParameters);
-            }, ReturnAncestorExecuteResult);
+            }, ReturnAncestorExecuteResult, exceptRows);
         }
-        public AncestorExecuteResult ExecuteNonQuery(string sql, object parameter, AncestorOptions options)
+        public AncestorExecuteResult ExecuteNonQuery(string sql, object parameter, int exceptRows, AncestorOptions options)
         {
             return TryCatch(() =>
             {
                 var dbParameters = CreateDBParameters(parameter);
                 var dbOpt = CreateDbOptions(options);
                 return _dbAction.ExecuteNonQuery(sql, dbParameters, dbOpt);
-            }, ReturnAncestorExecuteResult);
+            }, ReturnAncestorExecuteResult, exceptRows);
         }
 
         public AncestorExecuteResult ExecuteStoredProcedure(string name, object parameter, AncestorOptions options)
@@ -1912,7 +1939,7 @@ namespace Ancestor.DataAccess.DAO
                 private StringBuilder _sb = new StringBuilder().Append("(");
                 private bool _disposed = false;
 
-                
+
 
                 public ExpressionScope(ExpressionResolver resolver)
                 {
@@ -1951,7 +1978,7 @@ namespace Ancestor.DataAccess.DAO
                     {
                         if (disposing)
                         {
-                            AppendText(")");                            
+                            AppendText(")");
                             StringBuilder sb = IsRoot ? _resolver._sb : Parent.StringBuilder;
                             var text = _sb.ToString();
                             //if (sb.Length != 0 && sb[sb.Length - 1] != ' ')

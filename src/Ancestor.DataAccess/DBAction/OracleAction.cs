@@ -5,6 +5,7 @@ using Ancestor.DataAccess.DBAction.Options;
 using Oracle.DataAccess.Client;
 using Oracle.DataAccess.Types;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -17,11 +18,30 @@ namespace Ancestor.DataAccess.DBAction
     public class OracleAction : DbActionBase
     {
         private static readonly Dictionary<string, OracleDbType> TypeNameMap
-            = new Dictionary<string, OracleDbType>(StringComparer.OrdinalIgnoreCase)
-            {
+           = new Dictionary<string, OracleDbType>(StringComparer.OrdinalIgnoreCase)
+           {
                 { "BYTE[]", OracleDbType.Blob },
                 { "CHAR[]", OracleDbType.Clob },
-            };
+                { "NUMBER", OracleDbType.Decimal },
+                { "VARCHAR2", OracleDbType.Varchar2 },
+                { "SYSTEM.STRING", OracleDbType.Varchar2 },
+                { "STRING", OracleDbType.Varchar2 },
+                { "SYSTEM.DATETIME", OracleDbType.Date },
+                { "DATETIME", OracleDbType.Date },
+                { "DATE", OracleDbType.Date },
+                { "INT64", OracleDbType.Int64 },
+                { "INT32", OracleDbType.Int32 },
+                { "INT16", OracleDbType.Int16 },
+                { "BYTE", OracleDbType.Byte },
+                { "DECIMAL", OracleDbType.Decimal },
+                { "FLOAT", OracleDbType.Single },
+                { "DOUBLE", OracleDbType.Double },
+                { "CHAR", OracleDbType.Char },
+                { "TIMESTAMP", OracleDbType.TimeStamp },
+                { "REFCURSOR", OracleDbType.RefCursor },
+                { "CLOB", OracleDbType.Clob },
+                { "LONG", OracleDbType.Long },
+           };
         public OracleAction(DataAccessObjectBase dao, DBObject dbObject) : base(dao, dbObject)
         {
         }
@@ -80,7 +100,7 @@ namespace Ancestor.DataAccess.DBAction
                 p.Size = parameter.Size.Value;
             p.Direction = parameter.ParameterDirection;
             var opt = options as OracleOptions;
-            switch(p.OracleDbType)
+            switch (p.OracleDbType)
             {
                 case OracleDbType.Long:
                 case OracleDbType.LongRaw:
@@ -92,6 +112,14 @@ namespace Ancestor.DataAccess.DBAction
                     break;
             }
             return p;
+        }
+
+        protected override AncestorException CreateAncestorException(Exception innerException, QueryParameter parameter)
+        {
+            var oracleException = innerException as OracleException;
+            if (oracleException != null)
+                return CreateAncestorException(oracleException.ErrorCode, oracleException.Message, oracleException, parameter);
+            return base.CreateAncestorException(innerException, parameter);
         }
 
         protected override SqlMapper.IDynamicParameters CreateDynamicParameters(IEnumerable<DBParameter> parameters)
@@ -149,13 +177,28 @@ namespace Ancestor.DataAccess.DBAction
                     case OracleDbType.Varchar2:
                         oracleParameter.Value = GetString(oracleParameter.Value);
                         break;
+                    case OracleDbType.Int16:
+                    case OracleDbType.Int32:
+                    case OracleDbType.Int64:
+                    case OracleDbType.Single:
+                    case OracleDbType.Double:
+                    case OracleDbType.Decimal:
+                        oracleParameter.Value = GetDecimal(oracleParameter.Value, oracleParameter.OracleDbType);
+                        break;
                     case OracleDbType.Clob:
                         oracleParameter.Value = GetClob(oracleParameter.Value);
                         break;
                     case OracleDbType.RefCursor:
                         var table = GetRefCursor(oracleParameter.Value);
                         if (dbParameter.ItemType != null) // convert to list                        
-                            oracleParameter.Value = AncestorResultHelper.TableToCollection(table, dbParameter.ItemType, null, false, ResultListMode.All);
+                        {
+                            var enumerator = AncestorResultHelper.TableToCollection(table, dbParameter.ItemType, null, false, ResultListMode.All);
+                            var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(dbParameter.ItemType));
+                            var e = enumerator.GetEnumerator();
+                            while (e.MoveNext())
+                                list.Add(e.Current);
+                            oracleParameter.Value = list;
+                        }
                         else
                             oracleParameter.Value = table;
                         break;
@@ -179,6 +222,34 @@ namespace Ancestor.DataAccess.DBAction
                     return oracleString.Value;
                 if (GlobalSetting.UseOracleStringParameter)
                     return oracleString.ToString();
+            }
+            return null;
+        }
+        private static object GetDecimal(object dbValue, OracleDbType code)
+        {
+            if (dbValue != null)
+            {
+                var oracleDemical = (OracleDecimal)dbValue;
+                if (oracleDemical.IsNull)
+                    return null;
+                else
+                {
+                    switch (code)
+                    {
+                        case OracleDbType.Int16:
+                            return (short)oracleDemical;
+                        case OracleDbType.Int32:
+                            return (int)oracleDemical;
+                        case OracleDbType.Int64:
+                            return (long)oracleDemical;
+                        case OracleDbType.Single:
+                            return (float)oracleDemical;
+                        case OracleDbType.Double:
+                            return (double)oracleDemical;
+                        case OracleDbType.Decimal:
+                            return (decimal)oracleDemical;
+                    }
+                }
             }
             return null;
         }
@@ -281,7 +352,7 @@ namespace Ancestor.DataAccess.DBAction
         #endregion Protected / Private
 
 
-        
+
         private class OracleDynamicParameters : SqlMapper.IDynamicParameters
         {
             private readonly DynamicParameters _dynamicParameters = new DynamicParameters();

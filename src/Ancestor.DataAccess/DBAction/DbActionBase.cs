@@ -128,6 +128,7 @@ namespace Ancestor.DataAccess.DBAction
 
         public virtual DbActionResult<IList> Query(string sql, DBParameterCollection dbParameters, Type dataType, DbActionOptions options = null)
         {
+            var queryParameter = new QueryParameter(sql, dbParameters, options, dataType);
             return ActionWithConnectionHandler(() =>
             {
                 Log("QueryList", sql, dbParameters);
@@ -136,12 +137,13 @@ namespace Ancestor.DataAccess.DBAction
                 if (dataType != null)
                     list = AncestorResultHelper.MakeList(list, dataType);
                 return list;
-            }, sql, dbParameters, options);
+            }, queryParameter);
         }
 
 
         public virtual DbActionResult<DataTable> Query(string sql, DBParameterCollection dbParameters, DbActionOptions options = null)
         {
+            var queryParameter = new QueryParameter(sql, dbParameters, options, null);
             return ActionWithConnectionHandler(() =>
             {
                 Log("QueryTable", sql, dbParameters);
@@ -154,21 +156,23 @@ namespace Ancestor.DataAccess.DBAction
                     PreQuery(cmd, options);
                     return CreateDataTable(cmd, 0, 0);
                 }
-            }, sql, dbParameters, options);
+            }, queryParameter);
         }
 
         public virtual DbActionResult<object> QueryFirst(string sql, DBParameterCollection dbParameters, Type dataType, DbActionOptions options = null)
         {
+            var queryParameter = new QueryParameter(sql, dbParameters, options, dataType);
             return ActionWithConnectionHandler(() =>
             {
                 Log("QueryFirst", sql, dbParameters);
                 var dynamicParameter = CreateDynamicParameters(dbParameters);
                 var data = _connection.QueryFirstOrDefault(dataType, sql, dynamicParameter, _transaction);
                 return data;
-            }, sql, dbParameters, options);
+            }, queryParameter);
         }
         public virtual DbActionResult<DataTable> QueryFirst(string sql, DBParameterCollection dbParameters, DbActionOptions options = null)
         {
+            var queryParameter = new QueryParameter(sql, dbParameters, options, null);
             return ActionWithConnectionHandler(() =>
             {
                 Log("QueryFirstRow", sql, dbParameters);
@@ -181,10 +185,11 @@ namespace Ancestor.DataAccess.DBAction
                     PreQuery(cmd, options);
                     return CreateDataTable(cmd, 0, 1);
                 }
-            }, sql, dbParameters, options);
+            }, queryParameter);
         }
         public virtual DbActionResult<int> ExecuteNonQuery(string sql, DBParameterCollection dbParameters, DbActionOptions options = null)
         {
+            var queryParameter = new QueryParameter(sql, dbParameters, options, null);
             return ActionWithConnectionHandler(() =>
             {
                 Log("QueryTable", sql, dbParameters);
@@ -199,10 +204,11 @@ namespace Ancestor.DataAccess.DBAction
                     RestoreParameters(cmd, dbParameters);
                     return effectRows;
                 }
-            }, sql, dbParameters, options);
+            }, queryParameter);
         }
-        public virtual DbActionResult<int> ExecuteStoreProcedure(string name, DBParameterCollection dbParameters, DbActionOptions options = null)
+        public virtual DbActionResult<object> ExecuteStoreProcedure(string name, DBParameterCollection dbParameters, DbActionOptions options = null)
         {
+            var queryParameter = new QueryParameter(name, dbParameters, options, null);
             return ActionWithConnectionHandler(() =>
             {
                 using (var cmd = _connection.CreateCommand())
@@ -212,20 +218,20 @@ namespace Ancestor.DataAccess.DBAction
                     cmd.Transaction = _transaction;
                     BindParameters(cmd, dbParameters, options);
                     PreExecute(cmd, options);
-                    var effectRows = cmd.ExecuteNonQuery();
-                    RestoreParameters(cmd, dbParameters);
-                    return effectRows;
+                    cmd.ExecuteNonQuery();
+                    return RestoreParameters(cmd, dbParameters);
                 }
-            }, name, dbParameters, options);
+            }, queryParameter);
         }
 
         public virtual DbActionResult<object> ExecuteScalar(string sql, DBParameterCollection dbParameters, DbActionOptions options = null)
         {
+            var queryParameter = new QueryParameter(sql, dbParameters, options, null);
             return ActionWithConnectionHandler(() =>
             {
                 var dynamicParameter = CreateDynamicParameters(dbParameters);
                 return _connection.ExecuteScalar(sql, dynamicParameter, _transaction);
-            }, sql, dbParameters, options);
+            }, queryParameter);
         }
         DbActionOptions IDbAction.CreateOptions()
         {
@@ -249,19 +255,24 @@ namespace Ancestor.DataAccess.DBAction
                 }
             }
         }
-        protected virtual void RestoreParameters(IDbCommand command, DBParameterCollection dbParameters)
+        protected virtual object RestoreParameters(IDbCommand command, DBParameterCollection dbParameters)
         {
+            object returnValue = null;
             if (dbParameters != null)
             {
                 for (var index = 0; index < dbParameters.Count; index++)
                 {
-                    if (dbParameters[index].ParameterDirection == ParameterDirection.Output || dbParameters[index].ParameterDirection == ParameterDirection.ReturnValue)
+                    var direction = dbParameters[index].ParameterDirection;
+                    if (direction == ParameterDirection.Output || direction == ParameterDirection.ReturnValue)
                     {
                         var dbDataParameter = (IDbDataParameter)command.Parameters[dbParameters[index].Name];
                         RestoreParameter(dbDataParameter, dbParameters[index]);
-                    }
+                        if (direction == ParameterDirection.ReturnValue)
+                            returnValue = dbParameters[index].Value;
+                    }                    
                 }
             }
+            return returnValue;
         }
         protected virtual void RestoreParameter(IDbDataParameter dbDataParameter, DBParameter dbParameter)
         {
@@ -304,7 +315,16 @@ namespace Ancestor.DataAccess.DBAction
         {
 
         }
-
+        protected virtual AncestorException CreateAncestorException(Exception innerException, QueryParameter parameter)
+        {
+            return CreateAncestorException(9999, "database exception", innerException, parameter);
+        }
+        protected AncestorException CreateAncestorException(int code, string message, Exception innerException, QueryParameter parameter)
+        {
+            var exception = new AncestorException(code, message, innerException);
+            exception.Data["QueryParameter"] = parameter;
+            return exception;
+        }
         protected virtual SqlMapper.IDynamicParameters CreateDynamicParameters(IEnumerable<DBParameter> parameters)
         {
             var dynamicParameters = new DynamicParameters();
@@ -318,7 +338,7 @@ namespace Ancestor.DataAccess.DBAction
             }
             return dynamicParameters;
         }
-        protected DbActionResult<T> ActionWithConnectionHandler<T>(Func<T> action, string commandText, DBParameterCollection parameters, DbActionOptions option)
+        protected DbActionResult<T> ActionWithConnectionHandler<T>(Func<T> action, QueryParameter parameter)
         {
             lock (Locker)
             {
@@ -329,20 +349,12 @@ namespace Ancestor.DataAccess.DBAction
                     return new DbActionResult<T>
                     {
                         Result = result,
-                        Command = commandText,
-                        Parameters = parameters,
-                        Options = option,
+                        Parameter = parameter,                        
                     };
                 }
                 catch (Exception ex)
                 {
-                    throw new AncestorException
-                    {
-                        Exception = ex,
-                        CommandText = commandText,
-                        Parameters = parameters,
-                        Options = option,
-                    };
+                    throw CreateAncestorException(ex, parameter);
                 }
                 finally
                 {
@@ -350,6 +362,7 @@ namespace Ancestor.DataAccess.DBAction
                 }
             }
         }
+        
         protected void Log(string action, string sql, IEnumerable<DBParameter> parameters)
         {
             string args = null;

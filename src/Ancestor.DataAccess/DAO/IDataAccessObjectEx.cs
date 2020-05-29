@@ -43,18 +43,18 @@ namespace Ancestor.DataAccess.DAO
         #endregion Insert
 
         #region Update
-        AncestorExecuteResult UpdateEntity(object model, object whereObject, UpdateMode mode, object origin, AncestorOptions options);
-        AncestorExecuteResult UpdateEntity(object model, LambdaExpression predicate, UpdateMode mode, object origin, AncestorOptions options);        
+        AncestorExecuteResult UpdateEntity(object model, object whereObject, UpdateMode mode, object origin, int exceptRows, AncestorOptions options);
+        AncestorExecuteResult UpdateEntity(object model, LambdaExpression predicate, UpdateMode mode, object origin, int exceptRows, AncestorOptions options);        
         #endregion Update
 
 
         #region Delete 
-        AncestorExecuteResult DeleteEntity(object whereObject, object origin, AncestorOptions options);
-        AncestorExecuteResult DeleteEntity(LambdaExpression predicate, object origin, AncestorOptions options);        
+        AncestorExecuteResult DeleteEntity(object whereObject, object origin, int exceptRows, AncestorOptions options);
+        AncestorExecuteResult DeleteEntity(LambdaExpression predicate, object origin, int exceptRows, AncestorOptions options);        
         #endregion Delete
 
         #region Execute
-        AncestorExecuteResult ExecuteNonQuery(string sql, object parameter, AncestorOptions options);
+        AncestorExecuteResult ExecuteNonQuery(string sql, object parameter, int exceptRows, AncestorOptions options);
         AncestorExecuteResult ExecuteStoredProcedure(string name, object parameter, AncestorOptions options);
         AncestorExecuteResult ExecuteScalar(string sql, object parameter, AncestorOptions options);        
         #endregion

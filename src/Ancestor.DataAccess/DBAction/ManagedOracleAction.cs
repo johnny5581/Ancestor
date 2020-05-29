@@ -5,6 +5,7 @@ using Ancestor.DataAccess.DBAction.Options;
 using Oracle.ManagedDataAccess.Client;
 using Oracle.ManagedDataAccess.Types;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -39,8 +40,7 @@ namespace Ancestor.DataAccess.DBAction
                 { "TIMESTAMP", OracleDbType.TimeStamp },
                 { "REFCURSOR", OracleDbType.RefCursor },
                 { "CLOB", OracleDbType.Clob },
-                { "LONG", OracleDbType.Long }
-
+                { "LONG", OracleDbType.Long },
            };
         public ManagedOracleAction(DataAccessObjectBase dao, DBObject dbObject) : base(dao, dbObject)
         {
@@ -114,6 +114,14 @@ namespace Ancestor.DataAccess.DBAction
             return p;
         }
 
+        protected override AncestorException CreateAncestorException(Exception innerException, QueryParameter parameter)
+        {
+            var oracleException = innerException as OracleException;
+            if (oracleException != null)
+                return CreateAncestorException(oracleException.ErrorCode, oracleException.Message, oracleException, parameter);
+            return base.CreateAncestorException(innerException, parameter);
+        }
+
         protected override SqlMapper.IDynamicParameters CreateDynamicParameters(IEnumerable<DBParameter> parameters)
         {
             var dynamicParameters = new OracleDynamicParameters();
@@ -169,13 +177,28 @@ namespace Ancestor.DataAccess.DBAction
                     case OracleDbType.Varchar2:
                         oracleParameter.Value = GetString(oracleParameter.Value);
                         break;
+                    case OracleDbType.Int16:
+                    case OracleDbType.Int32:
+                    case OracleDbType.Int64:
+                    case OracleDbType.Single:
+                    case OracleDbType.Double:
+                    case OracleDbType.Decimal:
+                        oracleParameter.Value = GetDecimal(oracleParameter.Value);
+                        break;
                     case OracleDbType.Clob:
                         oracleParameter.Value = GetClob(oracleParameter.Value);
                         break;
                     case OracleDbType.RefCursor:
                         var table = GetRefCursor(oracleParameter.Value);
                         if (dbParameter.ItemType != null) // convert to list                        
-                            oracleParameter.Value = AncestorResultHelper.TableToCollection(table, dbParameter.ItemType, null, false, ResultListMode.All);
+                        {
+                            var enumerator = AncestorResultHelper.TableToCollection(table, dbParameter.ItemType, null, false, ResultListMode.All);
+                            var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(dbParameter.ItemType));
+                            var e = enumerator.GetEnumerator();
+                            while (e.MoveNext())
+                                list.Add(e.Current);
+                            oracleParameter.Value = list;
+                        }
                         else
                             oracleParameter.Value = table;
                         break;
@@ -197,6 +220,22 @@ namespace Ancestor.DataAccess.DBAction
                 var oracleString = (OracleString)dbValue;
                 if (!oracleString.IsNull)
                     return oracleString.Value;
+                if (GlobalSetting.UseOracleStringParameter)
+                    return oracleString.ToString();
+            }
+            return null;
+        }
+        private static decimal? GetDecimal(object dbValue)
+        {
+            if (dbValue != null)
+            {
+                var oracleDemical = (OracleDecimal)dbValue;
+                if (oracleDemical.IsNull)
+                    return null;
+                if (oracleDemical.IsInt)
+                    return (int)oracleDemical.Value;
+                else
+                    return oracleDemical.Value;
             }
             return null;
         }

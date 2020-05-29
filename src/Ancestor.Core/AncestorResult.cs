@@ -14,6 +14,10 @@ namespace Ancestor.Core
     {
         #region Properties
         /// <summary>
+        /// Execute return Code
+        /// </summary>
+        int Code { get; }
+        /// <summary>
         /// Execute success or not 
         /// </summary>
         bool IsSuccess { get; }
@@ -43,7 +47,7 @@ namespace Ancestor.Core
         /// <summary>
         /// Error exception
         /// </summary>
-        Exception Exception { get; }
+        AncestorException Exception { get; }
         /// <summary>
         /// Query result data type
         /// </summary>
@@ -66,21 +70,10 @@ namespace Ancestor.Core
     /// </summary>
     public class AncestorResult : IAncestorResult
     {
+        public const int CodeSuccess = 0;
+        public const int CodeFailure = 99999;
         private string _errorMessage;
-        private Exception _error;
-        private string _command;
-        private DBParameterCollection _parameters;
-        private object _option;
-
-        private static bool _enableSaveCommand = false;
-        /// <summary>
-        /// Enable to save command text and parameter list to result
-        /// </summary>
-        public static bool EnableSaveCommand
-        {
-            get { return _enableSaveCommand; }
-            set { _enableSaveCommand = value; }
-        }
+        private AncestorException _innerException;
         public AncestorResult()
         {
         }
@@ -93,7 +86,15 @@ namespace Ancestor.Core
         public AncestorResult(Exception exception)
             : this(false)
         {
-            _error = exception;
+            Code = 99999;
+            SetException(exception);
+            _errorMessage = exception.Message;
+        }
+        public AncestorResult(int code, Exception exception)
+            : this(false)
+        {
+            Code = code;
+            SetException(exception);
             _errorMessage = exception.Message;
         }
         public AncestorResult(IList list)
@@ -111,29 +112,7 @@ namespace Ancestor.Core
         {
             EffectRows = rows;
         }
-
-        public AncestorResult(Exception exception, string command, DBParameterCollection parameters, object option)
-            : this(exception)
-        {
-            SaveCommand(command, parameters, option);
-        }
-        public AncestorResult(IList list, string command, DBParameterCollection parameters, object option)
-            : this(list)
-        {
-            SaveCommand(command, parameters, option);
-        }
-        public AncestorResult(DataTable table, string command, DBParameterCollection parameters, object option)
-            : this(table)
-        {
-            SaveCommand(command, parameters, option);
-        }
-        public AncestorResult(int rows, string command, DBParameterCollection parameters, object option)
-          : this(rows)
-        {
-            _command = command;
-            _parameters = parameters;
-            _option = option;
-        }
+        public int Code { get; private set; }
         public bool IsSuccess { get; set; }
         public IList DataList { get; set; }
         public DataTable ReturnDataTable { get; set; }
@@ -143,26 +122,12 @@ namespace Ancestor.Core
             get { return _errorMessage; }
             set { _errorMessage = value; }
         }
-
-        internal Exception InnerException
+        public AncestorException Exception
         {
-            get { return _error; }
-            set { _error = value; }
+            get { return _innerException; }
         }
-
-        public string Command
-        {
-            get { return _command; }
-        }
-        public DBParameterCollection Parameters
-        {
-            get { return _parameters; }
-        }
-        public object Option
-        {
-            get { return _option; }
-        }
-
+        
+        public QueryParameter QueryParameter { get; set; }
 
         object IAncestorResult.Data
         {
@@ -187,10 +152,7 @@ namespace Ancestor.Core
                     return AncestorResultDataType.None;
             }
         }
-        Exception IAncestorResult.Exception
-        {
-            get { return _error; }
-        }
+
 
 
         public List<T> ResultList<T>() where T : class, new()
@@ -201,14 +163,17 @@ namespace Ancestor.Core
         {
             return (T)AncestorResultHelper.ResultFirst(this, typeof(T), null, ResultListMode.All);
         }
-        protected void SaveCommand(string command, DBParameterCollection parameters, object option)
+        public virtual object ResultScalar()
         {
-            if (_enableSaveCommand)
-            {
-                _command = command;
-                _parameters = parameters;
-                _option = option;
-            }
+            return AncestorResultHelper.ResultScalar(this);
+        }
+
+        private void SetException(Exception exception)
+        {
+            if (exception is AncestorException)
+                _innerException = (AncestorException)exception;
+            else
+                _innerException = new AncestorException(99999, "something wrong when using ancestor");
         }
     }
     /// <summary>
@@ -223,44 +188,45 @@ namespace Ancestor.Core
         {
         }
 
-        public AncestorExecuteResult(int rows, string command, DBParameterCollection parameters, object option) : base(rows, command, parameters, option)
+        public AncestorExecuteResult(int rows, IEnumerable<DBParameter> parameters) : base(rows)
         {
-            if (parameters != null)
-            {
-                foreach (var dbParameter in parameters)
-                {
-                    if (dbParameter.ParameterDirection != ParameterDirection.Input)
-                        _parameters.Add(dbParameter.Name, dbParameter);
-                }
-            }
+            BindParameters(parameters);
         }
 
-        public AncestorExecuteResult(object value, string command, DBParameterCollection parameters, object option) : base(true)
+        public AncestorExecuteResult(object value, IEnumerable<DBParameter> parameters) : base(true)
         {
-            _parameters.Add("", new DBParameter("", value));
-            SaveCommand(command, parameters, option);
+            _parameters.Add(DBParameter.ReturnValueName, new DBParameter(DBParameter.ReturnValueName, value));
+            BindParameters(parameters);
         }
 
-        public AncestorExecuteResult(Exception exception, string command, DBParameterCollection parameters, object option) : base(exception, command, parameters, option)
+        public AncestorExecuteResult(int code, Exception exception) : base(code, exception)
         {
         }
-
-        public DBParameter GetParameter(string name = "")
+        public DBParameter GetParameter(string name = DBParameter.ReturnValueName)
         {
             DBParameter p;
             _parameters.TryGetValue(name, out p);
             return p;
         }
-        public object GetValue(string name = "")
+        public object GetValue(string name = DBParameter.ReturnValueName)
         {
             DBParameter p;
             if (_parameters.TryGetValue(name, out p))
                 return p.Value;
             throw new ArgumentOutOfRangeException("name", "parameter name not found: " + name);
         }
-        public T GetValue<T>(string name = "")
+        public T? GetValue<T>(string name = DBParameter.ReturnValueName, bool useDefault = false) where T : struct
         {
-            return (T)GetValue(name);
+            return (T?)GetStructValue<T>(name, useDefault);
+        }
+        public T GetValue<T>(string name = DBParameter.ReturnValueName) where T : class
+        {
+            return (T)GetClassValue<T>(name);
+        }
+
+        public override object ResultScalar()
+        {
+            return GetValue();
         }
 
         public bool TryGetValue(string name, out object value)
@@ -280,7 +246,16 @@ namespace Ancestor.Core
         {
             try
             {
-                value = GetValue<T>(name);
+                object v;
+                if (typeof(T).IsValueType)
+                {
+                    v = GetStructValue<T>(name, false);
+                    if (v == null)
+                        throw new FormatException("value is empty");
+                }
+                else
+                    v = GetClassValue<T>(name);
+                value = (T)v;
                 return true;
             }
             catch
@@ -288,6 +263,36 @@ namespace Ancestor.Core
                 value = default(T);
                 return false;
             }
+        }
+        private void BindParameters(IEnumerable<DBParameter> parameters)
+        {
+            if (parameters != null)
+            {
+                foreach (var dbParameter in parameters)
+                {
+                    if (dbParameter.ParameterDirection == ParameterDirection.Output
+                        || dbParameter.ParameterDirection == ParameterDirection.InputOutput)
+                        _parameters.Add(dbParameter.Name, dbParameter);
+                }
+            }
+        }
+        private object GetStructValue<T>(string name, bool useDefault) 
+        {
+            var value = GetValue(name);
+            if (value == null)
+            {
+                if (useDefault)
+                    return Activator.CreateInstance(typeof(T));
+                else
+                    return null;
+            }
+            return (T)value;
+        }
+
+        private object GetClassValue<T>(string name) 
+        {
+            var value = GetValue(name);
+            return (T)value;
         }
     }
 }

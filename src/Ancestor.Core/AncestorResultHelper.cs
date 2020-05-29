@@ -26,11 +26,32 @@ namespace Ancestor.Core
             var list = InternalResultList(result, dataType, objectFactory, true, mode);
             return list.Count == 0 ? null : list[0];
         }
+        public static object ResultScalar(IAncestorResult result)
+        {
+            object value = null;
+            if (result.ReturnDataTable != null)
+            {
+                if (result.ReturnDataTable.Rows.Count > 0)
+                    return result.ReturnDataTable.Rows[0][0];
+            }
+            else if (result.DataList != null)
+            {
+                if (result.DataList.Count > 0)
+                {
+                    var item = result.DataList[0];
+                    var dataType = item.GetType();
+                    var firstProperty = dataType.GetProperties().FirstOrDefault();
+                    if (firstProperty != null)
+                        return firstProperty.GetValue(item, null);
+                }
+            }
+            return value;
+        }
 
-        
+
         public static IList ResultList(IAncestorResult result, Type dataType, Delegate objectFactory, ResultListMode mode)
         {
-            return InternalResultList(result, dataType, objectFactory, false, mode);            
+            return InternalResultList(result, dataType, objectFactory, false, mode);
         }
         internal static IList InternalResultList(IAncestorResult result, Type dataType, Delegate objectFactory, bool firstOnly, ResultListMode mode)
         {

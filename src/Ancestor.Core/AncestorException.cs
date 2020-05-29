@@ -7,18 +7,31 @@ using System.Text;
 
 namespace Ancestor.Core
 {
+    /// <summary>
+    /// Ancestor Exception class 
+    /// </summary>
     [Serializable]
-    internal class AncestorException : Exception
+    public class AncestorException : Exception
     {
-        
-        public AncestorException() : base()
+        public int Code { get; private set; }        
+
+        public AncestorException(int code, string message) : base(message)
         {
-        
+            Code = code;
+        }
+        public AncestorException(int code, string message, Exception innerException) : base(message, innerException)
+        {
+            Code = code;
         }
 
-        public Exception Exception { get; set; }
-        public string CommandText { get; set; }
-        public DBParameterCollection Parameters { get; set; }        
-        public object Options { get; set; }
+        protected AncestorException(SerializationInfo info, StreamingContext context)
+        {
+            info.AddValue("code", Code);
+        }
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            Code = info.GetInt32("code");
+            base.GetObjectData(info, context);
+        }
     }
 }

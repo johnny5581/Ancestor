@@ -13,7 +13,7 @@ namespace System
     /// </summary>
     public static class DataAccessObjectExtensions
     {
-        //#region Wrapper before 1.4.8
+        #region Wrapper before 1.4.8
         //public static AncestorResult Query(this IDataAccessObjectEx dao, string sqlString, object paramsObjects)
         //{
         //    return dao.QueryFromSqlString(sqlString, paramsObjects, null, false, null);
@@ -235,13 +235,14 @@ namespace System
         //{
         //    return Tuple.Create(type, origin);
         //}
-        //#endregion
+        #endregion
 
-        #region Duplicated 
+        #region Extensions 
         public static AncestorResult Query(this IDataAccessObjectEx dao, string sqlString, object paramsObjects)
         {
             return dao.QueryFromSqlString(sqlString, paramsObjects, null, false, null);
         }
+       
         public static AncestorResult Query(this IDataAccessObjectEx dao, object objectModel)
         {
             return dao.QueryFromModel(objectModel, null, null, false, null);
@@ -259,178 +260,305 @@ namespace System
             return dao.QueryFromModel(objectModel, typeof(T), null, false, new AncestorOptions { HasRowId = false });
         }
 
-        public static AncestorResult Query<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate, bool firstOnly = false) where T : class, new()
+        public static AncestorResult Query<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate) where T : class, new()
         {
-            return dao.QueryFromLambda(predicate, null, null, firstOnly, null);
+            return dao.QueryFromLambda(predicate, null, null, false, null);
         }
-        public static AncestorResult Query<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate, Expression<Func<T, object>> selectCondition, bool firstOnly = false) where T : class, new()
+        public static AncestorResult Query<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate, Expression<Func<T, object>> selectCondition) where T : class, new()
         {
-            return dao.QueryFromLambda(predicate, selectCondition, null, firstOnly, null);
+            return dao.QueryFromLambda(predicate, selectCondition, null, false, null);
         }
-        public static AncestorResult QueryNoRowid<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate, bool firstOnly = false) where T : class, new()
+        public static AncestorResult QueryNoRowid<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate) where T : class, new()
         {
-            return dao.QueryFromLambda(predicate, null, null, firstOnly, new AncestorOptions { HasRowId = false });
+            return dao.QueryFromLambda(predicate, null, null, false, new AncestorOptions { HasRowId = false });
         }
-        public static AncestorResult Query<T1, T2>(this IDataAccessObjectEx dao, Expression<Func<T1, T2, bool>> predicate, Expression<Func<T1, T2, object>> selectCondition, bool firstOnly = false) where T1 : class, new() where T2 : class, new()
+        public static AncestorResult Query<T1, T2>(this IDataAccessObjectEx dao, Expression<Func<T1, T2, bool>> predicate, Expression<Func<T1, T2, object>> selectCondition) where T1 : class, new() where T2 : class, new()
         {
-            return dao.QueryFromLambda(predicate, selectCondition, null, firstOnly, null);
+            return dao.QueryFromLambda(predicate, selectCondition, null, false, null);
         }
-        public static AncestorResult Query<T1, T2, T3>(this IDataAccessObjectEx dao, Expression<Func<T1, T2, T3, bool>> predicate, Expression<Func<T1, T2, T3, object>> selectCondition, bool firstOnly = false) where T1 : class, new() where T2 : class, new() where T3 : class, new()
+        public static AncestorResult Query<T1, T2, T3>(this IDataAccessObjectEx dao, Expression<Func<T1, T2, T3, bool>> predicate, Expression<Func<T1, T2, T3, object>> selectCondition) where T1 : class, new() where T2 : class, new() where T3 : class, new()
         {
-            return dao.QueryFromLambda(predicate, selectCondition, null, firstOnly, null);
+            return dao.QueryFromLambda(predicate, selectCondition, null, false, null);
         }
-        public static AncestorResult Query<T1, T2, T3, T4>(this IDataAccessObjectEx dao, Expression<Func<T1, T2, T3, T4, bool>> predicate, Expression<Func<T1, T2, T3, T4, object>> selectCondition, bool firstOnly = false) where T1 : class, new() where T2 : class, new() where T3 : class, new() where T4 : class, new()
+        public static AncestorResult Query<T1, T2, T3, T4>(this IDataAccessObjectEx dao, Expression<Func<T1, T2, T3, T4, bool>> predicate, Expression<Func<T1, T2, T3, T4, object>> selectCondition) where T1 : class, new() where T2 : class, new() where T3 : class, new() where T4 : class, new()
         {
-            return dao.QueryFromLambda(predicate, selectCondition, null, firstOnly, null);
+            return dao.QueryFromLambda(predicate, selectCondition, null, false, null);
         }
-        public static AncestorResult Query<T1, T2, T3, T4, T5>(this IDataAccessObjectEx dao, Expression<Func<T1, T2, T3, T4, T5, bool>> predicate, Expression<Func<T1, T2, T3, T4, T5, object>> selectCondition, bool firstOnly = false) where T1 : class, new() where T2 : class, new() where T3 : class, new() where T4 : class, new() where T5 : class, new()
+        public static AncestorResult Query<T1, T2, T3, T4, T5>(this IDataAccessObjectEx dao, Expression<Func<T1, T2, T3, T4, T5, bool>> predicate, Expression<Func<T1, T2, T3, T4, T5, object>> selectCondition) where T1 : class, new() where T2 : class, new() where T3 : class, new() where T4 : class, new() where T5 : class, new()
         {
-            return dao.QueryFromLambda(predicate, selectCondition, null, firstOnly, null);
+            return dao.QueryFromLambda(predicate, selectCondition, null, false, null);
         }
-        public static AncestorResult Query<T1, T2, T3, T4, T5, T6>(this IDataAccessObjectEx dao, Expression<Func<T1, T2, T3, T4, T5, T6, bool>> predicate, Expression<Func<T1, T2, T3, T4, T5, T6, object>> selectCondition, bool firstOnly = false) where T1 : class, new() where T2 : class, new() where T3 : class, new() where T4 : class, new() where T5 : class, new() where T6 : class, new()
+        public static AncestorResult Query<T1, T2, T3, T4, T5, T6>(this IDataAccessObjectEx dao, Expression<Func<T1, T2, T3, T4, T5, T6, bool>> predicate, Expression<Func<T1, T2, T3, T4, T5, T6, object>> selectCondition) where T1 : class, new() where T2 : class, new() where T3 : class, new() where T4 : class, new() where T5 : class, new() where T6 : class, new()
         {
-            return dao.QueryFromLambda(predicate, selectCondition, null, firstOnly, null);
+            return dao.QueryFromLambda(predicate, selectCondition, null, false, null);
         }
-        public static AncestorResult Query<FakeType>(this IDataAccessObjectEx dao, Expression<Func<FakeType, bool>> predicate, Type realType, bool firstOnly = false) where FakeType : class, new()
-        {
-            var map = CreateProxyMap(CreateTuple(typeof(FakeType), realType));
-            return dao.QueryFromLambda(predicate, null, map, firstOnly, null);
-        }
-        public static AncestorResult Query<FakeType>(this IDataAccessObjectEx dao, Expression<Func<FakeType, bool>> predicate, Expression<Func<FakeType, object>> selectCondition, Type realType, bool firstOnly = false) where FakeType : class, new()
+        public static AncestorResult Query<FakeType>(this IDataAccessObjectEx dao, Expression<Func<FakeType, bool>> predicate, Type realType) where FakeType : class, new()
         {
             var map = CreateProxyMap(CreateTuple(typeof(FakeType), realType));
-            return dao.QueryFromLambda(predicate, selectCondition, map, firstOnly, null);
+            return dao.QueryFromLambda(predicate, null, map, false, null);
         }
-        public static AncestorResult Query<FakeType1, FakeType2>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, bool>> predicate, Expression<Func<FakeType1, FakeType2, object>> selectCondition, Type realType1, Type realType2, bool firstOnly = false) where FakeType1 : class, new() where FakeType2 : class, new()
+        public static AncestorResult Query<FakeType>(this IDataAccessObjectEx dao, Expression<Func<FakeType, bool>> predicate, Expression<Func<FakeType, object>> selectCondition, Type realType) where FakeType : class, new()
+        {
+            var map = CreateProxyMap(CreateTuple(typeof(FakeType), realType));
+            return dao.QueryFromLambda(predicate, selectCondition, map, false, null);
+        }
+        public static AncestorResult Query<FakeType1, FakeType2>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, bool>> predicate, Expression<Func<FakeType1, FakeType2, object>> selectCondition, Type realType1, Type realType2) where FakeType1 : class, new() where FakeType2 : class, new()
         {
             var map = CreateProxyMap(CreateTuple(typeof(FakeType1), realType1), CreateTuple(typeof(FakeType2), realType2));
-            return dao.QueryFromLambda(predicate, selectCondition, map, firstOnly, null);
+            return dao.QueryFromLambda(predicate, selectCondition, map, false, null);
         }
-        public static AncestorResult Query<FakeType1, FakeType2, FakeType3>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, FakeType3, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, object>> selectCondition, Type realType1, Type realType2, Type realType3, bool firstOnly = false) where FakeType1 : class, new() where FakeType2 : class, new() where FakeType3 : class, new()
+        public static AncestorResult Query<FakeType1, FakeType2, FakeType3>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, FakeType3, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, object>> selectCondition, Type realType1, Type realType2, Type realType3) where FakeType1 : class, new() where FakeType2 : class, new() where FakeType3 : class, new()
         {
             var map = CreateProxyMap(CreateTuple(typeof(FakeType1), realType1), CreateTuple(typeof(FakeType2), realType2), CreateTuple(typeof(FakeType3), realType3));
-            return dao.QueryFromLambda(predicate, selectCondition, map, firstOnly, null);
+            return dao.QueryFromLambda(predicate, selectCondition, map, false, null);
         }
-        public static AncestorResult Query<FakeType1, FakeType2, FakeType3, FakeType4>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, object>> selectCondition, Type realType1, Type realType2, Type realType3, Type realType4, bool firstOnly = false) where FakeType1 : class, new() where FakeType2 : class, new() where FakeType3 : class, new() where FakeType4 : class, new()
+        public static AncestorResult Query<FakeType1, FakeType2, FakeType3, FakeType4>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, object>> selectCondition, Type realType1, Type realType2, Type realType3, Type realType4) where FakeType1 : class, new() where FakeType2 : class, new() where FakeType3 : class, new() where FakeType4 : class, new()
         {
             var map = CreateProxyMap(CreateTuple(typeof(FakeType1), realType1), CreateTuple(typeof(FakeType2), realType2), CreateTuple(typeof(FakeType3), realType3), CreateTuple(typeof(FakeType4), realType4));
-            return dao.QueryFromLambda(predicate, selectCondition, map, firstOnly, null);
+            return dao.QueryFromLambda(predicate, selectCondition, map, false, null);
         }
-        public static AncestorResult Query<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, object>> selectCondition, Type realType1, Type realType2, Type realType3, Type realType4, Type realType5, bool firstOnly = false) where FakeType1 : class, new() where FakeType2 : class, new() where FakeType3 : class, new() where FakeType4 : class, new() where FakeType5 : class, new()
+        public static AncestorResult Query<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, object>> selectCondition, Type realType1, Type realType2, Type realType3, Type realType4, Type realType5) where FakeType1 : class, new() where FakeType2 : class, new() where FakeType3 : class, new() where FakeType4 : class, new() where FakeType5 : class, new()
         {
             var map = CreateProxyMap(CreateTuple(typeof(FakeType1), realType1), CreateTuple(typeof(FakeType2), realType2), CreateTuple(typeof(FakeType3), realType3), CreateTuple(typeof(FakeType4), realType4), CreateTuple(typeof(FakeType5), realType5));
-            return dao.QueryFromLambda(predicate, selectCondition, map, firstOnly, null);
+            return dao.QueryFromLambda(predicate, selectCondition, map, false, null);
         }
-        public static AncestorResult Query<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, object>> selectCondition, Type realType1, Type realType2, Type realType3, Type realType4, Type realType5, Type realType6, bool firstOnly = false) where FakeType1 : class, new() where FakeType2 : class, new() where FakeType3 : class, new() where FakeType4 : class, new() where FakeType5 : class, new() where FakeType6 : class, new()
+        public static AncestorResult Query<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, object>> selectCondition, Type realType1, Type realType2, Type realType3, Type realType4, Type realType5, Type realType6) where FakeType1 : class, new() where FakeType2 : class, new() where FakeType3 : class, new() where FakeType4 : class, new() where FakeType5 : class, new() where FakeType6 : class, new()
         {
             var map = CreateProxyMap(CreateTuple(typeof(FakeType1), realType1), CreateTuple(typeof(FakeType2), realType2), CreateTuple(typeof(FakeType3), realType3), CreateTuple(typeof(FakeType4), realType4), CreateTuple(typeof(FakeType5), realType5), CreateTuple(typeof(FakeType6), realType6));
-            return dao.QueryFromLambda(predicate, selectCondition, map, firstOnly, null);
+            return dao.QueryFromLambda(predicate, selectCondition, map, false, null);
         }
-        public static AncestorResult Query<FakeType>(this IDataAccessObjectEx dao, Expression<Func<FakeType, bool>> predicate, string name, bool firstOnly = false) where FakeType : class, new()
+        public static AncestorResult Query<FakeType>(this IDataAccessObjectEx dao, Expression<Func<FakeType, bool>> predicate, string name) where FakeType : class, new()
         {
             var map = CreateProxyMap(CreateTuple(typeof(FakeType), name));
-            return dao.QueryFromLambda(predicate, null, map, firstOnly, null);
+            return dao.QueryFromLambda(predicate, null, map, false, null);
         }
-        public static AncestorResult Query<FakeType>(this IDataAccessObjectEx dao, Expression<Func<FakeType, bool>> predicate, Expression<Func<FakeType, object>> selectCondition, string name, bool firstOnly = false) where FakeType : class, new()
+        public static AncestorResult Query<FakeType>(this IDataAccessObjectEx dao, Expression<Func<FakeType, bool>> predicate, Expression<Func<FakeType, object>> selectCondition, string name) where FakeType : class, new()
         {
             var map = CreateProxyMap(CreateTuple(typeof(FakeType), name));
-            return dao.QueryFromLambda(predicate, selectCondition, map, firstOnly, null);
+            return dao.QueryFromLambda(predicate, selectCondition, map, false, null);
         }
-        public static AncestorResult Query<FakeType1, FakeType2>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, bool>> predicate, Expression<Func<FakeType1, FakeType2, object>> selectCondition, string name1, string name2, bool firstOnly = false) where FakeType1 : class, new() where FakeType2 : class, new()
+        public static AncestorResult Query<FakeType1, FakeType2>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, bool>> predicate, Expression<Func<FakeType1, FakeType2, object>> selectCondition, string name1, string name2) where FakeType1 : class, new() where FakeType2 : class, new()
         {
             var map = CreateProxyMap(CreateTuple(typeof(FakeType1), name1), CreateTuple(typeof(FakeType2), name2));
-            return dao.QueryFromLambda(predicate, selectCondition, map, firstOnly, null);
+            return dao.QueryFromLambda(predicate, selectCondition, map, false, null);
         }
-        public static AncestorResult Query<FakeType1, FakeType2, FakeType3>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, FakeType3, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, object>> selectCondition, string name1, string name2, string name3, bool firstOnly = false) where FakeType1 : class, new() where FakeType2 : class, new() where FakeType3 : class, new()
+        public static AncestorResult Query<FakeType1, FakeType2, FakeType3>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, FakeType3, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, object>> selectCondition, string name1, string name2, string name3) where FakeType1 : class, new() where FakeType2 : class, new() where FakeType3 : class, new()
         {
             var map = CreateProxyMap(CreateTuple(typeof(FakeType1), name1), CreateTuple(typeof(FakeType2), name2), CreateTuple(typeof(FakeType3), name3));
-            return dao.QueryFromLambda(predicate, selectCondition, map, firstOnly, null);
+            return dao.QueryFromLambda(predicate, selectCondition, map, false, null);
         }
-        public static AncestorResult Query<FakeType1, FakeType2, FakeType3, FakeType4>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, object>> selectCondition, string name1, string name2, string name3, string name4, bool firstOnly = false) where FakeType1 : class, new() where FakeType2 : class, new() where FakeType3 : class, new() where FakeType4 : class, new()
+        public static AncestorResult Query<FakeType1, FakeType2, FakeType3, FakeType4>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, object>> selectCondition, string name1, string name2, string name3, string name4) where FakeType1 : class, new() where FakeType2 : class, new() where FakeType3 : class, new() where FakeType4 : class, new()
         {
             var map = CreateProxyMap(CreateTuple(typeof(FakeType1), name1), CreateTuple(typeof(FakeType2), name2), CreateTuple(typeof(FakeType3), name3), CreateTuple(typeof(FakeType4), name4));
-            return dao.QueryFromLambda(predicate, selectCondition, map, firstOnly, null);
+            return dao.QueryFromLambda(predicate, selectCondition, map, false, null);
         }
-        public static AncestorResult Query<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, object>> selectCondition, string name1, string name2, string name3, string name4, string name5, bool firstOnly = false) where FakeType1 : class, new() where FakeType2 : class, new() where FakeType3 : class, new() where FakeType4 : class, new() where FakeType5 : class, new()
+        public static AncestorResult Query<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, object>> selectCondition, string name1, string name2, string name3, string name4, string name5) where FakeType1 : class, new() where FakeType2 : class, new() where FakeType3 : class, new() where FakeType4 : class, new() where FakeType5 : class, new()
         {
             var map = CreateProxyMap(CreateTuple(typeof(FakeType1), name1), CreateTuple(typeof(FakeType2), name2), CreateTuple(typeof(FakeType3), name3), CreateTuple(typeof(FakeType4), name4), CreateTuple(typeof(FakeType5), name5));
-            return dao.QueryFromLambda(predicate, selectCondition, map, firstOnly, null);
+            return dao.QueryFromLambda(predicate, selectCondition, map, false, null);
         }
-        public static AncestorResult Query<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, object>> selectCondition, string name1, string name2, string name3, string name4, string name5, string name6, bool firstOnly = false) where FakeType1 : class, new() where FakeType2 : class, new() where FakeType3 : class, new() where FakeType4 : class, new() where FakeType5 : class, new() where FakeType6 : class, new()
+        public static AncestorResult Query<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, object>> selectCondition, string name1, string name2, string name3, string name4, string name5, string name6) where FakeType1 : class, new() where FakeType2 : class, new() where FakeType3 : class, new() where FakeType4 : class, new() where FakeType5 : class, new() where FakeType6 : class, new()
         {
             var map = CreateProxyMap(CreateTuple(typeof(FakeType1), name1), CreateTuple(typeof(FakeType2), name2), CreateTuple(typeof(FakeType3), name3), CreateTuple(typeof(FakeType4), name4), CreateTuple(typeof(FakeType5), name5), CreateTuple(typeof(FakeType6), name6));
-            return dao.QueryFromLambda(predicate, selectCondition, map, firstOnly, null);
+            return dao.QueryFromLambda(predicate, selectCondition, map, false, null);
         }
 
-        
+        public static AncestorResult QueryFirst(this IDataAccessObjectEx dao, string sqlString, object paramsObjects)
+        {
+            return dao.QueryFromSqlString(sqlString, paramsObjects, null, true, null);
+        }
 
-        public static AncestorResult Insert(this IDataAccessObjectEx dao, object objectModel)
+        public static AncestorResult QueryFirst(this IDataAccessObjectEx dao, object objectModel)
+        {
+            return dao.QueryFromModel(objectModel, null, null, true, null);
+        }
+        public static AncestorResult QueryFirst<T>(this IDataAccessObjectEx dao, object objectModel) where T : class, new()
+        {
+            return dao.QueryFromModel(objectModel, typeof(T), null, true, null);
+        }
+        public static AncestorResult QueryFirstNoRowid(this IDataAccessObjectEx dao, object objectModel)
+        {
+            return dao.QueryFromModel(objectModel, null, null, true, new AncestorOptions { HasRowId = false });
+        }
+        public static AncestorResult QueryFirstNoRowid<T>(this IDataAccessObjectEx dao, object objectModel) where T : class, new()
+        {
+            return dao.QueryFromModel(objectModel, typeof(T), null, true, new AncestorOptions { HasRowId = false });
+        }
+
+        public static AncestorResult QueryFirst<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate) where T : class, new()
+        {
+            return dao.QueryFromLambda(predicate, null, null, true, null);
+        }
+        public static AncestorResult QueryFirst<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate, Expression<Func<T, object>> selectCondition) where T : class, new()
+        {
+            return dao.QueryFromLambda(predicate, selectCondition, null, true, null);
+        }
+        public static AncestorResult QueryFirstNoRowid<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate) where T : class, new()
+        {
+            return dao.QueryFromLambda(predicate, null, null, true, new AncestorOptions { HasRowId = false });
+        }
+        public static AncestorResult QueryFirst<T1, T2>(this IDataAccessObjectEx dao, Expression<Func<T1, T2, bool>> predicate, Expression<Func<T1, T2, object>> selectCondition) where T1 : class, new() where T2 : class, new()
+        {
+            return dao.QueryFromLambda(predicate, selectCondition, null, true, null);
+        }
+        public static AncestorResult QueryFirst<T1, T2, T3>(this IDataAccessObjectEx dao, Expression<Func<T1, T2, T3, bool>> predicate, Expression<Func<T1, T2, T3, object>> selectCondition) where T1 : class, new() where T2 : class, new() where T3 : class, new()
+        {
+            return dao.QueryFromLambda(predicate, selectCondition, null, true, null);
+        }
+        public static AncestorResult QueryFirst<T1, T2, T3, T4>(this IDataAccessObjectEx dao, Expression<Func<T1, T2, T3, T4, bool>> predicate, Expression<Func<T1, T2, T3, T4, object>> selectCondition) where T1 : class, new() where T2 : class, new() where T3 : class, new() where T4 : class, new()
+        {
+            return dao.QueryFromLambda(predicate, selectCondition, null, true, null);
+        }
+        public static AncestorResult QueryFirst<T1, T2, T3, T4, T5>(this IDataAccessObjectEx dao, Expression<Func<T1, T2, T3, T4, T5, bool>> predicate, Expression<Func<T1, T2, T3, T4, T5, object>> selectCondition) where T1 : class, new() where T2 : class, new() where T3 : class, new() where T4 : class, new() where T5 : class, new()
+        {
+            return dao.QueryFromLambda(predicate, selectCondition, null, true, null);
+        }
+        public static AncestorResult QueryFirst<T1, T2, T3, T4, T5, T6>(this IDataAccessObjectEx dao, Expression<Func<T1, T2, T3, T4, T5, T6, bool>> predicate, Expression<Func<T1, T2, T3, T4, T5, T6, object>> selectCondition) where T1 : class, new() where T2 : class, new() where T3 : class, new() where T4 : class, new() where T5 : class, new() where T6 : class, new()
+        {
+            return dao.QueryFromLambda(predicate, selectCondition, null, true, null);
+        }
+        public static AncestorResult QueryFirst<FakeType>(this IDataAccessObjectEx dao, Expression<Func<FakeType, bool>> predicate, Type realType) where FakeType : class, new()
+        {
+            var map = CreateProxyMap(CreateTuple(typeof(FakeType), realType));
+            return dao.QueryFromLambda(predicate, null, map, true, null);
+        }
+        public static AncestorResult QueryFirst<FakeType>(this IDataAccessObjectEx dao, Expression<Func<FakeType, bool>> predicate, Expression<Func<FakeType, object>> selectCondition, Type realType) where FakeType : class, new()
+        {
+            var map = CreateProxyMap(CreateTuple(typeof(FakeType), realType));
+            return dao.QueryFromLambda(predicate, selectCondition, map, true, null);
+        }
+        public static AncestorResult QueryFirst<FakeType1, FakeType2>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, bool>> predicate, Expression<Func<FakeType1, FakeType2, object>> selectCondition, Type realType1, Type realType2) where FakeType1 : class, new() where FakeType2 : class, new()
+        {
+            var map = CreateProxyMap(CreateTuple(typeof(FakeType1), realType1), CreateTuple(typeof(FakeType2), realType2));
+            return dao.QueryFromLambda(predicate, selectCondition, map, true, null);
+        }
+        public static AncestorResult QueryFirst<FakeType1, FakeType2, FakeType3>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, FakeType3, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, object>> selectCondition, Type realType1, Type realType2, Type realType3) where FakeType1 : class, new() where FakeType2 : class, new() where FakeType3 : class, new()
+        {
+            var map = CreateProxyMap(CreateTuple(typeof(FakeType1), realType1), CreateTuple(typeof(FakeType2), realType2), CreateTuple(typeof(FakeType3), realType3));
+            return dao.QueryFromLambda(predicate, selectCondition, map, true, null);
+        }
+        public static AncestorResult QueryFirst<FakeType1, FakeType2, FakeType3, FakeType4>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, object>> selectCondition, Type realType1, Type realType2, Type realType3, Type realType4) where FakeType1 : class, new() where FakeType2 : class, new() where FakeType3 : class, new() where FakeType4 : class, new()
+        {
+            var map = CreateProxyMap(CreateTuple(typeof(FakeType1), realType1), CreateTuple(typeof(FakeType2), realType2), CreateTuple(typeof(FakeType3), realType3), CreateTuple(typeof(FakeType4), realType4));
+            return dao.QueryFromLambda(predicate, selectCondition, map, true, null);
+        }
+        public static AncestorResult QueryFirst<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, object>> selectCondition, Type realType1, Type realType2, Type realType3, Type realType4, Type realType5) where FakeType1 : class, new() where FakeType2 : class, new() where FakeType3 : class, new() where FakeType4 : class, new() where FakeType5 : class, new()
+        {
+            var map = CreateProxyMap(CreateTuple(typeof(FakeType1), realType1), CreateTuple(typeof(FakeType2), realType2), CreateTuple(typeof(FakeType3), realType3), CreateTuple(typeof(FakeType4), realType4), CreateTuple(typeof(FakeType5), realType5));
+            return dao.QueryFromLambda(predicate, selectCondition, map, true, null);
+        }
+        public static AncestorResult QueryFirst<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, object>> selectCondition, Type realType1, Type realType2, Type realType3, Type realType4, Type realType5, Type realType6) where FakeType1 : class, new() where FakeType2 : class, new() where FakeType3 : class, new() where FakeType4 : class, new() where FakeType5 : class, new() where FakeType6 : class, new()
+        {
+            var map = CreateProxyMap(CreateTuple(typeof(FakeType1), realType1), CreateTuple(typeof(FakeType2), realType2), CreateTuple(typeof(FakeType3), realType3), CreateTuple(typeof(FakeType4), realType4), CreateTuple(typeof(FakeType5), realType5), CreateTuple(typeof(FakeType6), realType6));
+            return dao.QueryFromLambda(predicate, selectCondition, map, true, null);
+        }
+        public static AncestorResult QueryFirst<FakeType>(this IDataAccessObjectEx dao, Expression<Func<FakeType, bool>> predicate, string name) where FakeType : class, new()
+        {
+            var map = CreateProxyMap(CreateTuple(typeof(FakeType), name));
+            return dao.QueryFromLambda(predicate, null, map, true, null);
+        }
+        public static AncestorResult QueryFirst<FakeType>(this IDataAccessObjectEx dao, Expression<Func<FakeType, bool>> predicate, Expression<Func<FakeType, object>> selectCondition, string name) where FakeType : class, new()
+        {
+            var map = CreateProxyMap(CreateTuple(typeof(FakeType), name));
+            return dao.QueryFromLambda(predicate, selectCondition, map, true, null);
+        }
+        public static AncestorResult QueryFirst<FakeType1, FakeType2>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, bool>> predicate, Expression<Func<FakeType1, FakeType2, object>> selectCondition, string name1, string name2) where FakeType1 : class, new() where FakeType2 : class, new()
+        {
+            var map = CreateProxyMap(CreateTuple(typeof(FakeType1), name1), CreateTuple(typeof(FakeType2), name2));
+            return dao.QueryFromLambda(predicate, selectCondition, map, true, null);
+        }
+        public static AncestorResult QueryFirst<FakeType1, FakeType2, FakeType3>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, FakeType3, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, object>> selectCondition, string name1, string name2, string name3) where FakeType1 : class, new() where FakeType2 : class, new() where FakeType3 : class, new()
+        {
+            var map = CreateProxyMap(CreateTuple(typeof(FakeType1), name1), CreateTuple(typeof(FakeType2), name2), CreateTuple(typeof(FakeType3), name3));
+            return dao.QueryFromLambda(predicate, selectCondition, map, true, null);
+        }
+        public static AncestorResult QueryFirst<FakeType1, FakeType2, FakeType3, FakeType4>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, object>> selectCondition, string name1, string name2, string name3, string name4) where FakeType1 : class, new() where FakeType2 : class, new() where FakeType3 : class, new() where FakeType4 : class, new()
+        {
+            var map = CreateProxyMap(CreateTuple(typeof(FakeType1), name1), CreateTuple(typeof(FakeType2), name2), CreateTuple(typeof(FakeType3), name3), CreateTuple(typeof(FakeType4), name4));
+            return dao.QueryFromLambda(predicate, selectCondition, map, true, null);
+        }
+        public static AncestorResult QueryFirst<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, object>> selectCondition, string name1, string name2, string name3, string name4, string name5) where FakeType1 : class, new() where FakeType2 : class, new() where FakeType3 : class, new() where FakeType4 : class, new() where FakeType5 : class, new()
+        {
+            var map = CreateProxyMap(CreateTuple(typeof(FakeType1), name1), CreateTuple(typeof(FakeType2), name2), CreateTuple(typeof(FakeType3), name3), CreateTuple(typeof(FakeType4), name4), CreateTuple(typeof(FakeType5), name5));
+            return dao.QueryFromLambda(predicate, selectCondition, map, true, null);
+        }
+        public static AncestorResult QueryFirst<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6>(this IDataAccessObjectEx dao, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, object>> selectCondition, string name1, string name2, string name3, string name4, string name5, string name6) where FakeType1 : class, new() where FakeType2 : class, new() where FakeType3 : class, new() where FakeType4 : class, new() where FakeType5 : class, new() where FakeType6 : class, new()
+        {
+            var map = CreateProxyMap(CreateTuple(typeof(FakeType1), name1), CreateTuple(typeof(FakeType2), name2), CreateTuple(typeof(FakeType3), name3), CreateTuple(typeof(FakeType4), name4), CreateTuple(typeof(FakeType5), name5), CreateTuple(typeof(FakeType6), name6));
+            return dao.QueryFromLambda(predicate, selectCondition, map, true, null);
+        }
+
+
+        public static AncestorExecuteResult Insert(this IDataAccessObjectEx dao, object objectModel)
         {
             return dao.InsertEntity(objectModel, null, null);
         }
-        public static AncestorResult Update(this IDataAccessObjectEx dao, object valueObject, object paramsObjects)
+        public static AncestorExecuteResult Update(this IDataAccessObjectEx dao, object valueObject, object paramsObjects, int exceptRows = -1)
         {
-            return dao.UpdateEntity(valueObject, paramsObjects, UpdateMode.Value, null, null);
+            return dao.UpdateEntity(valueObject, paramsObjects, UpdateMode.Value, null, exceptRows, null);
         }
-        public static AncestorResult Update<T>(this IDataAccessObjectEx dao, object valueObject, Expression<Func<T, bool>> predicate) where T : class, new()
+        public static AncestorExecuteResult Update<T>(this IDataAccessObjectEx dao, object valueObject, Expression<Func<T, bool>> predicate, int exceptRows = -1) where T : class, new()
         {
-            return dao.UpdateEntity(valueObject, predicate, UpdateMode.Value, null, null);
+            return dao.UpdateEntity(valueObject, predicate, UpdateMode.Value, null, exceptRows, null);
         }
-        public static AncestorResult UpdateAll(this IDataAccessObjectEx dao, object valueObject, object whereObject)
+        public static AncestorExecuteResult UpdateAll(this IDataAccessObjectEx dao, object valueObject, object whereObject, int exceptRows = -1)
         {
-            return dao.UpdateEntity(valueObject, whereObject, UpdateMode.All, null, null);
+            return dao.UpdateEntity(valueObject, whereObject, UpdateMode.All, null, exceptRows, null);
         }
-        public static AncestorResult UpdateAll<T>(this IDataAccessObjectEx dao, object valueObject, Expression<Func<T, bool>> predicate) where T : class, new()
+        public static AncestorExecuteResult UpdateAll<T>(this IDataAccessObjectEx dao, object valueObject, Expression<Func<T, bool>> predicate, int exceptRows = -1) where T : class, new()
         {
-            return dao.UpdateEntity(valueObject, predicate, UpdateMode.All, null, null);
+            return dao.UpdateEntity(valueObject, predicate, UpdateMode.All, null, exceptRows, null);
         }
-        public static AncestorResult Delete(this IDataAccessObjectEx dao, object whereObject)
+        public static AncestorExecuteResult Delete(this IDataAccessObjectEx dao, object whereObject, int exceptRows = -1)
         {
-            return dao.DeleteEntity(whereObject, null, null);
+            return dao.DeleteEntity(whereObject, null, exceptRows, null);
         }
-        public static AncestorResult Delete<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate) where T : class, new()
+        public static AncestorExecuteResult Delete<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate, int exceptRows = -1) where T : class, new()
         {
-            return dao.DeleteEntity(predicate, null, null);
+            return dao.DeleteEntity(predicate, null, exceptRows, null);
         }
-        public static AncestorResult ExecuteNonQuery(this IDataAccessObjectEx dao, string sqlString, object modelObject)
+        public static AncestorExecuteResult ExecuteNonQuery(this IDataAccessObjectEx dao, string sqlString, object modelObject, int exceptRows = -1)
         {
-            return dao.ExecuteNonQuery(sqlString, modelObject, null);
+            return dao.ExecuteNonQuery(sqlString, modelObject, exceptRows, null);
         }
-        public static AncestorResult ExecuteStoredProcedure(this IDataAccessObjectEx dao, string procedureName, bool bindbyName, List<DBParameter> dBParameter)
+        public static AncestorExecuteResult ExecuteStoredProcedure(this IDataAccessObjectEx dao, string procedureName, bool bindbyName, IEnumerable<DBParameter> parameters)
         {
-            return dao.ExecuteStoredProcedure(procedureName, dBParameter, new AncestorOptions { BindByName = bindbyName });
+            return dao.ExecuteStoredProcedure(procedureName, parameters, new AncestorOptions { BindByName = bindbyName });
         }
-
-        public static AncestorResult Insert(this IDataAccessObjectEx dao, object model, string name)
+        public static AncestorExecuteResult ExecuteStoredProcedure(this IDataAccessObjectEx dao, string procedureName, bool bindbyName, params DBParameter[] parameters)
+        {
+            return dao.ExecuteStoredProcedure(procedureName, parameters, new AncestorOptions { BindByName = bindbyName });
+        }
+        public static AncestorExecuteResult Insert(this IDataAccessObjectEx dao, object model, string name)
         {
             return dao.InsertEntity(model, name, null);
         }
-        public static AncestorResult Update(this IDataAccessObjectEx dao, object valueObject, object paramsObjects, string name)
+        public static AncestorExecuteResult Update(this IDataAccessObjectEx dao, object valueObject, object paramsObjects, string name, int exceptRows = -1)
         {
-            return dao.UpdateEntity(valueObject, paramsObjects, UpdateMode.Value, name, null);
+            return dao.UpdateEntity(valueObject, paramsObjects, UpdateMode.Value, name, exceptRows, null);
         }
-        public static AncestorResult Update<T>(this IDataAccessObjectEx dao, object valueObject, Expression<Func<T, bool>> predicate, string name) where T : class, new()
+        public static AncestorExecuteResult Update<T>(this IDataAccessObjectEx dao, object valueObject, Expression<Func<T, bool>> predicate, string name, int exceptRows = -1) where T : class, new()
         {
-            return dao.UpdateEntity(valueObject, predicate, UpdateMode.Value, name, null);
+            return dao.UpdateEntity(valueObject, predicate, UpdateMode.Value, name, exceptRows, null);
         }
-        public static AncestorResult UpdateAll(this IDataAccessObjectEx dao, object valueObject, object whereObject, string name)
+        public static AncestorExecuteResult UpdateAll(this IDataAccessObjectEx dao, object valueObject, object whereObject, string name, int exceptRows = -1)
         {
-            return dao.UpdateEntity(valueObject, whereObject, UpdateMode.All, name, null);
+            return dao.UpdateEntity(valueObject, whereObject, UpdateMode.All, name, exceptRows, null);
         }
-        public static AncestorResult UpdateAll<T>(this IDataAccessObjectEx dao, object valueObject, Expression<Func<T, bool>> predicate, string name) where T : class, new()
+        public static AncestorExecuteResult UpdateAll<T>(this IDataAccessObjectEx dao, object valueObject, Expression<Func<T, bool>> predicate, string name, int exceptRows = -1) where T : class, new()
         {
-            return dao.UpdateEntity(valueObject, predicate, UpdateMode.All, name, null);
+            return dao.UpdateEntity(valueObject, predicate, UpdateMode.All, name, exceptRows, null);
         }
-        public static AncestorResult Delete(this IDataAccessObjectEx dao, object whereObject, string name)
+        public static AncestorExecuteResult Delete(this IDataAccessObjectEx dao, object whereObject, string name, int exceptRows = -1)
         {
-            return dao.DeleteEntity(whereObject, name, null);
+            return dao.DeleteEntity(whereObject, name, exceptRows, null);
         }
-        public static AncestorResult Delete<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate, string name) where T : class, new()
+        public static AncestorExecuteResult Delete<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate, string name, int exceptRows = -1) where T : class, new()
         {
-            return dao.DeleteEntity(predicate, name, null);
+            return dao.DeleteEntity(predicate, name, exceptRows, null);
         }
 
-        public static AncestorResult BulkInsert<T>(this IDataAccessObjectEx dao, List<T> ObjList) where T : class, new()
+        public static AncestorExecuteResult BulkInsert<T>(this IDataAccessObjectEx dao, List<T> ObjList) where T : class, new()
         {
             return dao.BulkInsertEntities(ObjList, null, null);
         }

@@ -28,5 +28,29 @@ namespace Ancestor.Core
             var m = mode ?? (objectFactory != null ? ResultListMode.Value : ResultListMode.All);
             return (T)AncestorResultHelper.ResultFirst(result, typeof(T), objectFactory, m);
         }
+
+        public static T ResultScalar<T>(this IAncestorResult result, T defaultValue = default(T))
+        {
+            try
+            {
+                return (T)AncestorResultHelper.ResultScalar(result);
+            }
+            catch
+            {
+                return defaultValue;
+            }
+        }
+
+        public static T ThrowIfError<T>(this T result) where T : IAncestorResult
+        {
+            if(!result.IsSuccess)
+            {
+                if (result.Exception != null)
+                    throw result.Exception;
+                else
+                    throw new AncestorException(99999, "ancestor result is failure");
+            }
+            return result;
+        }
     }
 }
