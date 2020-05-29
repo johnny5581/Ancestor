@@ -14,10 +14,6 @@ namespace Ancestor.Core
     {
         #region Properties
         /// <summary>
-        /// Execute return Code
-        /// </summary>
-        int Code { get; }
-        /// <summary>
         /// Execute success or not 
         /// </summary>
         bool IsSuccess { get; }
@@ -70,8 +66,6 @@ namespace Ancestor.Core
     /// </summary>
     public class AncestorResult : IAncestorResult
     {
-        public const int CodeSuccess = 0;
-        public const int CodeFailure = 99999;
         private string _errorMessage;
         private Exception _innerException;
         public AncestorResult()
@@ -86,14 +80,6 @@ namespace Ancestor.Core
         public AncestorResult(Exception exception)
             : this(false)
         {
-            Code = 99999;
-            _innerException = exception;
-            _errorMessage = exception.Message;
-        }
-        public AncestorResult(int code, Exception exception)
-            : this(false)
-        {
-            Code = code;
             _innerException = exception;
             _errorMessage = exception.Message;
         }
@@ -112,7 +98,6 @@ namespace Ancestor.Core
         {
             EffectRows = rows;
         }
-        public int Code { get; private set; }
         public bool IsSuccess { get; set; }
         public IList DataList { get; set; }
         public DataTable ReturnDataTable { get; set; }
@@ -196,9 +181,7 @@ namespace Ancestor.Core
             BindParameters(parameters);
         }
 
-        public AncestorExecuteResult(int code, Exception exception) : base(code, exception)
-        {
-        }
+
         public DBParameter GetParameter(string name = DBParameter.ReturnValueName)
         {
             DBParameter p;

@@ -120,7 +120,7 @@ namespace Ancestor.DataAccess.DAO
             try
             {
                 object data = action();
-                if(exceptRows != -1)
+                if (exceptRows != -1)
                 {
                     int actualRows = -1;
                     if (data is int)
@@ -203,18 +203,28 @@ namespace Ancestor.DataAccess.DAO
             }
             throw new InvalidOperationException("can not get AncestorResult");
         }
-        protected AncestorExecuteResult ReturnAncestorExecuteResult(object result)
+        protected AncestorExecuteResult ReturnEffectRowResult(object result)
         {
             QueryParameter parameters = new QueryParameter();
             var dbResult = result as DbActionResult;
             if (dbResult != null)
-            {                
+            {
                 result = dbResult.Result;
                 parameters = dbResult.Parameter;
             }
             if (result is int)
                 return new AncestorExecuteResult((int)result, parameters.Parameters) { QueryParameter = parameters };
-
+            return new AncestorExecuteResult(result, parameters.Parameters) { QueryParameter = parameters };
+        }
+        protected AncestorExecuteResult ReturnAncestorExecuteResult(object result)
+        {
+            QueryParameter parameters = new QueryParameter();
+            var dbResult = result as DbActionResult;
+            if (dbResult != null)
+            {
+                result = dbResult.Result;
+                parameters = dbResult.Parameter;
+            }
             return new AncestorExecuteResult(result, parameters.Parameters) { QueryParameter = parameters };
         }
         public void BeginTransaction()
@@ -310,6 +320,43 @@ namespace Ancestor.DataAccess.DAO
             }, ReturnAncestorResult);
         }
 
+        public AncestorResult GroupFromLambda(LambdaExpression predicate, LambdaExpression selector, IDictionary<Type, object> proxyMap, AncestorOptions options)
+        {
+            return TryCatch(() =>
+            {
+                var predicateParameterTypes = predicate == null ? new Type[0] : predicate.Parameters.Select(p => p.Type);
+                var selectorParameterTypes = selector == null ? new Type[0] : selector.Parameters.Select(p => p.Type);
+                var parameterTypes = predicateParameterTypes.Concat(selectorParameterTypes).Distinct();
+                var reference = GetReferenceInfo(parameterTypes, proxyMap);
+                var resolver = CreateExpressionResolver(reference);
+                ExpressionResolver.ExpressionResolveResult predicateResult = null;
+                ExpressionResolver.ExpressionResolveResult selectorResult = null;
+                if (predicate != null)
+                    predicateResult = resolver.Resolve(predicate);
+                if (selector != null)
+                    selectorResult = resolver.Resolve(selector);
+                if (predicateResult == null && selectorResult == null)
+                    throw new ArgumentNullException("no predicate or selector");
+
+                var mergeResult = ExpressionResolver.CombineResult(selectorResult, predicateResult);
+
+                var selectorText = mergeResult.Sql1;
+                var tuples = mergeResult.Reference.GetStructs();
+                var tableText = string.Join(", ", tuples.Select(r => r.Item3));
+                if (selectorText == null)
+                {
+                    selectorText = CreateSelectCommand(mergeResult.Reference);
+                }
+
+                var whereText = mergeResult.Sql2 != null ? ("Where " + mergeResult.Sql2) : "";
+                var groupText = selectorResult.GroupBy;
+                var sql = string.Format("Select {0} From {1} {2} Group By {3}", selectorText, tableText, whereText, groupText);
+                var dataType = mergeResult.Reference.GetReferenceType();
+                var opt = CreateDbOptions(options);
+                return InternalQuery(sql, mergeResult.Parameters, null, false, opt);
+            }, ReturnAncestorResult);
+        }
+
         public AncestorExecuteResult InsertEntity(object model, object origin, AncestorOptions options)
         {
             return TryCatch(() =>
@@ -325,7 +372,7 @@ namespace Ancestor.DataAccess.DAO
                 var sql = string.Format("Insert Into {0} {1} Values ({2})", name, fields, values);
                 var opt = CreateDbOptions(options);
                 return _dbAction.ExecuteNonQuery(sql, dbParameters, opt);
-            }, ReturnAncestorExecuteResult);
+            }, ReturnEffectRowResult);
         }
 
         public AncestorExecuteResult BulkInsertEntities<T>(IEnumerable<T> models, object origin, AncestorOptions options)
@@ -374,7 +421,7 @@ namespace Ancestor.DataAccess.DAO
                     }
                 }
                 return successed;
-            }, ReturnAncestorExecuteResult);
+            }, ReturnEffectRowResult);
         }
         public AncestorExecuteResult UpdateEntity(object model, object whereObject, UpdateMode mode, object origin, int exceptRows, AncestorOptions options)
         {
@@ -390,7 +437,7 @@ namespace Ancestor.DataAccess.DAO
                 var whereCommand = CreateWhereCommand(whereObject, null, ignoreNull, dbParameters);
                 var sql = string.Format("Update {0} Set {1} {2}", name, updateCommand, whereCommand);
                 return _dbAction.ExecuteNonQuery(sql, dbParameters);
-            }, ReturnAncestorExecuteResult, exceptRows);
+            }, ReturnEffectRowResult, exceptRows);
         }
         public AncestorExecuteResult UpdateEntity(object model, LambdaExpression predicate, UpdateMode mode, object origin, int exceptRows, AncestorOptions options)
         {
@@ -413,7 +460,7 @@ namespace Ancestor.DataAccess.DAO
                 var whereCommand = result != null ? "Where " + result.Sql : "";
                 var sql = string.Format("Update {0} Set {1} {2}", name, updateCommand, whereCommand);
                 return _dbAction.ExecuteNonQuery(sql, dbParameters);
-            }, ReturnAncestorExecuteResult, exceptRows);
+            }, ReturnEffectRowResult, exceptRows);
         }
         // TODO
         public AncestorExecuteResult DeleteEntity(object whereObject, object origin, int exceptRows, AncestorOptions options)
@@ -429,7 +476,7 @@ namespace Ancestor.DataAccess.DAO
                 var whereCommand = CreateWhereCommand(whereObject, null, ignoreNull, dbParameters);
                 var sql = string.Format("Delete From {0} {1}", tableName, whereCommand);
                 return _dbAction.ExecuteNonQuery(sql, dbParameters);
-            }, ReturnAncestorExecuteResult,exceptRows );
+            }, ReturnEffectRowResult, exceptRows);
         }
         public AncestorExecuteResult DeleteEntity(LambdaExpression predicate, object origin, int exceptRows, AncestorOptions options)
         {
@@ -451,7 +498,7 @@ namespace Ancestor.DataAccess.DAO
                 var whereCommand = result != null ? "Where " + result.Sql : "";
                 var sql = string.Format("Delete From {0} {1}", name, whereCommand);
                 return _dbAction.ExecuteNonQuery(sql, dbParameters);
-            }, ReturnAncestorExecuteResult, exceptRows);
+            }, ReturnEffectRowResult, exceptRows);
         }
         public AncestorExecuteResult ExecuteNonQuery(string sql, object parameter, int exceptRows, AncestorOptions options)
         {
@@ -460,7 +507,7 @@ namespace Ancestor.DataAccess.DAO
                 var dbParameters = CreateDBParameters(parameter);
                 var dbOpt = CreateDbOptions(options);
                 return _dbAction.ExecuteNonQuery(sql, dbParameters, dbOpt);
-            }, ReturnAncestorExecuteResult, exceptRows);
+            }, ReturnEffectRowResult, exceptRows);
         }
 
         public AncestorExecuteResult ExecuteStoredProcedure(string name, object parameter, AncestorOptions options)
@@ -803,13 +850,14 @@ namespace Ancestor.DataAccess.DAO
             private int _index;
             private readonly DataAccessObjectBase _dao;
             private readonly ReferenceInfo _refernece;
+            private List<string> _groupBy;
             private readonly IDictionary<Type, object> _proxyMap;
             private ExpressionScope _scope;
             private bool _resolved = false;
             private bool _initialized = false;
             private List<string> _tables;
             private List<Type> _dataTypes;
-
+            private bool _groupByFlag = false;
             protected StringBuilder StringBuilder
             {
                 get
@@ -840,6 +888,7 @@ namespace Ancestor.DataAccess.DAO
                 {
                     _scope = null;
                     _sb = new StringBuilder();
+                    _groupBy = new List<string>();
                     _dbParameters = new DBParameterCollection();
                     _index = 0;
                     _resolved = false;
@@ -880,6 +929,7 @@ namespace Ancestor.DataAccess.DAO
                     Sql = _sb.ToString().Trim(),
                     Parameters = _dbParameters,
                     Reference = _refernece,
+                    GroupBy = string.Join(",", _groupBy),
                 };
                 _resolved = true;
                 return result;
@@ -903,6 +953,7 @@ namespace Ancestor.DataAccess.DAO
                     Sql = _sb.ToString().Trim(),
                     Parameters = _dbParameters,
                     Reference = _refernece,
+                    GroupBy = string.Join(",", _groupBy),
                 };
                 _resolved = true;
                 return result;
@@ -1205,6 +1256,18 @@ namespace Ancestor.DataAccess.DAO
                 {
                     ProcessTruncateMethodCall(node.Arguments[0]);
                 }
+                else if (node.Method.Name == "GroupCount")
+                {
+                    ProcessGroupBy(node.Arguments[0], "Count");
+                }
+                else if (node.Method.Name == "GroupMax")
+                {
+                    ProcessGroupBy(node.Arguments[0], "Max");
+                }
+                else if (node.Method.Name == "GroupMin")
+                {
+                    ProcessGroupBy(node.Arguments[0], "Min");
+                }
                 else if (node.Method.Name == "SelectAll")
                 {
                     var parameterType = node.Arguments[0].Type;
@@ -1370,6 +1433,15 @@ namespace Ancestor.DataAccess.DAO
                 Visit(to);
             }
             protected abstract void ProcessTruncateMethodCall(Expression nodeObject);
+            protected virtual void ProcessGroupBy(Expression nodeObject, string symbol)
+            {
+                _groupByFlag = true;
+                Write(symbol);
+                Write("(");
+                Visit(nodeObject);
+                Write(")");
+                _groupByFlag = false;
+            }
 
             protected virtual void ProcessCollectionMethodCall(Expression objectNode, MethodInfo method, ReadOnlyCollection<Expression> args)
             {
@@ -1573,6 +1645,8 @@ namespace Ancestor.DataAccess.DAO
                 var tableName = GetTableName(parameterType);
                 var memberName = TableManager.GetName(member as PropertyInfo);
                 var value = string.Format("{0}.{1}", tableName, memberName);
+                if (!_groupByFlag)
+                    _groupBy.Add(value);    
                 if (property != null)
                 {
                     var hd = HardWordManager.Get(property);
@@ -1920,6 +1994,10 @@ namespace Ancestor.DataAccess.DAO
                 /// Reference table/origin info
                 /// </summary>
                 public ReferenceInfo Reference { get; set; }
+                /// <summary>
+                /// Group by string
+                /// </summary>
+                public string GroupBy { get; set; }
             }
             public class MergedExpressionResolveResult
             {

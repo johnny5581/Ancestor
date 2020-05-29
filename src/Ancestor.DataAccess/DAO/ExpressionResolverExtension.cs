@@ -9,7 +9,7 @@ namespace Ancestor.DataAccess.DAO
     {
         /// <remark>Oracle Only</remark>
         /// <summary>
-        /// Left Join 或 Righ Join使用的(+)符號
+        /// Left join
         /// </summary>        
         /// <example>
         ///     // The result is X.PID = y.PID(+)
@@ -21,10 +21,8 @@ namespace Ancestor.DataAccess.DAO
         }
 
         /// <summary>
-        /// 區間(Between)語句
+        /// between Begin and End
         /// </summary>        
-        /// <param name="begin">起始時間</param>
-        /// <param name="end">結束時間</param>
         /// <example>
         ///     var dateEnd = DateTime.Now;
         ///     var dateBgn = dateEnd.AddDays(-3);
@@ -37,10 +35,8 @@ namespace Ancestor.DataAccess.DAO
             return dt >= begin && dt <= end;
         }
         /// <summary>
-        /// 區間(Between)語句
+        /// between Begin and End
         /// </summary>        
-        /// <param name="begin">起始時間</param>
-        /// <param name="end">結束時間</param>
         /// <example>
         ///     var dateEnd = DateTime.Now;
         ///     var dateBgn = dateEnd.AddDays(-3);
@@ -53,10 +49,8 @@ namespace Ancestor.DataAccess.DAO
             return dt >= begin && dt <= end;
         }
         /// <summary>
-        /// 區間(Between)語句(字串)
+        /// between Begin and End
         /// </summary>        
-        /// <param name="begin">起始時間</param>
-        /// <param name="end">結束時間</param>
         /// <example>
         ///     var dateEnd = "20170101";
         ///     var dateBgn = "20170201";
@@ -70,7 +64,7 @@ namespace Ancestor.DataAccess.DAO
         }
 
         /// <summary>
-        /// 選擇全部欄位
+        /// Select all fields
         /// </summary>
         /// <example>
         ///     //Will Select X.F1, X.F2, .... , Y.F1
@@ -80,11 +74,9 @@ namespace Ancestor.DataAccess.DAO
         {
             return t;
         }
-        /// <remark>Oracle Only</remark>
         /// <summary>
-        /// 過濾Null
+        /// Not Null
         /// </summary>        
-        /// <param name="defaultValue">預設值</param>
         /// <example>
         ///     //In Oracle, the result is NVL(X.NAME, :defaultValue) = 'Alice'
         ///     x.NAME.NotNull() == "Alice"
@@ -95,9 +87,8 @@ namespace Ancestor.DataAccess.DAO
         }
         /// <remark>Oracle Only</remark>
         /// <summary>
-        /// 過濾Null
+        /// Not Null
         /// </summary>        
-        /// <param name="defaultValue">預設值</param>
         /// <example>
         ///     //In Oracle, the result is NVL(X.NAME, 'this field is null') = 'Alice'
         ///     x.NAME.NotNull() == "Alice"
@@ -107,7 +98,7 @@ namespace Ancestor.DataAccess.DAO
             return NotNull(property, default(T));
         }
         /// <summary>
-        /// 取得日期部分
+        /// Truncate date 
         /// </summary>
         public static DateTime Truncate(this DateTime value)
         {
@@ -118,7 +109,7 @@ namespace Ancestor.DataAccess.DAO
             return value;
         }
         /// <summary>
-        /// 取得日期部分
+        /// Truncate date
         /// </summary>
         public static DateTime? Truncate(this DateTime? value)
         {
@@ -130,7 +121,7 @@ namespace Ancestor.DataAccess.DAO
             return value;
         }
         /// <summary>
-        /// 取得數值整數部分
+        /// Truncate decimal
         /// </summary>        
         public static decimal? Truncate(this decimal? value)
         {
@@ -141,7 +132,7 @@ namespace Ancestor.DataAccess.DAO
             return value;
         }
         /// <summary>
-        /// 取得數值整數部分
+        /// Truncate double
         /// </summary>        
         public static double? Truncate(this double? value)
         {
@@ -149,6 +140,28 @@ namespace Ancestor.DataAccess.DAO
             {
                 value = Math.Truncate(value.Value);
             }
+            return value;
+        }
+
+        /// <summary>
+        /// Group count()
+        /// </summary>        
+        public static T GroupCount<T>(this T value)
+        {
+            return value;
+        }
+        /// <summary>
+        /// Group max
+        /// </summary>        
+        public static T GroupMax<T>(this T value)
+        {
+            return value;
+        }
+        /// <summary>
+        /// Group min
+        /// </summary>        
+        public static T GroupMin<T>(this T value)
+        {
             return value;
         }
     }
