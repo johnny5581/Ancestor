@@ -47,7 +47,7 @@ namespace Ancestor.Core
         /// <summary>
         /// Error exception
         /// </summary>
-        AncestorException Exception { get; }
+        Exception Exception { get; }
         /// <summary>
         /// Query result data type
         /// </summary>
@@ -73,7 +73,7 @@ namespace Ancestor.Core
         public const int CodeSuccess = 0;
         public const int CodeFailure = 99999;
         private string _errorMessage;
-        private AncestorException _innerException;
+        private Exception _innerException;
         public AncestorResult()
         {
         }
@@ -87,14 +87,14 @@ namespace Ancestor.Core
             : this(false)
         {
             Code = 99999;
-            SetException(exception);
+            _innerException = exception;
             _errorMessage = exception.Message;
         }
         public AncestorResult(int code, Exception exception)
             : this(false)
         {
             Code = code;
-            SetException(exception);
+            _innerException = exception;
             _errorMessage = exception.Message;
         }
         public AncestorResult(IList list)
@@ -122,11 +122,16 @@ namespace Ancestor.Core
             get { return _errorMessage; }
             set { _errorMessage = value; }
         }
-        public AncestorException Exception
+        public Exception Exception
         {
             get { return _innerException; }
         }
-        
+        public AncestorException AncestorException
+        {
+            get { return _innerException as AncestorException; }
+        }
+
+
         public QueryParameter QueryParameter { get; set; }
 
         object IAncestorResult.Data
@@ -166,14 +171,6 @@ namespace Ancestor.Core
         public virtual object ResultScalar()
         {
             return AncestorResultHelper.ResultScalar(this);
-        }
-
-        private void SetException(Exception exception)
-        {
-            if (exception is AncestorException)
-                _innerException = (AncestorException)exception;
-            else
-                _innerException = new AncestorException(99999, "something wrong when using ancestor");
         }
     }
     /// <summary>
@@ -276,7 +273,7 @@ namespace Ancestor.Core
                 }
             }
         }
-        private object GetStructValue<T>(string name, bool useDefault) 
+        private object GetStructValue<T>(string name, bool useDefault)
         {
             var value = GetValue(name);
             if (value == null)
@@ -289,7 +286,7 @@ namespace Ancestor.Core
             return (T)value;
         }
 
-        private object GetClassValue<T>(string name) 
+        private object GetClassValue<T>(string name)
         {
             var value = GetValue(name);
             return (T)value;
