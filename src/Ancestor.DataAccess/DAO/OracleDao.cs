@@ -64,20 +64,20 @@ namespace Ancestor.DataAccess.DAO
             return "SYSDATE";
         }
 
-        protected override ExpressionResolver CreateExpressionResolver(ReferenceInfo reference)
+        protected override ExpressionResolver CreateExpressionResolver(ReferenceInfo reference, ExpressionResolver.ExpressionResolveOption option)
         {
-            return new OracleExpressionResolver(this, reference);
+            return new OracleExpressionResolver(this, reference, option);
         }
 
         private class OracleExpressionResolver : ExpressionResolver
         {
-            public OracleExpressionResolver(OracleDao dao, ReferenceInfo reference) : base(dao, reference)
+            public OracleExpressionResolver(OracleDao dao, ReferenceInfo reference, ExpressionResolveOption option) : base(dao, reference, option)
             {
             }
 
-            protected override ExpressionResolver CreateInstance(DataAccessObjectBase dao, ReferenceInfo reference)
+            protected override ExpressionResolver CreateInstance(DataAccessObjectBase dao, ReferenceInfo reference, ExpressionResolveOption option)
             {
-                return new OracleExpressionResolver((OracleDao)dao, reference);
+                return new OracleExpressionResolver((OracleDao)dao, reference, option);
             }
 
 
@@ -101,6 +101,11 @@ namespace Ancestor.DataAccess.DAO
                         return node;
                 }
                 return base.VisitStaticMethodCall(node);
+            }
+
+            protected override void ProcessStringMethodCall(Expression objectNode, MethodInfo method, ReadOnlyCollection<Expression> args)
+            {                
+                base.ProcessStringMethodCall(objectNode, method, args);
             }
 
             protected override void ProcessTruncateMethodCall(Expression nodeObject)

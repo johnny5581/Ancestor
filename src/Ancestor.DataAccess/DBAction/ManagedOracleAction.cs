@@ -16,7 +16,7 @@ using System.Text;
 namespace Ancestor.DataAccess.DBAction
 {
     public class ManagedOracleAction : DbActionBase
-    {
+    {        
         private static readonly Dictionary<string, OracleDbType> TypeNameMap
            = new Dictionary<string, OracleDbType>(StringComparer.OrdinalIgnoreCase)
            {
@@ -183,7 +183,7 @@ namespace Ancestor.DataAccess.DBAction
                     case OracleDbType.Single:
                     case OracleDbType.Double:
                     case OracleDbType.Decimal:
-                        oracleParameter.Value = GetDecimal(oracleParameter.Value);
+                        oracleParameter.Value = GetDecimal(oracleParameter.Value, oracleParameter.OracleDbType);
                         break;
                     case OracleDbType.Clob:
                         oracleParameter.Value = GetClob(oracleParameter.Value);
@@ -225,17 +225,31 @@ namespace Ancestor.DataAccess.DBAction
             }
             return null;
         }
-        private static decimal? GetDecimal(object dbValue)
+        private static object GetDecimal(object dbValue, OracleDbType code)
         {
             if (dbValue != null)
             {
                 var oracleDemical = (OracleDecimal)dbValue;
                 if (oracleDemical.IsNull)
                     return null;
-                if (oracleDemical.IsInt)
-                    return (int)oracleDemical.Value;
                 else
-                    return oracleDemical.Value;
+                {
+                    switch (code)
+                    {
+                        case OracleDbType.Int16:
+                            return (short)oracleDemical;
+                        case OracleDbType.Int32:
+                            return (int)oracleDemical;
+                        case OracleDbType.Int64:
+                            return (long)oracleDemical;
+                        case OracleDbType.Single:
+                            return (float)oracleDemical;
+                        case OracleDbType.Double:
+                            return (double)oracleDemical;
+                        case OracleDbType.Decimal:
+                            return (decimal)oracleDemical;
+                    }
+                }
             }
             return null;
         }
@@ -245,7 +259,11 @@ namespace Ancestor.DataAccess.DBAction
             {
                 var adapter = new OracleDataAdapter();
                 var table = new DataTable();
-                adapter.Fill(table, (OracleRefCursor)dbValue);
+                try
+                {
+                    adapter.Fill(table, (OracleRefCursor)dbValue);
+                }
+                catch { }
                 return table;
             }
             return null;

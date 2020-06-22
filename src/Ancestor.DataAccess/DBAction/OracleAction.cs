@@ -259,7 +259,11 @@ namespace Ancestor.DataAccess.DBAction
             {
                 var adapter = new OracleDataAdapter();
                 var table = new DataTable();
-                adapter.Fill(table, (OracleRefCursor)dbValue);
+                try
+                {
+                    adapter.Fill(table, (OracleRefCursor)dbValue);
+                }
+                catch { }
                 return table;
             }
             return null;

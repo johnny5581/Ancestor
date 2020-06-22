@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.SqlServer.Server;
+using Microsoft.VisualBasic;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -33,8 +35,30 @@ namespace Ancestor.DataAccess.DAO
         {
             foreach (var value in _referenceMap.Values)
             {
-                yield return Tuple.Create(value.SourceType, value.ReferenceType, value.ReferenceName);
+                yield return CreateStruct(value);
             }
+        }
+        public Tuple<Type, Type, string> GetStructs(Type sourceType)
+        {
+            var key = GetSourceKey(sourceType);
+            var value = _referenceMap[key];
+            return CreateStruct(value);
+        }
+        public bool TryGetStruct(Type sourceType, out Tuple<Type, string> value)
+        {
+            value = null;
+            var key = GetSourceKey(sourceType);
+            ReferenceStruct v;
+            if(_referenceMap.TryGetValue(key, out v))
+            {
+                value = Tuple.Create(v.ReferenceType, v.ReferenceName);
+                return true;
+            }            
+            return false;
+        }
+        private Tuple<Type, Type, string> CreateStruct(ReferenceStruct value)
+        {
+            return Tuple.Create(value.SourceType, value.ReferenceType, value.ReferenceName);
         }
         private static string GetSourceKey(Type sourceType)
         {

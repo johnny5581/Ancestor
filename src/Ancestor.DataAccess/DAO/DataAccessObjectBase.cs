@@ -114,7 +114,7 @@ namespace Ancestor.DataAccess.DAO
             return CreateDbOptions(options, _dbAction.CreateOptions());
         }
         protected abstract DbActionOptions CreateDbOptions(AncestorOptions options, DbActionOptions dbOptions);
-        protected abstract ExpressionResolver CreateExpressionResolver(ReferenceInfo reference);
+        protected abstract ExpressionResolver CreateExpressionResolver(ReferenceInfo reference, ExpressionResolver.ExpressionResolveOption option);
         protected TResult TryCatch<T, TResult>(Func<T> action, Func<object, TResult> resultFactory, int exceptRows) where TResult : AncestorResult
         {
             try
@@ -139,7 +139,7 @@ namespace Ancestor.DataAccess.DAO
                 var innerException = ex.InnerException;
                 if (RaiseException)
                     throw innerException;
-                var result = (TResult)Activator.CreateInstance(typeof(TResult), code, innerException);
+                var result = (TResult)Activator.CreateInstance(typeof(TResult), innerException);
                 result.QueryParameter = QueryParameter.Parse(ex.Data["QueryParameter"]);
                 return result;
             }
@@ -163,7 +163,7 @@ namespace Ancestor.DataAccess.DAO
                 var innerException = ex.InnerException;
                 if (RaiseException)
                     throw innerException;
-                var result = (TResult)Activator.CreateInstance(typeof(TResult), code, innerException);
+                var result = (TResult)Activator.CreateInstance(typeof(TResult), innerException);
                 result.QueryParameter = QueryParameter.Parse(ex.Data["QueryParameter"]);
                 return result;
             }
@@ -292,13 +292,20 @@ namespace Ancestor.DataAccess.DAO
                 var selectorParameterTypes = selector == null ? new Type[0] : selector.Parameters.Select(p => p.Type);
                 var parameterTypes = predicateParameterTypes.Concat(selectorParameterTypes).Distinct();
                 var reference = GetReferenceInfo(parameterTypes, proxyMap);
-                var resolver = CreateExpressionResolver(reference);
+                
+                
                 ExpressionResolver.ExpressionResolveResult predicateResult = null;
                 ExpressionResolver.ExpressionResolveResult selectorResult = null;
                 if (predicate != null)
+                {
+                    var resolver = CreateExpressionResolver(reference, null);
                     predicateResult = resolver.Resolve(predicate);
+                }
                 if (selector != null)
-                    selectorResult = resolver.Resolve(selector);
+                {
+                    var selectResolver = CreateExpressionResolver(reference, ExpressionResolver.ExpressionResolveOption.Selector);
+                    selectorResult = selectResolver.Resolve(selector);
+                }
                 if (predicateResult == null && selectorResult == null)
                     throw new ArgumentNullException("no predicate or selector");
 
@@ -320,7 +327,7 @@ namespace Ancestor.DataAccess.DAO
             }, ReturnAncestorResult);
         }
 
-        public AncestorResult GroupFromLambda(LambdaExpression predicate, LambdaExpression selector, IDictionary<Type, object> proxyMap, AncestorOptions options)
+        public AncestorResult GroupFromLambda(LambdaExpression predicate, LambdaExpression selector, LambdaExpression groupBy, IDictionary<Type, object> proxyMap, AncestorOptions options)
         {
             return TryCatch(() =>
             {
@@ -328,15 +335,26 @@ namespace Ancestor.DataAccess.DAO
                 var selectorParameterTypes = selector == null ? new Type[0] : selector.Parameters.Select(p => p.Type);
                 var parameterTypes = predicateParameterTypes.Concat(selectorParameterTypes).Distinct();
                 var reference = GetReferenceInfo(parameterTypes, proxyMap);
-                var resolver = CreateExpressionResolver(reference);
+                
+                
+                
                 ExpressionResolver.ExpressionResolveResult predicateResult = null;
                 ExpressionResolver.ExpressionResolveResult selectorResult = null;
+                ExpressionResolver.ExpressionResolveResult groupResult = null;
+                if (groupBy != null)
+                {
+                    var grpResolver = CreateExpressionResolver(reference, ExpressionResolver.ExpressionResolveOption.GroupBy);
+                    groupResult = grpResolver.Resolve(groupBy);
+                }
                 if (predicate != null)
+                {
+                    var resolver = CreateExpressionResolver(reference, null);
                     predicateResult = resolver.Resolve(predicate);
-                if (selector != null)
-                    selectorResult = resolver.Resolve(selector);
-                if (predicateResult == null && selectorResult == null)
-                    throw new ArgumentNullException("no predicate or selector");
+                }
+                if (selector == null)
+                    throw new ArgumentNullException("no selector statement");
+                var selectResolver = CreateExpressionResolver(reference, ExpressionResolver.ExpressionResolveOption.Selector);
+                selectorResult = selectResolver.Resolve(selector);
 
                 var mergeResult = ExpressionResolver.CombineResult(selectorResult, predicateResult);
 
@@ -349,7 +367,7 @@ namespace Ancestor.DataAccess.DAO
                 }
 
                 var whereText = mergeResult.Sql2 != null ? ("Where " + mergeResult.Sql2) : "";
-                var groupText = selectorResult.GroupBy;
+                var groupText = groupResult != null ? groupResult.Sql : selectorResult.GroupBy;
                 var sql = string.Format("Select {0} From {1} {2} Group By {3}", selectorText, tableText, whereText, groupText);
                 var dataType = mergeResult.Reference.GetReferenceType();
                 var opt = CreateDbOptions(options);
@@ -453,7 +471,7 @@ namespace Ancestor.DataAccess.DAO
                 ExpressionResolver.ExpressionResolveResult result = null;
                 if (predicate != null)
                 {
-                    var resolver = CreateExpressionResolver(reference);
+                    var resolver = CreateExpressionResolver(reference, null);
                     result = resolver.Resolve(predicate);
                 }
 
@@ -491,7 +509,7 @@ namespace Ancestor.DataAccess.DAO
                 ExpressionResolver.ExpressionResolveResult result = null;
                 if (predicate != null)
                 {
-                    var resolver = CreateExpressionResolver(reference);
+                    var resolver = CreateExpressionResolver(reference, null);
                     result = resolver.Resolve(predicate);
                 }
 
@@ -648,7 +666,34 @@ namespace Ancestor.DataAccess.DAO
             }
             return string.Join(", ", selecteds.Values);
         }
+        protected virtual string CreateSelectCommand(ReferenceInfo info, Type sourceType)
+        {
+            var selecteds = new Dictionary<int, string>();
+            var item = info.GetStructs(sourceType);
+            int index = 0;
+            var referenceName = item.Item3;
+            var referenceType = item.Item2;
+            if (referenceType != null)
+            {
+                if (referenceName == null)
+                    referenceName = TableManager.GetTableName(referenceType);
+                var hds = HardWordManager.Get(referenceType);
+                if (hds.Count > 0)
+                {
+                    foreach (var hd in hds)
+                    {
+                        var field = TableManager.GetName(hd.Key);
+                        var name = string.Format("{0}.{1}", referenceName, field);
+                        name = ConvertFromHardWord(name, hd.Value);
+                        selecteds.Add(index, string.Format("{0} As {1}", name, field));
+                    }
+                }
+            }
+            var asterisk = referenceName == null ? "*" : string.Format("{0}.*", referenceName);
+            selecteds.Add(index + 100, asterisk);
 
+            return string.Join(", ", selecteds.Values);
+        }
         protected virtual Tuple<string, string> CreateInsertCommand(ReferenceInfo info, object model, DBParameterCollection parameters)
         {
             var fields = new List<string>();
@@ -787,14 +832,20 @@ namespace Ancestor.DataAccess.DAO
         private ReferenceInfo GetReferenceInfo(IEnumerable<Type> types, IDictionary<Type, object> proxyMap)
         {
             var reference = new ReferenceInfo();
+            Tuple<Type, string> tuple = null;
             foreach (var type in types)
             {
                 object origin = null;
                 if (proxyMap != null)
                 {
-                    proxyMap.TryGetValue(type, out origin);
+                    if (proxyMap.TryGetValue(type, out origin))
+                    {
+                        tuple = CreateReferenceTuple(null, null, null, origin);
+                        reference.Add(type, tuple.Item1, tuple.Item2);
+                        continue;
+                    }
                 }
-                var tuple = CreateReferenceTuple(null, null, type, origin);
+                tuple = CreateReferenceTuple(null, null, type, origin);
                 reference.Add(type, tuple.Item1, tuple.Item2);
             }
             return reference;
@@ -835,23 +886,25 @@ namespace Ancestor.DataAccess.DAO
         /// </summary>
         public abstract class ExpressionResolver : ExpressionVisitor
         {
-            public ExpressionResolver(DataAccessObjectBase dao, ReferenceInfo reference)
+            public ExpressionResolver(DataAccessObjectBase dao, ReferenceInfo reference, ExpressionResolveOption option)
             {
                 _dao = dao;
-                _refernece = reference;
-                if (_proxyMap == null)
-                    _proxyMap = new Dictionary<Type, object>();
+                _reference = reference;
+                _option = option ?? new ExpressionResolveOption();
+                //if (_proxyMap == null)
+                //    _proxyMap = new Dictionary<Type, object>();
             }
 
-            protected abstract ExpressionResolver CreateInstance(DataAccessObjectBase dao, ReferenceInfo reference);
+            protected abstract ExpressionResolver CreateInstance(DataAccessObjectBase dao, ReferenceInfo reference, ExpressionResolveOption option);
 
             private StringBuilder _sb;
             private DBParameterCollection _dbParameters;
             private int _index;
             private readonly DataAccessObjectBase _dao;
-            private readonly ReferenceInfo _refernece;
+            private readonly ReferenceInfo _reference;
+            private readonly ExpressionResolveOption _option;
             private List<string> _groupBy;
-            private readonly IDictionary<Type, object> _proxyMap;
+            //private readonly IDictionary<Type, object> _proxyMap;
             private ExpressionScope _scope;
             private bool _resolved = false;
             private bool _initialized = false;
@@ -902,18 +955,14 @@ namespace Ancestor.DataAccess.DAO
                 var node = expression as LambdaExpression;
                 if (node != null)
                 {
-                    object proxy;
+                    Type proxyType;
                     foreach (var p in node.Parameters)
                     {
-                        if (_proxyMap.TryGetValue(p.Type, out proxy))
-                        {
-                            var dataType = proxy as Type;
-                            if (dataType != null && !_dataTypes.Contains(dataType))
-                                _dataTypes.Add(dataType);
-                        }
+                        proxyType = _reference.GetReferenceType(p.Type);
+                        if (proxyType != null && _dataTypes.Contains(proxyType))
+                            _dataTypes.Add(proxyType);
                         else if (!_dataTypes.Contains(p.Type))
                             _dataTypes.Add(p.Type);
-
                     }
                 }
             }
@@ -928,7 +977,7 @@ namespace Ancestor.DataAccess.DAO
                     Dao = _dao,
                     Sql = _sb.ToString().Trim(),
                     Parameters = _dbParameters,
-                    Reference = _refernece,
+                    Reference = _reference,
                     GroupBy = string.Join(",", _groupBy),
                 };
                 _resolved = true;
@@ -952,7 +1001,7 @@ namespace Ancestor.DataAccess.DAO
                     Dao = _dao,
                     Sql = _sb.ToString().Trim(),
                     Parameters = _dbParameters,
-                    Reference = _refernece,
+                    Reference = _reference,
                     GroupBy = string.Join(",", _groupBy),
                 };
                 _resolved = true;
@@ -1046,7 +1095,7 @@ namespace Ancestor.DataAccess.DAO
             {
                 using (var scope = CreateScope())
                 {
-                    var subResolver = CreateInstance(_dao, _refernece);
+                    var subResolver = CreateInstance(_dao, _reference, _option);
                     var result = subResolver.ResolveContinue(collectionNode, _index);
                     Continue(result);
                     if (result.Parameters.Count > 0 || result.Sql.Length > 0)
@@ -1271,10 +1320,7 @@ namespace Ancestor.DataAccess.DAO
                 else if (node.Method.Name == "SelectAll")
                 {
                     var parameterType = node.Arguments[0].Type;
-                    object origin;
-                    _proxyMap.TryGetValue(parameterType, out origin);
-                    var info = DataAccessObject.GetReferenceInfo(null, null, parameterType, origin);
-                    var command = DataAccessObject.CreateSelectCommand(info);
+                    var command = DataAccessObject.CreateSelectCommand(_reference, parameterType);
                     Write(command);
                 }
                 else
@@ -1360,13 +1406,13 @@ namespace Ancestor.DataAccess.DAO
                         }
                         break;
                     case "Trim":
-                        ProcessStringTrim(objectNode, args[0], 0);
+                        ProcessStringTrim(objectNode, args.ElementAtOrDefault(0), 0);
                         break;
                     case "TrimStart":
-                        ProcessStringTrim(objectNode, args[0], -1);
+                        ProcessStringTrim(objectNode, args.ElementAtOrDefault(0), -1);
                         break;
                     case "TrimEnd":
-                        ProcessStringTrim(objectNode, args[0], 1);
+                        ProcessStringTrim(objectNode, args.ElementAtOrDefault(0), 1);
                         break;
                     case "ToUpper":
                         Write("Upper(");
@@ -1396,7 +1442,7 @@ namespace Ancestor.DataAccess.DAO
                         ProcessCompareTo(objectNode, args[0]);
                         break;
                     case "IsNullOrEmpty":
-                        var resolver = CreateInstance(_dao, _refernece);
+                        var resolver = CreateInstance(_dao, _reference, _option);
                         var result = resolver.ResolveContinue(objectNode, _index);
                         if (result.Parameters.Count > 0 || result.Sql.Length > 0)
                         {
@@ -1646,14 +1692,15 @@ namespace Ancestor.DataAccess.DAO
                 var memberName = TableManager.GetName(member as PropertyInfo);
                 var value = string.Format("{0}.{1}", tableName, memberName);
                 if (!_groupByFlag)
-                    _groupBy.Add(value);    
-                if (property != null)
+                    _groupBy.Add(value);
+                if (property != null && _option.UseHardWord)
                 {
                     var hd = HardWordManager.Get(property);
                     if (hd != null)
                     {
                         value = _dao.ConvertFromHardWord(value, hd);
-                        value = value + " AS " + memberName;
+                        if (_option.AppendAs)
+                            value = value + " AS " + memberName;
                     }
                 }
                 Write(value);
@@ -1722,12 +1769,17 @@ namespace Ancestor.DataAccess.DAO
 
             protected virtual string GetTableName(Type parameterExpressionType)
             {
-                object proxy;
+                //object proxy;
                 string tableName = null;
-                if (_proxyMap.TryGetValue(parameterExpressionType, out proxy))
+                Tuple<Type, string> proxy;
+                if (_reference.TryGetStruct(parameterExpressionType, out proxy))
+                //if (_proxyMap.TryGetValue(parameterExpressionType, out proxy))
                 {
-                    tableName = TableManager.GetTableName(proxy);
-                    var dataType = proxy as Type;
+                    object proxyObj = proxy.Item1;
+                    if (proxyObj == null)
+                        proxyObj = proxy.Item2;
+                    tableName = TableManager.GetTableName(proxyObj);
+                    var dataType = proxyObj as Type;
                     if (dataType != null && !_dataTypes.Contains(dataType))
                         _dataTypes.Add(dataType);
                 }
@@ -1821,10 +1873,15 @@ namespace Ancestor.DataAccess.DAO
                 {
                     var argument = node.Arguments[index];
                     var member = node.Members[index];
-                    Write("(");
-                    Visit(argument);
-                    Write(") As ");
-                    Write(member.Name);
+                    if (_option.NewAs)
+                    {
+                        Write("(");
+                        Visit(argument);
+                        Write(") As ");
+                        Write(member.Name);
+                    }
+                    else
+                        Visit(argument);                    
                     if (index != node.Members.Count - 1)
                         Write(", ");
                 }
@@ -1976,6 +2033,24 @@ namespace Ancestor.DataAccess.DAO
                 }
                 return merged;
             }
+            public class ExpressionResolveOption
+            {
+
+                public static readonly ExpressionResolveOption Default = new ExpressionResolveOption();
+                public static readonly ExpressionResolveOption GroupBy = new ExpressionResolveOption { AppendAs = false, UseHardWord = false, NewAs = false, };
+                public static readonly ExpressionResolveOption Selector = new ExpressionResolveOption { AppendAs = false, UseHardWord = true, NewAs = true };
+
+                public ExpressionResolveOption()
+                {
+                    AppendAs = true;
+                    UseHardWord = true;
+                    NewAs = true;
+                }
+                public bool AppendAs { get; set; }
+                public bool UseHardWord { get; set; }
+                public bool NewAs { get; set; }
+            }
+
             /// <summary>
             /// Resolve result
             /// </summary>

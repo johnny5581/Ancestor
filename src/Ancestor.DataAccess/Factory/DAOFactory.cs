@@ -128,17 +128,17 @@ namespace Ancestor.DataAccess.Factory
 
         AncestorResult IDataAccessObject.Query(IModel objectModel)
         {
-            return _dao.Query(objectModel);
+            return _dao.QueryWithRowid(objectModel);
         }
 
         AncestorResult IDataAccessObject.Query<T>(IModel objectModel)
         {
-            return _dao.Query<T>(objectModel);
+            return _dao.QueryWithRowid<T>(objectModel);
         }
 
         AncestorResult IDataAccessObject.Query<T>(Expression<Func<T, bool>> predicate)
         {
-            return _dao.Query(predicate);
+            return _dao.QueryWithRowid(predicate);
         }
 
         AncestorResult IDataAccessObject.Query<T>(Expression<Func<T, bool>> predicate, Expression<Func<T, object>> selectCondition)
@@ -243,17 +243,17 @@ namespace Ancestor.DataAccess.Factory
 
         AncestorResult IDataAccessObject.QueryNoRowid(IModel objectModel)
         {
-            return _dao.QueryNoRowid(objectModel);
+            return _dao.Query(objectModel);
         }
 
         AncestorResult IDataAccessObject.QueryNoRowid<T>(IModel objectModel)
         {
-            return _dao.QueryNoRowid<T>(objectModel);
+            return _dao.Query<T>(objectModel);
         }
 
         AncestorResult IDataAccessObject.QueryNoRowid<T>(Expression<Func<T, bool>> predicate)
         {
-            return _dao.QueryNoRowid(predicate);
+            return _dao.Query(predicate);
         }
 
         void IDataAccessObject.Rollback()

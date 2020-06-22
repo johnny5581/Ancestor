@@ -14,6 +14,11 @@ namespace Ancestor.DataAccess.DAO
         internal static readonly DateTime SYSDATE = DateTime.MinValue.AddTicks(49);
         private static TimeSpan _TimeOffset;
         private static bool _TimeOffsetFlag = false;
+        public static bool IsTimeInitialized
+        {
+            get { return _TimeOffsetFlag; }
+        }
+
         /// <summary>
         /// Server Time (Proxy)
         /// </summary>
@@ -28,7 +33,7 @@ namespace Ancestor.DataAccess.DAO
             {
                 if (_TimeOffsetFlag)
                     return DateTime.Now + _TimeOffset;
-                throw new InvalidOperationException("Server.DateTime must be initialized first");
+                throw new InvalidOperationException("ServerTime must be initialized first");
             }
         }
 
@@ -41,7 +46,7 @@ namespace Ancestor.DataAccess.DAO
             {
                 var res = dao.ExecuteScalar("SELECT SYSDATE FROM DUAL", null, null);
                 if (res.IsSuccess)
-                {                    
+                {
                     var time = res.GetValue<DateTime>();
                     if (time.HasValue)
                     {

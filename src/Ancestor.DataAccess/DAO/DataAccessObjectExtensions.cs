@@ -242,7 +242,7 @@ namespace System
         {
             return dao.QueryFromSqlString(sqlString, paramsObjects, null, false, null);
         }
-       
+
         public static AncestorResult Query(this IDataAccessObjectEx dao, object objectModel)
         {
             return dao.QueryFromModel(objectModel, null, null, false, null);
@@ -251,13 +251,13 @@ namespace System
         {
             return dao.QueryFromModel(objectModel, typeof(T), null, false, null);
         }
-        public static AncestorResult QueryNoRowid(this IDataAccessObjectEx dao, object objectModel)
+        public static AncestorResult QueryWithRowid(this IDataAccessObjectEx dao, object objectModel)
         {
-            return dao.QueryFromModel(objectModel, null, null, false, new AncestorOptions { HasRowId = false });
+            return dao.QueryFromModel(objectModel, null, null, false, new AncestorOptions { HasRowId = true });
         }
-        public static AncestorResult QueryNoRowid<T>(this IDataAccessObjectEx dao, object objectModel) where T : class, new()
+        public static AncestorResult QueryWithRowid<T>(this IDataAccessObjectEx dao, object objectModel) where T : class, new()
         {
-            return dao.QueryFromModel(objectModel, typeof(T), null, false, new AncestorOptions { HasRowId = false });
+            return dao.QueryFromModel(objectModel, typeof(T), null, false, new AncestorOptions { HasRowId = true });
         }
 
         public static AncestorResult Query<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate) where T : class, new()
@@ -268,9 +268,9 @@ namespace System
         {
             return dao.QueryFromLambda(predicate, selectCondition, null, false, null);
         }
-        public static AncestorResult QueryNoRowid<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate) where T : class, new()
+        public static AncestorResult QueryWithRowid<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate) where T : class, new()
         {
-            return dao.QueryFromLambda(predicate, null, null, false, new AncestorOptions { HasRowId = false });
+            return dao.QueryFromLambda(predicate, null, null, false, new AncestorOptions { HasRowId = true });
         }
         public static AncestorResult Query<T1, T2>(this IDataAccessObjectEx dao, Expression<Func<T1, T2, bool>> predicate, Expression<Func<T1, T2, object>> selectCondition) where T1 : class, new() where T2 : class, new()
         {
@@ -376,13 +376,13 @@ namespace System
         {
             return dao.QueryFromModel(objectModel, typeof(T), null, true, null);
         }
-        public static AncestorResult QueryFirstNoRowid(this IDataAccessObjectEx dao, object objectModel)
+        public static AncestorResult QueryFirstWithRowid(this IDataAccessObjectEx dao, object objectModel)
         {
-            return dao.QueryFromModel(objectModel, null, null, true, new AncestorOptions { HasRowId = false });
+            return dao.QueryFromModel(objectModel, null, null, true, new AncestorOptions { HasRowId = true });
         }
-        public static AncestorResult QueryFirstNoRowid<T>(this IDataAccessObjectEx dao, object objectModel) where T : class, new()
+        public static AncestorResult QueryFirstWithRowid<T>(this IDataAccessObjectEx dao, object objectModel) where T : class, new()
         {
-            return dao.QueryFromModel(objectModel, typeof(T), null, true, new AncestorOptions { HasRowId = false });
+            return dao.QueryFromModel(objectModel, typeof(T), null, true, new AncestorOptions { HasRowId = true });
         }
 
         public static AncestorResult QueryFirst<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate) where T : class, new()
@@ -393,9 +393,9 @@ namespace System
         {
             return dao.QueryFromLambda(predicate, selectCondition, null, true, null);
         }
-        public static AncestorResult QueryFirstNoRowid<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate) where T : class, new()
+        public static AncestorResult QueryFirstWithRowid<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate) where T : class, new()
         {
-            return dao.QueryFromLambda(predicate, null, null, true, new AncestorOptions { HasRowId = false });
+            return dao.QueryFromLambda(predicate, null, null, true, new AncestorOptions { HasRowId = true });
         }
         public static AncestorResult QueryFirst<T1, T2>(this IDataAccessObjectEx dao, Expression<Func<T1, T2, bool>> predicate, Expression<Func<T1, T2, object>> selectCondition) where T1 : class, new() where T2 : class, new()
         {
@@ -558,6 +558,35 @@ namespace System
             return dao.DeleteEntity(predicate, name, exceptRows, null);
         }
 
+        public static AncestorExecuteResult Insert(this IDataAccessObjectEx dao, object model, Type realType)
+        {
+            return dao.InsertEntity(model, realType, null);
+        }
+        public static AncestorExecuteResult Update(this IDataAccessObjectEx dao, object valueObject, object paramsObjects, Type realType, int exceptRows = -1)
+        {
+            return dao.UpdateEntity(valueObject, paramsObjects, UpdateMode.Value, realType, exceptRows, null);
+        }
+        public static AncestorExecuteResult Update<T>(this IDataAccessObjectEx dao, object valueObject, Expression<Func<T, bool>> predicate, Type realType, int exceptRows = -1) where T : class, new()
+        {
+            return dao.UpdateEntity(valueObject, predicate, UpdateMode.Value, realType, exceptRows, null);
+        }
+        public static AncestorExecuteResult UpdateAll(this IDataAccessObjectEx dao, object valueObject, object whereObject, Type realType, int exceptRows = -1)
+        {
+            return dao.UpdateEntity(valueObject, whereObject, UpdateMode.All, realType, exceptRows, null);
+        }
+        public static AncestorExecuteResult UpdateAll<T>(this IDataAccessObjectEx dao, object valueObject, Expression<Func<T, bool>> predicate, Type realType, int exceptRows = -1) where T : class, new()
+        {
+            return dao.UpdateEntity(valueObject, predicate, UpdateMode.All, realType, exceptRows, null);
+        }
+        public static AncestorExecuteResult Delete(this IDataAccessObjectEx dao, object whereObject, Type realType, int exceptRows = -1)
+        {
+            return dao.DeleteEntity(whereObject, realType, exceptRows, null);
+        }
+        public static AncestorExecuteResult Delete<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate, Type realType, int exceptRows = -1) where T : class, new()
+        {
+            return dao.DeleteEntity(predicate, realType, exceptRows, null);
+        }
+
         public static AncestorExecuteResult BulkInsert<T>(this IDataAccessObjectEx dao, List<T> ObjList) where T : class, new()
         {
             return dao.BulkInsertEntities(ObjList, null, null);
@@ -586,10 +615,27 @@ namespace System
         {
             return dao.QueryFromModel(null, typeof(T), null, false, null);
         }
-
-        public static AncestorResult GroupFrom<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate, Expression<Func<T, object>> selector)
+        public static AncestorResult QueryAll<T>(this IDataAccessObjectEx dao, string name)
         {
-            return dao.GroupFromLambda(predicate, selector, null, null);
+            return dao.QueryFromModel(null, typeof(T), name, false, null);
+        }
+        public static AncestorResult QueryAll<T>(this IDataAccessObjectEx dao, Type  realType)
+        {
+            return dao.QueryFromModel(null, typeof(T), realType, false, null);
+        }
+        public static AncestorResult GroupFrom<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate, Expression<Func<T, object>> selector, Expression<Func<T, object>> groupBy)
+        {
+            return dao.GroupFromLambda(predicate, selector, groupBy, null, null);
+        }
+        public static AncestorResult GroupFrom<FakeType>(this IDataAccessObjectEx dao, Expression<Func<FakeType, bool>> predicate, Expression<Func<FakeType, object>> selector, Expression<Func<FakeType, object>> groupBy, Type realType) where FakeType : class, new()
+        {
+            var map = CreateProxyMap(CreateTuple(typeof(FakeType), realType));
+            return dao.GroupFromLambda(predicate, selector, groupBy, map, new AncestorOptions { HasRowId = false });
+        }
+        public static AncestorResult GroupFrom<FakeType>(this IDataAccessObjectEx dao, Expression<Func<FakeType, bool>> predicate, Expression<Func<FakeType, object>> selector, Expression<Func<FakeType, object>> groupBy, string name) where FakeType : class, new()
+        {
+            var map = CreateProxyMap(CreateTuple(typeof(FakeType), name));
+            return dao.GroupFromLambda(predicate, selector, groupBy, map, null);
         }
     }
 }

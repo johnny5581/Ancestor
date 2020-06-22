@@ -48,6 +48,28 @@ namespace Ancestor.Core
             return value;
         }
 
+        public static List<T> ResultScalarList<T>(IAncestorResult result)
+        {
+            var list = new List<T>();
+            if (result.ReturnDataTable != null)
+            {
+                if (result.ReturnDataTable.Rows.Count > 0)
+                {
+                    foreach (DataRow row in result.ReturnDataTable.Rows)
+                        list.Add((T)row[0]);
+                }
+            }
+            else if (result.DataList != null)
+            {
+                if (result.DataList.Count > 0)
+                {
+                    foreach (var item in result.DataList)
+                        list.Add((T)item);
+                }
+            }
+            return list;
+        }
+
 
         public static IList ResultList(IAncestorResult result, Type dataType, Delegate objectFactory, ResultListMode mode)
         {

@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Dynamic;
 using System.Linq;
 using System.Text;
 
@@ -87,11 +88,13 @@ namespace Ancestor.Core
             : this(true)
         {
             DataList = list;
+            EffectRows = list.Count;
         }
         public AncestorResult(DataTable table)
             : this(true)
         {
             ReturnDataTable = table;
+            EffectRows = table.Rows.Count;
         }
         public AncestorResult(int rows)
           : this(true)
@@ -156,6 +159,10 @@ namespace Ancestor.Core
         public virtual object ResultScalar()
         {
             return AncestorResultHelper.ResultScalar(this);
+        }
+        public virtual List<T> ResultScalarList<T>()
+        {
+            return AncestorResultHelper.ResultScalarList<T>(this);
         }
     }
     /// <summary>
