@@ -7,7 +7,9 @@ using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Net.NetworkInformation;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Ancestor.DataAccess.DAO
@@ -15,7 +17,7 @@ namespace Ancestor.DataAccess.DAO
     /// <summary>
     /// DataAccessObject base class
     /// </summary>
-    public abstract class DataAccessObjectBase : IDataAccessObjectEx, IIdentifiable
+    public abstract class DataAccessObjectBase : IDataAccessObjectEx, IInternalDataAccessObject, IIdentifiable
     {
         private readonly Guid _id = Guid.NewGuid();
         private readonly DBObject _dbObject;
@@ -79,6 +81,18 @@ namespace Ancestor.DataAccess.DAO
         {
             get { return " 1 <> 1 "; }
         }
+        /// <summary>
+        /// Dummy table name
+        /// </summary>
+        public virtual string DummyTable
+        {
+            get { return "Dual"; }
+        }
+        /// <summary>
+        /// Date time symbol
+        /// </summary>
+        public abstract string DateTimeSymbol{ get; }
+
         /// <summary>
         /// Update mode setting
         /// </summary>
@@ -572,7 +586,7 @@ namespace Ancestor.DataAccess.DAO
             var sysDate = false;
             if (value is DateTime && value != null && (DateTime)value == Server.SysDate)
             {
-                pname = GetServerTime();
+                pname = DateTimeSymbol;
                 value = null;
                 sysDate = true;
             }
@@ -590,10 +604,10 @@ namespace Ancestor.DataAccess.DAO
         {
             return name;
         }
-        public virtual string GetServerTime()
-        {
-            return "UNDEFINED_SERVER_TIME";
-        }
+        //public virtual string GetServerTime()
+        //{
+        //    return "UNDEFINED_SERVER_TIME";
+        //}
 
         protected virtual string CreateWhereCommand(object model, string tableName, bool ignoreNull, DBParameterCollection collection)
         {
@@ -621,7 +635,7 @@ namespace Ancestor.DataAccess.DAO
                         wheres.Add(string.Format("{0} Is Null", name));
                     }
                     else if (info.Value is DateTime && (DateTime)info.Value == Server.SysDate)
-                        wheres.Add(string.Format("{0} = {1}", name, GetServerTime()));
+                        wheres.Add(string.Format("{0} = {1}", name, DateTimeSymbol));
                     else
                     {
                         collection.Add(pname, info.Value);
@@ -657,7 +671,7 @@ namespace Ancestor.DataAccess.DAO
                             var field = TableManager.GetName(hd.Key);
                             var name = string.Format("{0}.{1}", referenceName, field);
                             name = ConvertFromHardWord(name, hd.Value);
-                            selecteds.Add(index, string.Format("{0} As {1}", name, field));
+                            selecteds.Add(index++, string.Format("{0} As {1}", name, field));
                         }
                     }
                 }
@@ -685,7 +699,7 @@ namespace Ancestor.DataAccess.DAO
                         var field = TableManager.GetName(hd.Key);
                         var name = string.Format("{0}.{1}", referenceName, field);
                         name = ConvertFromHardWord(name, hd.Value);
-                        selecteds.Add(index, string.Format("{0} As {1}", name, field));
+                        selecteds.Add(index++, string.Format("{0} As {1}", name, field));
                     }
                 }
             }
@@ -759,27 +773,76 @@ namespace Ancestor.DataAccess.DAO
         protected virtual string CreateUpdateCommand(ReferenceInfo info, object model, UpdateMode mode, DBParameterCollection parameters)
         {
             var fieldMap = new Dictionary<string, string>();
-            var properties = TableManager.GetBrowsableProperties(info.GetReferenceType());
-            foreach (var property in properties)
+            var referenceType = info.GetReferenceType();
+            IDictionary<string, object> map = model as IDictionary<string, object>;
+            if (typeof(IDictionary<string, object>).IsAssignableFrom(referenceType) && map != null)
             {
-                var value = property.GetValue(model, null);
-                var fname = TableManager.GetName(property);
-                var hd = HardWordManager.Get(property);
-
-                if (value != null)
+                foreach(var key in map.Keys)
                 {
-                    var parameter = CreateParameter(value, fname, true, UpdateParameterPrefix, null, hd);
-                    fieldMap.Add(fname, parameter.ValueName);
-                    if (!parameter.IsSysDateConverted)
-                        parameters.Add(parameter.ValueName, parameter.Value);
-                }
-                else if (mode == UpdateMode.All)
-                {
-                    fieldMap.Add(fname, "NULL");
+                    var value = map[key];
+                    var fname = key;
+                    if(value != null)
+                    {
+                        var parameter = CreateParameter(value, fname, true, UpdateParameterPrefix);
+                        fieldMap.Add(fname, parameter.ValueName);
+                        if (!parameter.IsSysDateConverted)
+                            parameters.Add(parameter.ValueName, parameter.Value);
+                    }
+                    else if(mode == UpdateMode.All)
+                    {
+                        fieldMap.Add(fname, "NULL");
+                    }                    
                 }
             }
-            return string.Join(", ", fieldMap.Select(kv => string.Format("{0} = {1}", kv.Key, kv.Value)));
+            else if(map != null)
+            {
+                var properties = TableManager.GetBrowsableProperties(referenceType);
+                foreach (var key in map.Keys)
+                {
+                    var value = map[key];
+                    var fname = key;
+                    var property = properties.FirstOrDefault(p => string.Equals(p.Name, fname, StringComparison.OrdinalIgnoreCase));
+                    HardWordAttribute hd = null;
+                    if (property != null)
+                        hd = HardWordManager.Get(property);
 
+                    if (value != null)
+                    {
+                        var parameter = CreateParameter(value, fname, true, UpdateParameterPrefix, null, hd);
+                        fieldMap.Add(fname, parameter.ValueName);
+                        if (!parameter.IsSysDateConverted)
+                            parameters.Add(parameter.ValueName, parameter.Value);
+                    }
+                    else if (mode == UpdateMode.All)
+                    {
+                        fieldMap.Add(fname, "NULL");
+                    }
+                }
+            }
+            else
+            {
+                var properties = TableManager.GetBrowsableProperties(referenceType);
+                foreach (var property in properties)
+                {
+                    var value = property.GetValue(model, null);
+                    var fname = TableManager.GetName(property);
+                    var hd = HardWordManager.Get(property);
+
+                    if (value != null)
+                    {
+                        var parameter = CreateParameter(value, fname, true, UpdateParameterPrefix, null, hd);
+                        fieldMap.Add(fname, parameter.ValueName);
+                        if (!parameter.IsSysDateConverted)
+                            parameters.Add(parameter.ValueName, parameter.Value);
+                    }
+                    else if (mode == UpdateMode.All)
+                    {
+                        fieldMap.Add(fname, "NULL");
+                    }
+                }
+            }
+            
+            return string.Join(", ", fieldMap.Select(kv => string.Format("{0} = {1}", kv.Key, kv.Value)));
         }
         private void CreateDBParameterFromDictionary(IDictionary<string, object> dic, ref DBParameterCollection collection)
         {
@@ -879,6 +942,15 @@ namespace Ancestor.DataAccess.DAO
         }
 
 
+        string IInternalDataAccessObject.GetServerTime()
+        {
+            return DateTimeSymbol;
+        }
+
+        string IInternalDataAccessObject.GetDummyTable()
+        {
+            return DummyTable;
+        }
 
         #region Expression Resolver
         /// <summary>

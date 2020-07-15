@@ -24,10 +24,15 @@ namespace Ancestor.DataAccess.DAO
         {
             get { return "||"; }
         }
+        public override string DateTimeSymbol
+        {
+            get { return "Sysdate"; }
+        }
+
 
         protected override IDbAction CreateDbAction(DBObject dbObject)
         {
-            switch(dbObject.DataBaseType)
+            switch (dbObject.DataBaseType)
             {
                 case DBObject.DataBase.Oracle:
                     return new OracleAction(this, dbObject);
@@ -35,7 +40,7 @@ namespace Ancestor.DataAccess.DAO
                     return new ManagedOracleAction(this, dbObject);
                 default:
                     return null;
-            }            
+            }
         }
 
         protected override DbActionOptions CreateDbOptions(AncestorOptions options, DbActionOptions dbOptions)
@@ -59,10 +64,10 @@ namespace Ancestor.DataAccess.DAO
         {
             return string.Format("UTL_RAW.Cast_To_VARCHAR2({0})", name);
         }
-        public override string GetServerTime()
-        {
-            return "SYSDATE";
-        }
+        //public override string GetServerTime()
+        //{
+        //    return "SYSDATE";
+        //}
 
         protected override ExpressionResolver CreateExpressionResolver(ReferenceInfo reference, ExpressionResolver.ExpressionResolveOption option)
         {
@@ -83,7 +88,7 @@ namespace Ancestor.DataAccess.DAO
 
             protected override Expression VisitStaticMethodCall(MethodCallExpression node)
             {
-                switch(node.Method.Name)
+                switch (node.Method.Name)
                 {
                     case "NotNull":
                         Write("Nvl(");
@@ -104,7 +109,7 @@ namespace Ancestor.DataAccess.DAO
             }
 
             protected override void ProcessStringMethodCall(Expression objectNode, MethodInfo method, ReadOnlyCollection<Expression> args)
-            {                
+            {
                 base.ProcessStringMethodCall(objectNode, method, args);
             }
 
@@ -149,13 +154,13 @@ namespace Ancestor.DataAccess.DAO
                             ProcessConstant(now);
                         throw new InvalidOperationException("can not resolve Server.Now");
                     case "SysDate":
-                        Write(DataAccessObject.GetServerTime());
+                        Write(DataAccessObject.DateTimeSymbol);
                         break;
                 }
             }
             protected override void ProcessDateTimeMethodCall(Expression objectNode, MethodInfo method, ReadOnlyCollection<Expression> args)
             {
-                switch(method.Name)
+                switch (method.Name)
                 {
                     case "AddYears":
                     case "AddMonths":
@@ -167,7 +172,7 @@ namespace Ancestor.DataAccess.DAO
                             Write(" * 12");
                         Write(")");
                         return;
-                    case "AddDays":                        
+                    case "AddDays":
                     case "AddHours":
                     case "AddMinutes":
                     case "AddSeconds":
@@ -187,7 +192,7 @@ namespace Ancestor.DataAccess.DAO
 
             protected override void ProcessConvertToString(Type fromType, Expression objectNode, ReadOnlyCollection<Expression> args)
             {
-                if(fromType == typeof(DateTime))
+                if (fromType == typeof(DateTime))
                 {
                     Write("To_Char(");
                     Visit(objectNode);
@@ -205,24 +210,24 @@ namespace Ancestor.DataAccess.DAO
                         }
                         else
                             Visit(formatExpression);
-                    }                    
-                    Write(")");                
+                    }
+                    Write(")");
                 }
                 else
                 {
                     Write("To_Char(");
                     Visit(objectNode);
                     Write(")");
-                }                
+                }
             }
             protected override void ProcessConvertToDateTime(Type fromType, Expression objectNode, ReadOnlyCollection<Expression> args)
             {
-                if(fromType == typeof(string))
+                if (fromType == typeof(string))
                 {
                     Write("To_Date(");
                     Visit(objectNode);
                     var formatExpression = args.ElementAtOrDefault(0);
-                    if(formatExpression != null)
+                    if (formatExpression != null)
                     {
                         Write(",");
                         object value;
@@ -258,7 +263,7 @@ namespace Ancestor.DataAccess.DAO
                     }
                     Write(")");
                 }
-                else if(InternalHelper.IsDecimalType(InternalHelper.GetUnderlyingType(fromType)))
+                else if (InternalHelper.IsDecimalType(InternalHelper.GetUnderlyingType(fromType)))
                 {
                     Visit(objectNode);
                 }

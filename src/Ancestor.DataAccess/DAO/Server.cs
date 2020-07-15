@@ -1,7 +1,10 @@
 ﻿using Ancestor.Core;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 
 namespace Ancestor.DataAccess.DAO
@@ -36,7 +39,46 @@ namespace Ancestor.DataAccess.DAO
                 throw new InvalidOperationException("ServerTime must be initialized first");
             }
         }
+        /// <summary>
+        /// Initialize <see cref="Server.DateTime"/> object
+        /// </summary>
+        public static bool InitializeServerTime(IDataAccessObjectEx dao, out string message)
+        {
+            var internalDao = dao as IInternalDataAccessObject;
+            if (internalDao == null)
+            {
+                message = "no date time sql";
+                return false; // unknown server time sql
+            }
 
+            var serverTimeSql = internalDao.GetServerTime();
+            var dummyTable = internalDao.GetDummyTable();
+            var res = dao.ExecuteScalar("Select " + serverTimeSql + " FROM " + dummyTable, null, null);
+            if (!res.IsSuccess)
+            {
+                message = res.Message;
+                return false; // execute false
+            }
+            var time = res.GetValue<DateTime>();
+            if (!time.HasValue)
+            {
+                message = "sys time is empty";
+                return false;
+
+            }
+            message = null;
+            _TimeOffset = time.Value - DateTime.Now;
+            _TimeOffsetFlag = true;
+            return true;
+        }
+        /// <summary>
+        /// Initialize <see cref="Server.DateTime"/> object
+        /// </summary>
+        public static bool InitializeServerTime(IDataAccessObjectEx dao)
+        {
+            string message;
+            return InitializeServerTime(dao, out message);
+        }
         /// <summary>
         /// Initialize <see cref="Server.DateTime"/> object
         /// </summary>
@@ -44,19 +86,18 @@ namespace Ancestor.DataAccess.DAO
         {
             using (var dao = new Factory.DAOFactoryEx(dbObject).GetDataAccessObjectFactory())
             {
-                var res = dao.ExecuteScalar("SELECT SYSDATE FROM DUAL", null, null);
-                if (res.IsSuccess)
-                {
-                    var time = res.GetValue<DateTime>();
-                    if (time.HasValue)
-                    {
-                        _TimeOffset = time.Value - DateTime.Now;
-                        _TimeOffsetFlag = true;
-                        return true;
-                    }
-                }
+                return InitializeServerTime(dao);
             }
-            return false;
+        }
+        /// <summary>
+        /// Initialize <see cref="Server.DateTime"/> object
+        /// </summary>
+        public static bool InitializeServerTime(DBObject dbObject, out string message)
+        {
+            using (var dao = new Factory.DAOFactoryEx(dbObject).GetDataAccessObjectFactory())
+            {
+                return InitializeServerTime(dao, out message);
+            }
         }
     }
 }
