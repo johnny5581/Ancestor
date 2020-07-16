@@ -346,7 +346,7 @@ namespace Ancestor.Core
             value = Convert.ChangeType(value, Nullable.GetUnderlyingType(conversionType) ?? conversionType);
             return value;
         }
-        private static string GetValueFormHex(string hex, Encoding encoding)
+        public static string GetValueFormHex(string hex, Encoding encoding)
         {
             if (hex == null) return null;
             var byteArray = ConvertFromHex(hex).ToArray();
