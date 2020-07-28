@@ -35,7 +35,16 @@ namespace Ancestor.Core
         {
             _parameterType = new DBParameterType(type);
         }
-
+        public DBParameter(string name, DbType commonType, ParameterDirection direction, int size)
+            : this(name, commonType, direction)
+        {
+            Size = size;
+        }
+        public DBParameter(string name, string type, ParameterDirection direction, int size)
+             : this(name, type, direction)
+        {
+            Size = size;
+        }
         public DBParameter(string name, object value)
             : this(name, "_LAZY_", ParameterDirection.Input)
         {
@@ -216,7 +225,18 @@ namespace Ancestor.Core
             Add(parameter);
             return parameter;
         }
-
+        public DBParameter Add(string name, DbType commonType, ParameterDirection direction, int size)
+        {
+            var parameter = new DBParameter(name, commonType, direction, size);
+            Add(parameter);
+            return parameter;
+        }
+        public DBParameter Add(string name, string type, ParameterDirection direction, int size)
+        {
+            var parameter = new DBParameter(name, type, direction, size);
+            Add(parameter);
+            return parameter;
+        }
         public DBParameter Add(string name, object value)
         {
             var parameter = new DBParameter(name, value);

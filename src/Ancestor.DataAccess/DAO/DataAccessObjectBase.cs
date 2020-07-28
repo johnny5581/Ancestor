@@ -1,5 +1,6 @@
 ﻿using Ancestor.Core;
 using Ancestor.DataAccess.DBAction;
+using Ancestor.DataAccess.Factory;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -62,6 +63,10 @@ namespace Ancestor.DataAccess.DAO
             set { _mergeParameterPostfix = value; }
         }
 
+        public bool IsTransacting
+        {
+            get { return _dbAction.IsTransacting; }
+        }
         Guid IIdentifiable.Guid
         {
             get { return _id; }
@@ -121,7 +126,10 @@ namespace Ancestor.DataAccess.DAO
 
         #endregion Property
 
-
+        IDataAccessObjectEx IDataAccessObjectEx.Clone()
+        {
+            return new DAOFactoryEx(_dbObject).GetDataAccessObjectFactory();
+        }
         protected abstract IDbAction CreateDbAction(DBObject dbObject);
         protected DbActionOptions CreateDbOptions(AncestorOptions options)
         {

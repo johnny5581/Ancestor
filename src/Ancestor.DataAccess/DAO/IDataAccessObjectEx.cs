@@ -19,6 +19,7 @@ namespace Ancestor.DataAccess.DAO
 
         string ParameterPrefix { get; set; }
         string ParameterPostfix { get; set; }
+        bool IsTransacting { get; }
         #endregion Property
 
         #region Connection
@@ -28,6 +29,8 @@ namespace Ancestor.DataAccess.DAO
         void Rollback();
         void Open();
         void Close();
+
+        IDataAccessObjectEx Clone();
         #endregion Connection
 
 

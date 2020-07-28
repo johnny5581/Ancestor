@@ -215,7 +215,7 @@ namespace Ancestor.DataAccess.DBAction
         }
         private static string GetString(object dbValue)
         {
-            if (dbValue != null)
+            if (dbValue != null && !(dbValue is DBNull))
             {
                 var oracleString = (OracleString)dbValue;
                 if (!oracleString.IsNull)
