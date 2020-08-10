@@ -10,15 +10,21 @@ namespace Ancestor.Core
     /// </summary>
     public class HardWordAttribute : Attribute
     {
+        private static Encoding _defaultEncoding;
         /// <summary>
         /// Global scope encoding
         /// </summary>
-        public static Encoding DefaultEncoding;
-        private static readonly Encoding _DefaultEncoding = Encoding.GetEncoding(950);
+        public static Encoding DefaultEncoding
+        {
+            get { return _defaultEncoding ?? SystemEncoding; }
+            set { _defaultEncoding = value; }
+        }
+
+        private static readonly Encoding SystemEncoding = Encoding.GetEncoding(950);
         private Encoding _encoding;
 
         public HardWordAttribute()
-        {            
+        {
         }
         public HardWordAttribute(int codepage)
         {
@@ -49,7 +55,7 @@ namespace Ancestor.Core
         /// </summary>
         public Encoding Encoding
         {
-            get { return _encoding ?? DefaultEncoding ?? _DefaultEncoding; }           
+            get { return _encoding ?? DefaultEncoding; }
         }
     }
 }

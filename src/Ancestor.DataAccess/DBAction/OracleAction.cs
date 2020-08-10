@@ -63,7 +63,7 @@ namespace Ancestor.DataAccess.DBAction
             if (dbObject.ConnectedMode == DBObject.Mode.Direct)
                 connStrBuilder.DataSource = string.Format(@"(DESCRIPTION = (CONNECT_DATA = (SERVER=DEDICATED)(SERVICE_NAME = {0}))(ADDRESS_LIST = (ADDRESS =  (COMMUNITY = tcp.world)(PROTOCOL = TCP)(Host = {1})(Port = 1521))(ADDRESS = (COMMUNITY = tcp.world)(PROTOCOL = TCP)(Host = {1})(Port = 1526))))", dbObject.Node, dsn);
             else
-                connStrBuilder.DataSource = dsn;
+                connStrBuilder.DataSource = dbObject.Node;
             connStrBuilder.UserID = dbObject.ID;
             connStrBuilder.Password = dbObject.Password;
 

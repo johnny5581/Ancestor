@@ -133,7 +133,7 @@ namespace Ancestor.DataAccess.DAO
         protected abstract IDbAction CreateDbAction(DBObject dbObject);
         protected DbActionOptions CreateDbOptions(AncestorOptions options)
         {
-            return CreateDbOptions(options, _dbAction.CreateOptions());
+            return CreateDbOptions(options ?? new AncestorOptions(), _dbAction.CreateOptions());
         }
         protected abstract DbActionOptions CreateDbOptions(AncestorOptions options, DbActionOptions dbOptions);
         protected abstract ExpressionResolver CreateExpressionResolver(ReferenceInfo reference, ExpressionResolver.ExpressionResolveOption option);
@@ -476,7 +476,8 @@ namespace Ancestor.DataAccess.DAO
                     ignoreNull = options.IgnoreNullCondition;
                 var whereCommand = CreateWhereCommand(whereObject, null, ignoreNull, dbParameters);
                 var sql = string.Format("Update {0} Set {1} {2}", name, updateCommand, whereCommand);
-                return _dbAction.ExecuteNonQuery(sql, dbParameters);
+                var opt = CreateDbOptions(options);
+                return _dbAction.ExecuteNonQuery(sql, dbParameters, opt);
             }, ReturnEffectRowResult, exceptRows);
         }
         public AncestorExecuteResult UpdateEntity(object model, LambdaExpression predicate, UpdateMode mode, object origin, int exceptRows, AncestorOptions options)
@@ -495,11 +496,13 @@ namespace Ancestor.DataAccess.DAO
                 {
                     var resolver = CreateExpressionResolver(reference, null);
                     result = resolver.Resolve(predicate);
+                    dbParameters.AddRange(result.Parameters);
                 }
 
                 var whereCommand = result != null ? "Where " + result.Sql : "";
+                var opt = CreateDbOptions(options);
                 var sql = string.Format("Update {0} Set {1} {2}", name, updateCommand, whereCommand);
-                return _dbAction.ExecuteNonQuery(sql, dbParameters);
+                return _dbAction.ExecuteNonQuery(sql, dbParameters, opt);
             }, ReturnEffectRowResult, exceptRows);
         }
         // TODO
@@ -514,8 +517,9 @@ namespace Ancestor.DataAccess.DAO
                 if (options != null)
                     ignoreNull = options.IgnoreNullCondition;
                 var whereCommand = CreateWhereCommand(whereObject, null, ignoreNull, dbParameters);
+                var opt = CreateDbOptions(options);
                 var sql = string.Format("Delete From {0} {1}", tableName, whereCommand);
-                return _dbAction.ExecuteNonQuery(sql, dbParameters);
+                return _dbAction.ExecuteNonQuery(sql, dbParameters, opt);
             }, ReturnEffectRowResult, exceptRows);
         }
         public AncestorExecuteResult DeleteEntity(LambdaExpression predicate, object origin, int exceptRows, AncestorOptions options)
@@ -536,8 +540,9 @@ namespace Ancestor.DataAccess.DAO
                 }
 
                 var whereCommand = result != null ? "Where " + result.Sql : "";
+                var opt = CreateDbOptions(options);
                 var sql = string.Format("Delete From {0} {1}", name, whereCommand);
-                return _dbAction.ExecuteNonQuery(sql, dbParameters);
+                return _dbAction.ExecuteNonQuery(sql, dbParameters, opt);
             }, ReturnEffectRowResult, exceptRows);
         }
         public AncestorExecuteResult ExecuteNonQuery(string sql, object parameter, int exceptRows, AncestorOptions options)
@@ -1874,6 +1879,12 @@ namespace Ancestor.DataAccess.DAO
                 return tableName;
             }
 
+            protected bool IsParameterMemberExpression(Expression node)
+            {
+                var visitor = new ExpressionMemberResolver();
+                visitor.Visit(node);
+                return visitor.IsParameterMemberExpression;
+            }
             protected virtual object ResolveValue(Expression node)
             {
                 try
@@ -1893,18 +1904,21 @@ namespace Ancestor.DataAccess.DAO
             }
             protected virtual bool TryResolveValue(Expression node, out object value, out Exception error)
             {
-                try
+                error = null;
+                if (!IsParameterMemberExpression(node))
                 {
-                    value = ResolveValue(node);
-                    error = null;
-                    return true;
+                    try
+                    {
+                        value = ResolveValue(node);
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {                        
+                        error = ex;                        
+                    }
                 }
-                catch (Exception ex)
-                {
-                    value = null;
-                    error = ex;
-                    return false;
-                }
+                value = null;
+                return false;
             }
             #endregion
 
@@ -1918,13 +1932,34 @@ namespace Ancestor.DataAccess.DAO
                 {
                     ProcessNewAnonymousObject(node);
                 }
-                else
-                {
-                    ProcessNewObject(node.Type);
-                }
                 return node;
             }
 
+            protected override Expression VisitMemberInit(MemberInitExpression node)
+            {
+                for(var index= 0; index < node.Bindings.Count; index++)
+                {
+                    var binding = node.Bindings[index];
+                    var member = binding.Member;
+                    var memberAssignment = binding as MemberAssignment;
+                    if(memberAssignment != null)
+                    {
+                        if (_option.NewAs)
+                        {
+                            Write("(");
+                            Visit(memberAssignment.Expression);
+                            Write(") As ");
+                            Write(member.Name);
+                        }
+                        else
+                            Visit(memberAssignment.Expression);
+                        if (index != node.Bindings.Count - 1)
+                            Write(", ");
+                    }
+
+                }
+                return node;
+            }
             /// <summary>
             /// new array (selector used)
             /// </summary>            
@@ -1940,11 +1975,6 @@ namespace Ancestor.DataAccess.DAO
                     Visit(expression);
                 }
                 return node;
-            }
-
-            protected virtual void ProcessNewObject(Type type)
-            {
-                throw new NotImplementedException();
             }
 
             protected virtual void ProcessNewAnonymousObject(NewExpression node)
@@ -2306,6 +2336,19 @@ namespace Ancestor.DataAccess.DAO
 
         }
 
+        protected sealed class ExpressionMemberResolver : ExpressionVisitor
+        {
+            public bool IsParameterMemberExpression { get; private set; }
+            protected override Expression VisitMember(MemberExpression node)
+            {
+                if (node.Expression != null && node.Expression.NodeType == ExpressionType.Parameter)
+                {
+                    IsParameterMemberExpression = true;
+                    return node;
+                }
+                return base.VisitMember(node);
+            }
+        }
 
         #endregion
 

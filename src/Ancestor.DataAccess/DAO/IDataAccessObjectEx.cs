@@ -70,6 +70,7 @@ namespace Ancestor.DataAccess.DAO
     {
         public AncestorOptions()
         {
+            BindByName = true;
             HasRowId = false;
             BulkStopWhenError = false;
             IgnoreNullCondition = true;

@@ -263,7 +263,7 @@ namespace Ancestor.DataAccess.DBAction
                 for (var index = 0; index < dbParameters.Count; index++)
                 {
                     var direction = dbParameters[index].ParameterDirection;
-                    if (direction == ParameterDirection.Output || direction == ParameterDirection.ReturnValue)
+                    if (direction != ParameterDirection.Input)
                     {
                         var dbDataParameter = (IDbDataParameter)command.Parameters[dbParameters[index].Name];
                         RestoreParameter(dbDataParameter, dbParameters[index]);

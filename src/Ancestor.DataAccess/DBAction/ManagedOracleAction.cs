@@ -2,6 +2,7 @@
 using Ancestor.DataAccess.DAO;
 using Ancestor.DataAccess.DBAction.Mapper;
 using Ancestor.DataAccess.DBAction.Options;
+using Microsoft.Win32;
 using Oracle.ManagedDataAccess.Client;
 using Oracle.ManagedDataAccess.Types;
 using System;
@@ -12,11 +13,15 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Ancestor.DataAccess.DBAction
 {
     public class ManagedOracleAction : DbActionBase
-    {        
+    {
+        private static string _LastTnsLocation;
+        private static readonly Dictionary<string, string> TnsNamesMap
+            = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private static readonly Dictionary<string, OracleDbType> TypeNameMap
            = new Dictionary<string, OracleDbType>(StringComparer.OrdinalIgnoreCase)
            {
@@ -62,8 +67,44 @@ namespace Ancestor.DataAccess.DBAction
             var connStrBuilder = new OracleConnectionStringBuilder();
             if (dbObject.ConnectedMode == DBObject.Mode.Direct)
                 connStrBuilder.DataSource = string.Format(@"(DESCRIPTION = (CONNECT_DATA = (SERVER=DEDICATED)(SERVICE_NAME = {0}))(ADDRESS_LIST = (ADDRESS =  (COMMUNITY = tcp.world)(PROTOCOL = TCP)(Host = {1})(Port = 1521))(ADDRESS = (COMMUNITY = tcp.world)(PROTOCOL = TCP)(Host = {1})(Port = 1526))))", dbObject.Node, dsn);
-            else
-                connStrBuilder.DataSource = dsn;
+            else if (dbObject.ConnectedMode == DBObject.Mode.DSN)
+                connStrBuilder.DataSource = dbObject.Node;
+            else if (dbObject.ConnectedMode == DBObject.Mode.TNSNAME)
+            {
+                if (GlobalSetting.TnsnamesPath == null && GlobalSetting.SystemTnsnamesPath == null)
+                {
+                    string tnsnamesPath = "";
+                    // try to find tnsnames.ora file for resolve name alias
+                    var oracleHome = FindOracleHome();
+                    if (oracleHome != null)
+                    {
+                        var path = Path.Combine(oracleHome, "NETWORK", "ADMIN", "TNSNAMES.ora");
+                        if (File.Exists(path))
+                            tnsnamesPath = path;
+                    }
+                    GlobalSetting.SystemTnsnamesPath = tnsnamesPath;
+                }
+
+                if (!string.IsNullOrEmpty(GlobalSetting.ManagedOracleTnsNamesLocation) && _LastTnsLocation != GlobalSetting.ManagedOracleTnsNamesLocation)
+                {
+                    TnsNamesMap.Clear();
+                    var text = File.ReadAllText(GlobalSetting.ManagedOracleTnsNamesLocation);
+                    var matches = Regex.Matches(text, "([\\w-]+)\\s*=((?:\\s|.)+?\\)\\s*\\)\\s*\\)\\s*(?=[\\w\\-]))");
+                    foreach(Match match in matches)
+                    {
+                        var name = match.Groups[1].Value;
+                        var dataSource = match.Groups[2].Value;
+                        if (!TnsNamesMap.ContainsKey(name))
+                            TnsNamesMap.Add(name, dataSource);
+                    }
+                    _LastTnsLocation = GlobalSetting.ManagedOracleTnsNamesLocation;
+                }
+
+                var key = TnsNamesMap.Keys.FirstOrDefault(k => k.StartsWith(dbObject.Node, StringComparison.OrdinalIgnoreCase));
+                if (key != null)
+                    connStrBuilder.DataSource = TnsNamesMap[key];
+            }
+
             connStrBuilder.UserID = dbObject.ID;
             connStrBuilder.Password = dbObject.Password;
 
@@ -89,6 +130,58 @@ namespace Ancestor.DataAccess.DBAction
             }
 
             return new OracleConnection(connStrBuilder.ConnectionString);
+        }
+
+        private static string FindOracleHome()
+        {
+            var oracleHome = System.Environment.GetEnvironmentVariable("ORACLE_HOME");
+            if (oracleHome != null)
+            {
+                var path = System.Environment.GetEnvironmentVariable("Path");
+                if (path != null)
+                {
+                    var paths = path.Split(';');
+                    foreach (var p in paths)
+                    {
+                        var netadmin = Path.Combine(p, "..", "NETWORK", "ADMIN");
+                        if (Directory.Exists(netadmin))
+                        {
+                            oracleHome = p;
+                            break;
+                        }
+                    }
+                }
+
+                if (oracleHome == null)
+                {
+                    string registryPath = System.Environment.Is64BitOperatingSystem
+                        ? "SOFTWARE\\WOW6432Node\\ORACLE\\ALL_HOMES"
+                        : "SOFTWARE\\ORACLE\\ALL_HOMES";
+                    var registry = Registry.LocalMachine.OpenSubKey(registryPath);
+                    if (registry != null)
+                    {
+                        var lastHomeId = (string)registry.GetValue("LAST_HOME");
+                        if (lastHomeId != null)
+                            oracleHome = (string)registry.GetValue("ID" + lastHomeId + "\\PATH");
+                        else
+                        {
+                            var defaultHome = (String)registry.GetValue("DEFAULT_HOME");
+                            if (defaultHome != null)
+                            {
+                                foreach (var name in registry.GetValueNames())
+                                {
+                                    if ((string)registry.GetValue(name + "\\NAME") == defaultHome)
+                                    {
+                                        oracleHome = (string)registry.GetValue(name + "\\PATH");
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return oracleHome;
         }
 
         protected override IDbDataParameter CreateParameter(DBParameter parameter, DbActionOptions options)

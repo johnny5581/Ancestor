@@ -11,6 +11,8 @@ namespace Ancestor.Core
     public static class GlobalSetting
     {
         private static bool _raiseExp = false;
+        internal static string TnsnamesPath;
+        internal static string SystemTnsnamesPath;
         public static event LoggingEventHandler Logging;
         /// <summary>
         /// Raise exception when happen, global setting (will be override if dao set RaiseException flag)
@@ -27,6 +29,15 @@ namespace Ancestor.Core
                 handler(sender, new LoggingEventArgs(sender.Guid, tag, name, message));
         }
         public static bool UseOracleStringParameter { get; set; }
+
+        /// <summary>
+        /// Managed Oracle Data Access's TNSNAMES.ora location
+        /// </summary>
+        public static string ManagedOracleTnsNamesLocation
+        {
+            get { return TnsnamesPath ?? SystemTnsnamesPath; }
+            set { TnsnamesPath = value; }
+        }
     }
     public delegate void LoggingEventHandler(object sender, LoggingEventArgs e);
     public class LoggingEventArgs : EventArgs

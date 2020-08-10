@@ -625,7 +625,7 @@ namespace System
         }
         public static AncestorResult GroupFrom<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate, Expression<Func<T, object>> selector, Expression<Func<T, object>> groupBy)
         {
-            return dao.GroupFromLambda(predicate, selector, groupBy, null, null);
+            return dao.GroupFromLambda(predicate, selector, groupBy, null, new AncestorOptions { HasRowId = false });
         }
         public static AncestorResult GroupFrom<FakeType>(this IDataAccessObjectEx dao, Expression<Func<FakeType, bool>> predicate, Expression<Func<FakeType, object>> selector, Expression<Func<FakeType, object>> groupBy, Type realType) where FakeType : class, new()
         {
@@ -635,7 +635,7 @@ namespace System
         public static AncestorResult GroupFrom<FakeType>(this IDataAccessObjectEx dao, Expression<Func<FakeType, bool>> predicate, Expression<Func<FakeType, object>> selector, Expression<Func<FakeType, object>> groupBy, string name) where FakeType : class, new()
         {
             var map = CreateProxyMap(CreateTuple(typeof(FakeType), name));
-            return dao.GroupFromLambda(predicate, selector, groupBy, map, null);
+            return dao.GroupFromLambda(predicate, selector, groupBy, map, new AncestorOptions { HasRowId = false });
         }
     }
 }
