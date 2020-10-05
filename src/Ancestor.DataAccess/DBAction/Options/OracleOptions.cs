@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Ancestor.DataAccess.DAO;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,7 +11,11 @@ namespace Ancestor.DataAccess.DBAction.Options
         public OracleOptions()
         {
             BindByName = true;
-            AddRowid = true;
+            AddRowid = false;
+
+            // default value for LOB / LONG fetch size set to -1
+            InitializeLOBFetchSize = -1;
+            InitializeLONGFetchSize = -1;
         }
         public int? InitializeLONGFetchSize
         {
@@ -28,9 +33,9 @@ namespace Ancestor.DataAccess.DBAction.Options
             get { return Get<bool>(nameof(BindByName)); }
             set { this[nameof(BindByName)] = value; }
         }
-        public int? FetchSize
+        public long? FetchSize
         {
-            get { return Get<int?>(nameof(FetchSize)); }
+            get { return Get<long?>(nameof(FetchSize)); }
             set { this[nameof(FetchSize)] = value; }
         }
         public bool AddRowid

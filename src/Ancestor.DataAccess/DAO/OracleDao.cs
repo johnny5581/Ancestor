@@ -42,20 +42,6 @@ namespace Ancestor.DataAccess.DAO
                     return null;
             }
         }
-
-        protected override DbActionOptions CreateDbOptions(AncestorOptions options, DbActionOptions dbOptions)
-        {
-            if (options != null)
-            {
-                var opt = dbOptions as DBAction.Options.OracleOptions;
-                if (opt != null)
-                {
-                    opt.AddRowid = options.HasRowId;
-                    opt.BindByName = options.BindByName;
-                }
-            }
-            return dbOptions;
-        }
         public override string ConvertFromHardWord(string name, HardWordAttribute attribute)
         {
             return string.Format("RawToHex({0})", name);

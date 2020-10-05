@@ -55,9 +55,9 @@ namespace Ancestor.Core
             });
         }
         public static HardWordAttribute GetHardWordAttribute(PropertyInfo property)
-        {
-            HardWordAttribute attr;
-            if (!AttributeCaches.TryGetValue(property, out attr))
+        {            
+            HardWordAttribute attr = null;
+            if (property != null && !AttributeCaches.TryGetValue(property, out attr))
             {
                 attr = property.GetCustomAttributes(typeof(HardWordAttribute), false).FirstOrDefault() as HardWordAttribute;
                 if (attr == null)

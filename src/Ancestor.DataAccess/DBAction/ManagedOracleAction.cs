@@ -249,7 +249,6 @@ namespace Ancestor.DataAccess.DBAction
             var opt = options as OracleOptions;
             if (cmd != null && opt != null)
                 BindOptions(cmd, opt);
-
             base.PreExecute(command, options);
         }
         protected override void PreQuery(IDbCommand command, DbActionOptions options)

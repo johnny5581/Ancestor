@@ -1,4 +1,5 @@
 ﻿using Ancestor.Core;
+using Ancestor.DataAccess.DBAction;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -16,7 +17,9 @@ namespace Ancestor.DataAccess.DAO
         [Browsable(false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         IDbConnection DBConnection { get; }
-
+        [Browsable(false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        IDbAction DbAction { get; }
         string ParameterPrefix { get; set; }
         string ParameterPostfix { get; set; }
         bool IsTransacting { get; }
@@ -32,7 +35,6 @@ namespace Ancestor.DataAccess.DAO
 
         IDataAccessObjectEx Clone();
         #endregion Connection
-
 
         #region Query
         AncestorResult QueryFromSqlString(string sql, object parameter, Type dataType, bool firstOnly, AncestorOptions options);     
@@ -51,7 +53,6 @@ namespace Ancestor.DataAccess.DAO
         AncestorExecuteResult UpdateEntity(object model, LambdaExpression predicate, UpdateMode mode, object origin, int exceptRows, AncestorOptions options);        
         #endregion Update
 
-
         #region Delete 
         AncestorExecuteResult DeleteEntity(object whereObject, object origin, int exceptRows, AncestorOptions options);
         AncestorExecuteResult DeleteEntity(LambdaExpression predicate, object origin, int exceptRows, AncestorOptions options);        
@@ -66,23 +67,13 @@ namespace Ancestor.DataAccess.DAO
     /// <summary>
     /// DataAccessObject command options
     /// </summary>
-    public class AncestorOptions
+    public class AncestorOptions : Dictionary<string, object>
     {
-        public AncestorOptions()
+        public AncestorOptions() : base(StringComparer.OrdinalIgnoreCase)
         {
-            BindByName = true;
-            HasRowId = false;
             BulkStopWhenError = false;
             IgnoreNullCondition = true;
         }
-        /// <summary>
-        /// Allow append RowID (Oracle)
-        /// </summary>
-        public bool HasRowId { get; set; }
-        /// <summary>
-        /// Bind parameter by name(Oracle)
-        /// </summary>
-        public bool BindByName { get; set; }
         /// <summary>
         /// Stop bulk insert when insert fail
         /// </summary>

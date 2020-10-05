@@ -238,6 +238,10 @@ namespace System
         #endregion
 
         #region Extensions 
+        private static AncestorOptions CreateRowIdOption()
+        {
+            return new AncestorOptions { { "HasRowId", true } };
+        }
         public static AncestorResult Query(this IDataAccessObjectEx dao, string sqlString, object paramsObjects)
         {
             return dao.QueryFromSqlString(sqlString, paramsObjects, null, false, null);
@@ -245,6 +249,8 @@ namespace System
 
         public static AncestorResult Query(this IDataAccessObjectEx dao, object objectModel)
         {
+            if (objectModel is string)
+                return dao.Query((string)objectModel, null);
             return dao.QueryFromModel(objectModel, null, null, false, null);
         }
         public static AncestorResult Query<T>(this IDataAccessObjectEx dao, object objectModel) where T : class, new()
@@ -253,11 +259,11 @@ namespace System
         }
         public static AncestorResult QueryWithRowid(this IDataAccessObjectEx dao, object objectModel)
         {
-            return dao.QueryFromModel(objectModel, null, null, false, new AncestorOptions { HasRowId = true });
+            return dao.QueryFromModel(objectModel, null, null, false, new AncestorOptions { { "AddRowId", true } });
         }
         public static AncestorResult QueryWithRowid<T>(this IDataAccessObjectEx dao, object objectModel) where T : class, new()
         {
-            return dao.QueryFromModel(objectModel, typeof(T), null, false, new AncestorOptions { HasRowId = true });
+            return dao.QueryFromModel(objectModel, typeof(T), null, false, new AncestorOptions { { "AddRowId", true } });
         }
 
         public static AncestorResult Query<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate) where T : class, new()
@@ -270,7 +276,7 @@ namespace System
         }
         public static AncestorResult QueryWithRowid<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate) where T : class, new()
         {
-            return dao.QueryFromLambda(predicate, null, null, false, new AncestorOptions { HasRowId = true });
+            return dao.QueryFromLambda(predicate, null, null, false, new AncestorOptions { { "AddRowId", true } });
         }
         public static AncestorResult Query<T1, T2>(this IDataAccessObjectEx dao, Expression<Func<T1, T2, bool>> predicate, Expression<Func<T1, T2, object>> selectCondition) where T1 : class, new() where T2 : class, new()
         {
@@ -378,11 +384,11 @@ namespace System
         }
         public static AncestorResult QueryFirstWithRowid(this IDataAccessObjectEx dao, object objectModel)
         {
-            return dao.QueryFromModel(objectModel, null, null, true, new AncestorOptions { HasRowId = true });
+            return dao.QueryFromModel(objectModel, null, null, true, new AncestorOptions { { "AddRowId", true } });
         }
         public static AncestorResult QueryFirstWithRowid<T>(this IDataAccessObjectEx dao, object objectModel) where T : class, new()
         {
-            return dao.QueryFromModel(objectModel, typeof(T), null, true, new AncestorOptions { HasRowId = true });
+            return dao.QueryFromModel(objectModel, typeof(T), null, true, new AncestorOptions { { "AddRowId", true } });
         }
 
         public static AncestorResult QueryFirst<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate) where T : class, new()
@@ -395,7 +401,7 @@ namespace System
         }
         public static AncestorResult QueryFirstWithRowid<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate) where T : class, new()
         {
-            return dao.QueryFromLambda(predicate, null, null, true, new AncestorOptions { HasRowId = true });
+            return dao.QueryFromLambda(predicate, null, null, true, new AncestorOptions { { "AddRowId", true } });
         }
         public static AncestorResult QueryFirst<T1, T2>(this IDataAccessObjectEx dao, Expression<Func<T1, T2, bool>> predicate, Expression<Func<T1, T2, object>> selectCondition) where T1 : class, new() where T2 : class, new()
         {
@@ -523,11 +529,11 @@ namespace System
         }
         public static AncestorExecuteResult ExecuteStoredProcedure(this IDataAccessObjectEx dao, string procedureName, bool bindbyName, IEnumerable<DBParameter> parameters)
         {
-            return dao.ExecuteStoredProcedure(procedureName, parameters, new AncestorOptions { BindByName = bindbyName });
+            return dao.ExecuteStoredProcedure(procedureName, parameters, new AncestorOptions { { "BindByName", bindbyName } });
         }
         public static AncestorExecuteResult ExecuteStoredProcedure(this IDataAccessObjectEx dao, string procedureName, bool bindbyName, params DBParameter[] parameters)
         {
-            return dao.ExecuteStoredProcedure(procedureName, parameters, new AncestorOptions { BindByName = bindbyName });
+            return dao.ExecuteStoredProcedure(procedureName, parameters, new AncestorOptions { { "BindByName", bindbyName } });
         }
         public static AncestorExecuteResult Insert(this IDataAccessObjectEx dao, object model, string name)
         {
@@ -598,14 +604,14 @@ namespace System
 
 
 
-        private static IDictionary<Type, object> CreateProxyMap(params Tuple<Type, object>[] args)
+        internal static IDictionary<Type, object> CreateProxyMap(params Tuple<Type, object>[] args)
         {
             var map = new Dictionary<Type, object>();
             foreach (var e in args)
                 map.Add(e.Item1, e.Item2);
             return map;
         }
-        private static Tuple<Type, object> CreateTuple(Type type, object origin)
+        internal static Tuple<Type, object> CreateTuple(Type type, object origin)
         {
             return Tuple.Create(type, origin);
         }
@@ -619,23 +625,23 @@ namespace System
         {
             return dao.QueryFromModel(null, typeof(T), name, false, null);
         }
-        public static AncestorResult QueryAll<T>(this IDataAccessObjectEx dao, Type  realType)
+        public static AncestorResult QueryAll<T>(this IDataAccessObjectEx dao, Type realType)
         {
             return dao.QueryFromModel(null, typeof(T), realType, false, null);
         }
         public static AncestorResult GroupFrom<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate, Expression<Func<T, object>> selector, Expression<Func<T, object>> groupBy)
         {
-            return dao.GroupFromLambda(predicate, selector, groupBy, null, new AncestorOptions { HasRowId = false });
+            return dao.GroupFromLambda(predicate, selector, groupBy, null, null);
         }
         public static AncestorResult GroupFrom<FakeType>(this IDataAccessObjectEx dao, Expression<Func<FakeType, bool>> predicate, Expression<Func<FakeType, object>> selector, Expression<Func<FakeType, object>> groupBy, Type realType) where FakeType : class, new()
         {
             var map = CreateProxyMap(CreateTuple(typeof(FakeType), realType));
-            return dao.GroupFromLambda(predicate, selector, groupBy, map, new AncestorOptions { HasRowId = false });
+            return dao.GroupFromLambda(predicate, selector, groupBy, map, null);
         }
         public static AncestorResult GroupFrom<FakeType>(this IDataAccessObjectEx dao, Expression<Func<FakeType, bool>> predicate, Expression<Func<FakeType, object>> selector, Expression<Func<FakeType, object>> groupBy, string name) where FakeType : class, new()
         {
             var map = CreateProxyMap(CreateTuple(typeof(FakeType), name));
-            return dao.GroupFromLambda(predicate, selector, groupBy, map, new AncestorOptions { HasRowId = false });
+            return dao.GroupFromLambda(predicate, selector, groupBy, map, null);
         }
     }
 }

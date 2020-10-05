@@ -13,7 +13,7 @@ namespace Ancestor.DataAccess.DAO
     /// Server object 
     /// </summary>
     public static class Server
-    {
+    {        
         internal static readonly DateTime SYSDATE = DateTime.MinValue.AddTicks(49);
         private static TimeSpan _TimeOffset;
         private static bool _TimeOffsetFlag = false;

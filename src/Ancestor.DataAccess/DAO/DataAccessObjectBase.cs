@@ -12,6 +12,7 @@ using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Ancestor.DataAccess.DAO
 {
@@ -96,7 +97,7 @@ namespace Ancestor.DataAccess.DAO
         /// <summary>
         /// Date time symbol
         /// </summary>
-        public abstract string DateTimeSymbol{ get; }
+        public abstract string DateTimeSymbol { get; }
 
         /// <summary>
         /// Update mode setting
@@ -135,7 +136,12 @@ namespace Ancestor.DataAccess.DAO
         {
             return CreateDbOptions(options ?? new AncestorOptions(), _dbAction.CreateOptions());
         }
-        protected abstract DbActionOptions CreateDbOptions(AncestorOptions options, DbActionOptions dbOptions);
+        protected virtual DbActionOptions CreateDbOptions(AncestorOptions options, DbActionOptions dbOptions)
+        {
+            if (options != null)            
+                dbOptions.Parse(options);            
+            return dbOptions;
+        }
         protected abstract ExpressionResolver CreateExpressionResolver(ReferenceInfo reference, ExpressionResolver.ExpressionResolveOption option);
         protected TResult TryCatch<T, TResult>(Func<T> action, Func<object, TResult> resultFactory, int exceptRows) where TResult : AncestorResult
         {
@@ -223,7 +229,12 @@ namespace Ancestor.DataAccess.DAO
                 anonymousList.Add(result);
                 return new AncestorResult(anonymousList) { QueryParameter = parameters };
             }
-            throw new InvalidOperationException("can not get AncestorResult");
+            else
+            {
+                var emptyList = new List<object>();
+                return new AncestorResult(emptyList) { QueryParameter = parameters };
+            }
+            //throw new InvalidOperationException("can not get AncestorResult");
         }
         protected AncestorExecuteResult ReturnEffectRowResult(object result)
         {
@@ -284,7 +295,7 @@ namespace Ancestor.DataAccess.DAO
             {
                 var dbParameters = CreateDBParameters(parameter);
                 if (options == null)
-                    options = new AncestorOptions { HasRowId = false };
+                    options = new AncestorOptions { };
                 var dbOpts = CreateDbOptions(options);
                 return InternalQuery(sql, dbParameters, dataType, firstOnly, dbOpts);
             }, ReturnAncestorResult);
@@ -314,8 +325,8 @@ namespace Ancestor.DataAccess.DAO
                 var selectorParameterTypes = selector == null ? new Type[0] : selector.Parameters.Select(p => p.Type);
                 var parameterTypes = predicateParameterTypes.Concat(selectorParameterTypes).Distinct();
                 var reference = GetReferenceInfo(parameterTypes, proxyMap);
-                
-                
+
+
                 ExpressionResolver.ExpressionResolveResult predicateResult = null;
                 ExpressionResolver.ExpressionResolveResult selectorResult = null;
                 if (predicate != null)
@@ -357,9 +368,9 @@ namespace Ancestor.DataAccess.DAO
                 var selectorParameterTypes = selector == null ? new Type[0] : selector.Parameters.Select(p => p.Type);
                 var parameterTypes = predicateParameterTypes.Concat(selectorParameterTypes).Distinct();
                 var reference = GetReferenceInfo(parameterTypes, proxyMap);
-                
-                
-                
+
+
+
                 ExpressionResolver.ExpressionResolveResult predicateResult = null;
                 ExpressionResolver.ExpressionResolveResult selectorResult = null;
                 ExpressionResolver.ExpressionResolveResult groupResult = null;
@@ -790,24 +801,24 @@ namespace Ancestor.DataAccess.DAO
             IDictionary<string, object> map = model as IDictionary<string, object>;
             if (typeof(IDictionary<string, object>).IsAssignableFrom(referenceType) && map != null)
             {
-                foreach(var key in map.Keys)
+                foreach (var key in map.Keys)
                 {
                     var value = map[key];
                     var fname = key;
-                    if(value != null)
+                    if (value != null)
                     {
                         var parameter = CreateParameter(value, fname, true, UpdateParameterPrefix);
                         fieldMap.Add(fname, parameter.ValueName);
                         if (!parameter.IsSysDateConverted)
                             parameters.Add(parameter.ValueName, parameter.Value);
                     }
-                    else if(mode == UpdateMode.All)
+                    else if (mode == UpdateMode.All)
                     {
                         fieldMap.Add(fname, "NULL");
-                    }                    
+                    }
                 }
             }
-            else if(map != null)
+            else if (map != null)
             {
                 var properties = TableManager.GetBrowsableProperties(referenceType);
                 foreach (var key in map.Keys)
@@ -854,7 +865,7 @@ namespace Ancestor.DataAccess.DAO
                     }
                 }
             }
-            
+
             return string.Join(", ", fieldMap.Select(kv => string.Format("{0} = {1}", kv.Key, kv.Value)));
         }
         private void CreateDBParameterFromDictionary(IDictionary<string, object> dic, ref DBParameterCollection collection)
@@ -1913,8 +1924,8 @@ namespace Ancestor.DataAccess.DAO
                         return true;
                     }
                     catch (Exception ex)
-                    {                        
-                        error = ex;                        
+                    {
+                        error = ex;
                     }
                 }
                 value = null;
@@ -1937,27 +1948,68 @@ namespace Ancestor.DataAccess.DAO
 
             protected override Expression VisitMemberInit(MemberInitExpression node)
             {
-                for(var index= 0; index < node.Bindings.Count; index++)
+                var newExpression = node.NewExpression;
+                var type = newExpression.Type;
+                var properties = TableManager.GetBrowsableProperties(type);
+                for (var index = 0; index < properties.Length; index++)
                 {
-                    var binding = node.Bindings[index];
-                    var member = binding.Member;
-                    var memberAssignment = binding as MemberAssignment;
-                    if(memberAssignment != null)
+                    var property = properties[index];
+                    var binding = node.Bindings.FirstOrDefault(b => b.Member == property);
+                    if (binding != null)
                     {
+                        var memberAssignment = binding as MemberAssignment;
+                        Action<StringBuilder, string> action = null;
                         if (_option.NewAs)
                         {
-                            Write("(");
-                            Visit(memberAssignment.Expression);
-                            Write(") As ");
-                            Write(member.Name);
+                            action = (sb, text) => ExpressionScope.AppendText(sb, string.Format("{0} AS {1}", text, property.Name));
                         }
-                        else
+                        using (var scope = CreateScope())
+                        {
+                            scope.DisposeAction = action;
                             Visit(memberAssignment.Expression);
-                        if (index != node.Bindings.Count - 1)
-                            Write(", ");
+                        }
                     }
-
+                    else
+                    {
+                        var name = property.Name;
+                        if (_option.UseHardWord)
+                        {
+                            var hd = HardWordManager.Get(property);
+                            if (hd != null)
+                                name = _dao.ConvertFromHardWord(name, hd);
+                        }
+                        Write(name);
+                    }
+                    if (index != properties.Length - 1)
+                        Write(", ");
                 }
+                //for (var index = 0; index < node.Bindings.Count; index++)
+                //{
+                //    var binding = node.Bindings[index];
+                //    var member = binding.Member;
+                //    var memberAssignment = binding as MemberAssignment;
+                //    if (memberAssignment != null)
+                //    {
+                //        Action<StringBuilder, string> action = null;
+                //        if (_option.UseHardWord)
+                //        {
+                //            var hd = HardWordManager.Get(member as PropertyInfo);
+                //            if (hd != null) // hardword
+                //                action = (sb, text) => ExpressionScope.AppendText(sb, _dao.ConvertFromHardWord(text, hd));
+                //        }
+                //        if (action == null && _option.NewAs)
+                //        {
+                //            action = (sb, text) => ExpressionScope.AppendText(sb, string.Format("({0}) AS {1}", text, member.Name));
+                //        }
+                //        using (var scope = CreateScope())
+                //        {
+                //            scope.DisposeAction = action;
+                //            Visit(memberAssignment.Expression);
+                //        }
+
+                //    }
+
+                //}
                 return node;
             }
             /// <summary>
@@ -1991,7 +2043,7 @@ namespace Ancestor.DataAccess.DAO
                         Write(member.Name);
                     }
                     else
-                        Visit(argument);                    
+                        Visit(argument);
                     if (index != node.Members.Count - 1)
                         Write(", ");
                 }
@@ -2134,7 +2186,10 @@ namespace Ancestor.DataAccess.DAO
                         var name = extraParameters[i].Name;
                         name += postfix;
                         if (extraSql != null)
-                            extraSql = extraSql.Replace(extraParameters[i].Name + " ", name + " ");
+                        {
+                            extraSql = Regex.Replace(extraSql, Regex.Escape(extraParameters[i].Name) + "\\s?", name + " ");
+                            //extraSql = extraSql.Replace(extraParameters[i].Name + " ", name + " ");
+                        }
                         extraParameters[i].Name = name;
                     }
                     merged.Sql2 = extraSql;
@@ -2199,19 +2254,27 @@ namespace Ancestor.DataAccess.DAO
             protected class ExpressionScope : IDisposable
             {
                 private readonly ExpressionResolver _resolver;
-                private StringBuilder _sb = new StringBuilder().Append("(");
+                private readonly bool _rb;
+                private StringBuilder _sb = new StringBuilder();
                 private bool _disposed = false;
 
+                public Action<StringBuilder, string> DisposeAction { get; set; }
 
-
-                public ExpressionScope(ExpressionResolver resolver)
+                public ExpressionScope(ExpressionResolver resolver, bool rb = true)
                 {
                     _resolver = resolver;
+                    _rb = rb;
+                    if (rb)
+                        AppendText("(");
+
                 }
-                public ExpressionScope(ExpressionResolver resolver, ExpressionScope parent)
+                public ExpressionScope(ExpressionResolver resolver, ExpressionScope parent, bool rb = true)
                 {
                     _resolver = resolver;
                     Parent = parent;
+                    _rb = rb;
+                    if (rb)
+                        AppendText("(");
                 }
 
                 public StringBuilder StringBuilder
@@ -2241,13 +2304,17 @@ namespace Ancestor.DataAccess.DAO
                     {
                         if (disposing)
                         {
-                            AppendText(")");
+                            if (_rb)
+                                AppendText(")");
                             StringBuilder sb = IsRoot ? _resolver._sb : Parent.StringBuilder;
                             var text = _sb.ToString();
                             //if (sb.Length != 0 && sb[sb.Length - 1] != ' ')
                             //    sb.Append(" ");
                             //sb.Append(text);
-                            AppendText(sb, text);
+                            if (DisposeAction != null)
+                                DisposeAction(sb, text);
+                            else
+                                AppendText(sb, text);
                             _resolver._scope = !IsRoot ? Parent : null;
                         }
                         _disposed = true;
@@ -2258,7 +2325,7 @@ namespace Ancestor.DataAccess.DAO
                 {
                     return _sb.ToString() + ")";
                 }
-                private void AppendText(StringBuilder sb, string text)
+                public static void AppendText(StringBuilder sb, string text)
                 {
                     if (sb.Length > 0 && sb[sb.Length - 1] != ' ' && !text.StartsWith(" "))
                         sb.Append(" ");

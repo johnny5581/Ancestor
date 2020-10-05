@@ -1,4 +1,5 @@
 ﻿using Ancestor.Core;
+using Ancestor.DataAccess.DAO;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -64,7 +65,13 @@ namespace Ancestor.DataAccess.DBAction
                 return defaultValue;
             }
         }
-
+        public virtual void Parse(AncestorOptions option)
+        {
+            foreach(var keyValue in option)
+            {
+                this[keyValue.Key] = keyValue.Value;
+            }
+        }
     }
 
 }

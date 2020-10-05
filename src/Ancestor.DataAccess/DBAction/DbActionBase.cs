@@ -166,7 +166,7 @@ namespace Ancestor.DataAccess.DBAction
             {
                 Log("QueryFirst", sql, dbParameters);
                 var dynamicParameter = CreateDynamicParameters(dbParameters);
-                var data = _connection.QueryFirstOrDefault(dataType, sql, dynamicParameter, _transaction);
+                var data = _connection.QueryFirstOrDefault(dataType, sql, dynamicParameter, _transaction);                
                 return data;
             }, queryParameter);
         }

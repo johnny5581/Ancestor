@@ -156,7 +156,6 @@ namespace Ancestor.DataAccess.DBAction
             var opt = options as OracleOptions;
             if (cmd != null && opt != null)
                 BindOptions(cmd, opt);
-
             base.PreExecute(command, options);
         }
         protected override void PreQuery(IDbCommand command, DbActionOptions options)
@@ -164,7 +163,7 @@ namespace Ancestor.DataAccess.DBAction
             var cmd = (OracleCommand)command;
             var opt = options as OracleOptions;
             if (cmd != null && opt != null)
-                BindOptions(cmd, opt);
+                BindOptions(cmd, opt);                
             base.PreQuery(command, options);
         }
         protected override void RestoreParameter(IDbDataParameter dbDataParameter, DBParameter dbParameter)
