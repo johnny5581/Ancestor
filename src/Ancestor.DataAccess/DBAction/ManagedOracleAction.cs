@@ -146,7 +146,7 @@ namespace Ancestor.DataAccess.DBAction
                         var netadmin = Path.Combine(p, "..", "NETWORK", "ADMIN");
                         if (Directory.Exists(netadmin))
                         {
-                            oracleHome = p;
+                            oracleHome = Path.GetDirectoryName(p);
                             break;
                         }
                     }
