@@ -135,7 +135,7 @@ namespace Ancestor.DataAccess.DBAction
         private static string FindOracleHome()
         {
             var oracleHome = System.Environment.GetEnvironmentVariable("ORACLE_HOME");
-            if (oracleHome != null)
+            if (oracleHome == null)
             {
                 var path = System.Environment.GetEnvironmentVariable("Path");
                 if (path != null)
