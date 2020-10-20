@@ -88,15 +88,57 @@ namespace Ancestor.DataAccess.DBAction
                 if (!string.IsNullOrEmpty(GlobalSetting.ManagedOracleTnsNamesLocation) && _LastTnsLocation != GlobalSetting.ManagedOracleTnsNamesLocation)
                 {
                     TnsNamesMap.Clear();
-                    var text = File.ReadAllText(GlobalSetting.ManagedOracleTnsNamesLocation);
-                    var matches = Regex.Matches(text, "([\\w-]+)\\s*=((?:\\s|.)+?\\)\\s*\\)\\s*\\)\\s*(?=[\\w\\-]))");
-                    foreach(Match match in matches)
+                    // parse tnsnames.ora to TnsNamesMap
+                    var stack = new Stack<StringBuilder>();
+                    var sb = new StringBuilder();                    
+                    int c;
+                    using (var fs = File.OpenRead(GlobalSetting.ManagedOracleTnsNamesLocation))
+                    using (var sr = new StreamReader(fs))
                     {
-                        var name = match.Groups[1].Value;
-                        var dataSource = match.Groups[2].Value;
-                        if (!TnsNamesMap.ContainsKey(name))
-                            TnsNamesMap.Add(name, dataSource);
+                        while ((c = sr.Read()) != -1)
+                        {
+                            switch ((char)c)
+                            {
+                                case '#':
+                                    sr.ReadLine();
+                                    continue;
+                                case '(':
+                                    stack.Push(sb);
+                                    sb = new StringBuilder();
+                                    break;
+                                case ')':
+                                    var t = stack.Pop();
+                                    if (stack.Count == 0)
+                                    {
+                                        var s = t.ToString();
+                                        var splited = s.Split(new[] { '=' }, StringSplitOptions.RemoveEmptyEntries);
+                                        if (splited.Length > 0)
+                                        {
+                                            var name = splited[0];
+                                            var dns = sb.Insert(0, "(").Append(")").ToString();
+                                            dns = Regex.Replace(dns, @"[\r|\n|\s]", string.Empty);
+                                            TnsNamesMap.Add(name, dns);                                            
+                                        }
+                                        sb.Clear();
+
+                                    }
+                                    else
+                                    {
+                                        t.Append(sb.Insert(0, "(").Append(")").ToString());
+                                        sb = t;
+                                    }
+                                    break;
+                                case '\r':
+                                case '\n':
+                                    continue;
+                                default:
+                                    sb.Append((char)c);
+                                    break;
+                            }
+
+                        }
                     }
+
                     _LastTnsLocation = GlobalSetting.ManagedOracleTnsNamesLocation;
                 }
 
@@ -146,7 +188,7 @@ namespace Ancestor.DataAccess.DBAction
                         var netadmin = Path.Combine(p, "..", "NETWORK", "ADMIN");
                         if (Directory.Exists(netadmin))
                         {
-                            oracleHome = p;
+                            oracleHome = Path.GetDirectoryName(p);
                             break;
                         }
                     }
