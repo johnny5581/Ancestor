@@ -148,13 +148,13 @@ namespace Ancestor.Core
 
 
 
-        public List<T> ResultList<T>() where T : class, new()
+        public List<T> ResultList<T>(Encoding encoding = null) where T : class, new()
         {
-            return (List<T>)AncestorResultHelper.ResultList(this, typeof(T), null, ResultListMode.All);
+            return (List<T>)AncestorResultHelper.ResultList(this, typeof(T), null, ResultListMode.All, encoding);
         }
-        public T ResultFirst<T>() where T : class, new()
+        public T ResultFirst<T>(Encoding encoding = null) where T : class, new()
         {
-            return (T)AncestorResultHelper.ResultFirst(this, typeof(T), null, ResultListMode.All);
+            return (T)AncestorResultHelper.ResultFirst(this, typeof(T), null, ResultListMode.All, encoding);
         }
         public virtual object ResultScalar()
         {

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 
@@ -10,17 +11,15 @@ namespace Ancestor.Core
     /// </summary>
     public class HardWordAttribute : Attribute
     {
-        private static Encoding _defaultEncoding;
         /// <summary>
         /// Global scope encoding
         /// </summary>
         public static Encoding DefaultEncoding
         {
-            get { return _defaultEncoding ?? SystemEncoding; }
-            set { _defaultEncoding = value; }
+            get { return HardWordManager.Encoding; }
+            set { HardWordManager.Encoding = value; }
         }
 
-        private static readonly Encoding SystemEncoding = Encoding.GetEncoding(950);
         private Encoding _encoding;
 
         public HardWordAttribute()

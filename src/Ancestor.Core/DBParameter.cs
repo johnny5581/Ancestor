@@ -67,7 +67,7 @@ namespace Ancestor.Core
         /// </summary>
         public object Value { get; set; }
         public Type ItemType { get; set; }
-
+        public Encoding ItemEncoding { get; set; }
 
         public DBParameterType ParameterType
         {

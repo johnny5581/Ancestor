@@ -21,9 +21,9 @@ namespace Ancestor.Core
                 addItemMethod.Invoke(genericList, new object[] { item });
             return (IList)genericList;
         }
-        public static object ResultFirst(IAncestorResult result, Type dataType, Delegate objectFactory, ResultListMode mode)
+        public static object ResultFirst(IAncestorResult result, Type dataType, Delegate objectFactory, ResultListMode mode, Encoding hardwordEncoding)
         {
-            var list = InternalResultList(result, dataType, objectFactory, true, mode);
+            var list = InternalResultList(result, dataType, objectFactory, true, mode, hardwordEncoding);
             return list.Count == 0 ? null : list[0];
         }
         public static object ResultScalar(IAncestorResult result)
@@ -71,11 +71,11 @@ namespace Ancestor.Core
         }
 
 
-        public static IList ResultList(IAncestorResult result, Type dataType, Delegate objectFactory, ResultListMode mode)
+        public static IList ResultList(IAncestorResult result, Type dataType, Delegate objectFactory, ResultListMode mode, Encoding hardwordEncoding)
         {
-            return InternalResultList(result, dataType, objectFactory, false, mode);
+            return InternalResultList(result, dataType, objectFactory, false, mode, hardwordEncoding);
         }
-        internal static IList InternalResultList(IAncestorResult result, Type dataType, Delegate objectFactory, bool firstOnly, ResultListMode mode)
+        internal static IList InternalResultList(IAncestorResult result, Type dataType, Delegate objectFactory, bool firstOnly, ResultListMode mode, Encoding hardwordEncoding)
         {
             IList list = Activator.CreateInstance(typeof(List<>).MakeGenericType(dataType)) as IList;
             var hds = HardWordManager.Get(dataType);
@@ -114,7 +114,7 @@ namespace Ancestor.Core
                         Dictionary<PropertyInfo, Tuple<PropertyInfo, Func<object, object>>> propertyMap = null;
                         if (factory == null)
                             factory = () => Activator.CreateInstance(dataType);
-                        foreach (var item in CastToItem(result.DataList, o => DeepCloneItem(o, factory(), ref propertyMap, hds, mode)))
+                        foreach (var item in CastToItem(result.DataList, o => DeepCloneItem(o, factory(), ref propertyMap, hds, mode, hardwordEncoding)))
                         {
                             list.Add(item);
                             if (firstOnly)
@@ -126,14 +126,14 @@ namespace Ancestor.Core
                     var rowObjectFactory = objectFactory as Func<DataRow, object>;
                     if (rowObjectFactory == null && factory != null)
                         rowObjectFactory = row => factory();
-                    foreach (var item in TableToCollection(result.ReturnDataTable, dataType, rowObjectFactory, firstOnly, mode))
+                    foreach (var item in TableToCollection(result.ReturnDataTable, dataType, rowObjectFactory, firstOnly, mode, hardwordEncoding))
                         list.Add(item);
                     break;
             }
             return list;
         }
 
-        private static object DeepCloneItem(object src, object dst, ref Dictionary<PropertyInfo, Tuple<PropertyInfo, Func<object, object>>> propertyMap, IDictionary<PropertyInfo, HardWordAttribute> hardWords, ResultListMode mode)
+        private static object DeepCloneItem(object src, object dst, ref Dictionary<PropertyInfo, Tuple<PropertyInfo, Func<object, object>>> propertyMap, IDictionary<PropertyInfo, HardWordAttribute> hardWords, ResultListMode mode, Encoding hardwordEncoding)
         {
             if (propertyMap == null)
             {
@@ -152,7 +152,8 @@ namespace Ancestor.Core
                             converter = o =>
                             {
                                 var hex = o as string;
-                                return GetValueFormHex(hex, attr.Encoding);
+                                var encoding = hardwordEncoding ?? attr.Encoding;
+                                return GetValueFormHex(hex, encoding);
                             };
                         }
                         else
@@ -193,11 +194,11 @@ namespace Ancestor.Core
                 yield return b;
             }
         }
-        public static IEnumerable TableToCollection(DataTable table, Type instanceType, Func<DataRow, object> objectFactory, bool firstOnly, ResultListMode mode)
+        public static IEnumerable TableToCollection(DataTable table, Type instanceType, Func<DataRow, object> objectFactory, bool firstOnly, ResultListMode mode, Encoding hardwordEncoding)
         {
             if (IsAnonymousType(instanceType))
             {
-                var wrappers = GetWrappers(GetColumnNames(table.Columns), instanceType, true);
+                var wrappers = GetWrappers(GetColumnNames(table.Columns), instanceType, true, hardwordEncoding);
                 foreach (DataRow row in table.Rows)
                 {
                     yield return InternalRowToObjectByConstructor(row, instanceType, wrappers);
@@ -207,7 +208,7 @@ namespace Ancestor.Core
             }
             else
             {
-                var wrappers = GetWrappers(GetColumnNames(table.Columns), instanceType, false);
+                var wrappers = GetWrappers(GetColumnNames(table.Columns), instanceType, false, hardwordEncoding);
                 if (objectFactory == null)
                     objectFactory = r => Activator.CreateInstance(instanceType);
                 foreach (DataRow row in table.Rows)
@@ -230,20 +231,20 @@ namespace Ancestor.Core
             return null;
         }
 
-        public static IEnumerable<T> TableToCollection<T>(DataTable table, Func<DataRow, object> objectFactory = null, bool firstOnly = false, ResultListMode mode = ResultListMode.All)
+        public static IEnumerable<T> TableToCollection<T>(DataTable table, Func<DataRow, object> objectFactory = null, bool firstOnly = false, ResultListMode mode = ResultListMode.All, Encoding hardwordEncoding = null)
         {
-            return (IEnumerable<T>)TableToCollection(table, typeof(T), objectFactory, firstOnly, mode);
+            return (IEnumerable<T>)TableToCollection(table, typeof(T), objectFactory, firstOnly, mode, hardwordEncoding);
         }
-        public static object RowToObject(DataRow row, Type instanceType, object instance, Func<DataRow, object> objectFactory = null, ResultListMode mode = ResultListMode.All)
+        public static object RowToObject(DataRow row, Type instanceType, object instance, Func<DataRow, object> objectFactory = null, ResultListMode mode = ResultListMode.All, Encoding hardwordEncoding = null)
         {
             if (IsAnonymousType(instanceType))
             {
-                var wrappers = GetWrappers(GetColumnNames(row.Table.Columns), instanceType, true);
+                var wrappers = GetWrappers(GetColumnNames(row.Table.Columns), instanceType, true, hardwordEncoding);
                 return InternalRowToObjectByConstructor(row, instanceType, wrappers);
             }
             else
             {
-                var wrappers = GetWrappers(GetColumnNames(row.Table.Columns), instanceType, false);
+                var wrappers = GetWrappers(GetColumnNames(row.Table.Columns), instanceType, false, hardwordEncoding);
                 if (instance != null)
                     return InternalRowToObjectBySetter(row, instance, wrappers, mode);
                 if (objectFactory == null)
@@ -275,7 +276,7 @@ namespace Ancestor.Core
             }
         }
 
-        internal static List<RowPropertyWrapper> GetWrappers(string[] columns, Type instanceType, bool ignoreWritable)
+        internal static List<RowPropertyWrapper> GetWrappers(string[] columns, Type instanceType, bool ignoreWritable, Encoding hardwordEncoding)
         {
             var result = instanceType.GetProperties().Aggregate(new
             {
@@ -296,7 +297,10 @@ namespace Ancestor.Core
                         };
                         var attribute = HardWordManager.Get(property);
                         if (attribute != null)
-                            wrapper.Encoding = attribute.Encoding;
+                        {
+                            
+                            wrapper.Encoding = hardwordEncoding ?? attribute.Encoding;
+                        }
                         seed.List.Add(wrapper);
                     }
                 }

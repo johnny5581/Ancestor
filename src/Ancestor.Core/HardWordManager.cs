@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -11,17 +12,35 @@ namespace Ancestor.Core
 {
     public static class HardWordManager
     {
-        private static Func<PropertyInfo, HardWordAttribute> _hardwordResolver;
+        private static Func<PropertyInfo, HardWordAttribute> _HardwordResolver;
         private static readonly ConcurrentDictionary<PropertyInfo, HardWordAttribute> AttributeCaches
             = new ConcurrentDictionary<PropertyInfo, HardWordAttribute>();
         private static readonly ConcurrentDictionary<Type, PropertyInfo[]> PropertyCaches
             = new ConcurrentDictionary<Type, PropertyInfo[]>();
         private static readonly Dictionary<PropertyInfo, HardWordAttribute> RegisteredProperties
             = new Dictionary<PropertyInfo, HardWordAttribute>();
+        private static readonly Encoding _SystemEncoding;
+        private static Encoding _Encoding;
+
+        static HardWordManager()
+        {
+            var sysCodePage = CultureInfo.CurrentCulture.TextInfo.ANSICodePage;
+            if (sysCodePage == 0)
+                _SystemEncoding = Encoding.UTF8;
+            else
+                _SystemEncoding = Encoding.GetEncoding(sysCodePage);
+        }
+
+        public static Encoding Encoding
+        {
+            get { return _Encoding ?? _SystemEncoding; }
+            set { _Encoding = value; }
+        }
+
         public static Func<PropertyInfo, HardWordAttribute> HardWordResolver
         {
-            get { return _hardwordResolver ?? GetHardWordAttribute; }
-            set { _hardwordResolver = value; }
+            get { return _HardwordResolver ?? GetHardWordAttribute; }
+            set { _HardwordResolver = value; }
         }
 
         public static HardWordAttribute Get(PropertyInfo property)

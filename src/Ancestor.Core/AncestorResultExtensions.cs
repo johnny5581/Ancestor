@@ -17,16 +17,16 @@ namespace Ancestor.Core
     /// </summary>
     public static class AncestorResultExtensions
     {
-        public static IList<T> ResultList<T>(this IAncestorResult result, Func<T> objectFactory, ResultListMode? mode = null)
+        public static IList<T> ResultList<T>(this IAncestorResult result, Func<T> objectFactory, ResultListMode? mode = null, Encoding hardwordEncoding = null)
         {
             var m = mode ?? (objectFactory != null ? ResultListMode.Value : ResultListMode.All);
-            return (IList<T>)AncestorResultHelper.ResultList(result, typeof(T), objectFactory, m);
+            return (IList<T>)AncestorResultHelper.ResultList(result, typeof(T), objectFactory, m, hardwordEncoding);
         }
 
-        public static T ResultFirst<T>(this IAncestorResult result, Func<T> objectFactory, ResultListMode? mode = null)
+        public static T ResultFirst<T>(this IAncestorResult result, Func<T> objectFactory, ResultListMode? mode = null, Encoding hardwordEncoding = null)
         {
             var m = mode ?? (objectFactory != null ? ResultListMode.Value : ResultListMode.All);
-            return (T)AncestorResultHelper.ResultFirst(result, typeof(T), objectFactory, m);
+            return (T)AncestorResultHelper.ResultFirst(result, typeof(T), objectFactory, m, hardwordEncoding);
         }
 
         public static T ResultScalar<T>(this IAncestorResult result, T defaultValue = default(T))
