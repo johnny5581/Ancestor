@@ -30,8 +30,11 @@ namespace Ancestor.Core
         }
         public static void RegisterProperty(PropertyInfo property, HardWordAttribute attr = null)
         {
+            var hw = attr ?? new HardWordAttribute();
             if (!RegisteredProperties.ContainsKey(property))
-                RegisteredProperties.Add(property, attr ?? new HardWordAttribute());
+                RegisteredProperties.Add(property, hw);
+            if (AttributeCaches.ContainsKey(property))
+                AttributeCaches[property] = hw;
         }
         public static void RegisterProperty<T>(Expression<Func<T, object>> propertySelector, HardWordAttribute attr = null)
         {

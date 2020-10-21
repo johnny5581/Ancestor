@@ -7,6 +7,7 @@ using Oracle.ManagedDataAccess.Client;
 using Oracle.ManagedDataAccess.Types;
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -20,8 +21,8 @@ namespace Ancestor.DataAccess.DBAction
     public class ManagedOracleAction : DbActionBase
     {
         private static string _LastTnsLocation;
-        private static readonly Dictionary<string, string> TnsNamesMap
-            = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private static readonly ConcurrentDictionary<string, string> TnsNamesMap
+            = new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private static readonly Dictionary<string, OracleDbType> TypeNameMap
            = new Dictionary<string, OracleDbType>(StringComparer.OrdinalIgnoreCase)
            {
@@ -84,64 +85,65 @@ namespace Ancestor.DataAccess.DBAction
                     }
                     GlobalSetting.SystemTnsnamesPath = tnsnamesPath;
                 }
-
-                if (!string.IsNullOrEmpty(GlobalSetting.ManagedOracleTnsNamesLocation) && _LastTnsLocation != GlobalSetting.ManagedOracleTnsNamesLocation)
+                lock (TnsNamesMap)
                 {
-                    TnsNamesMap.Clear();
-                    // parse tnsnames.ora to TnsNamesMap
-                    var stack = new Stack<StringBuilder>();
-                    var sb = new StringBuilder();                    
-                    int c;
-                    using (var fs = File.OpenRead(GlobalSetting.ManagedOracleTnsNamesLocation))
-                    using (var sr = new StreamReader(fs))
+                    if (!string.IsNullOrEmpty(GlobalSetting.ManagedOracleTnsNamesLocation) && _LastTnsLocation != GlobalSetting.ManagedOracleTnsNamesLocation)
                     {
-                        while ((c = sr.Read()) != -1)
+                        TnsNamesMap.Clear();
+                        // parse tnsnames.ora to TnsNamesMap
+                        var stack = new Stack<StringBuilder>();
+                        var sb = new StringBuilder();
+                        int c;
+                        using (var fs = File.OpenRead(GlobalSetting.ManagedOracleTnsNamesLocation))
+                        using (var sr = new StreamReader(fs))
                         {
-                            switch ((char)c)
+                            while ((c = sr.Read()) != -1)
                             {
-                                case '#':
-                                    sr.ReadLine();
-                                    continue;
-                                case '(':
-                                    stack.Push(sb);
-                                    sb = new StringBuilder();
-                                    break;
-                                case ')':
-                                    var t = stack.Pop();
-                                    if (stack.Count == 0)
-                                    {
-                                        var s = t.ToString();
-                                        var splited = s.Split(new[] { '=' }, StringSplitOptions.RemoveEmptyEntries);
-                                        if (splited.Length > 0)
+                                switch ((char)c)
+                                {
+                                    case '#':
+                                        sr.ReadLine();
+                                        continue;
+                                    case '(':
+                                        stack.Push(sb);
+                                        sb = new StringBuilder();
+                                        break;
+                                    case ')':
+                                        var t = stack.Pop();
+                                        if (stack.Count == 0)
                                         {
-                                            var name = splited[0];
-                                            var dns = sb.Insert(0, "(").Append(")").ToString();
-                                            dns = Regex.Replace(dns, @"[\r|\n|\s]", string.Empty);
-                                            TnsNamesMap.Add(name, dns);                                            
+                                            var s = t.ToString();
+                                            var splited = s.Split(new[] { '=' }, StringSplitOptions.RemoveEmptyEntries);
+                                            if (splited.Length > 0)
+                                            {
+                                                var name = splited[0];
+                                                var dns = sb.Insert(0, "(").Append(")").ToString();
+                                                dns = Regex.Replace(dns, @"[\r|\n|\s]", string.Empty);
+                                                TnsNamesMap.AddOrUpdate(name, dns, (n, v) => dns);
+                                            }
+                                            sb.Clear();
+
                                         }
-                                        sb.Clear();
+                                        else
+                                        {
+                                            t.Append(sb.Insert(0, "(").Append(")").ToString());
+                                            sb = t;
+                                        }
+                                        break;
+                                    case '\r':
+                                    case '\n':
+                                        continue;
+                                    default:
+                                        sb.Append((char)c);
+                                        break;
+                                }
 
-                                    }
-                                    else
-                                    {
-                                        t.Append(sb.Insert(0, "(").Append(")").ToString());
-                                        sb = t;
-                                    }
-                                    break;
-                                case '\r':
-                                case '\n':
-                                    continue;
-                                default:
-                                    sb.Append((char)c);
-                                    break;
                             }
-
                         }
+
+                        _LastTnsLocation = GlobalSetting.ManagedOracleTnsNamesLocation;
                     }
-
-                    _LastTnsLocation = GlobalSetting.ManagedOracleTnsNamesLocation;
                 }
-
                 var key = TnsNamesMap.Keys.FirstOrDefault(k => k.StartsWith(dbObject.Node, StringComparison.OrdinalIgnoreCase));
                 if (key != null)
                     connStrBuilder.DataSource = TnsNamesMap[key];
