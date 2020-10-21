@@ -62,6 +62,8 @@ namespace Ancestor.DataAccess.DAO
 
         private class OracleExpressionResolver : ExpressionResolver
         {
+            private bool _stringComparisonFlag = false;
+
             public OracleExpressionResolver(OracleDao dao, ReferenceInfo reference, ExpressionResolveOption option) : base(dao, reference, option)
             {
             }
@@ -69,6 +71,59 @@ namespace Ancestor.DataAccess.DAO
             protected override ExpressionResolver CreateInstance(DataAccessObjectBase dao, ReferenceInfo reference, ExpressionResolveOption option)
             {
                 return new OracleExpressionResolver((OracleDao)dao, reference, option);
+            }
+            protected override Expression VisitBinary(BinaryExpression node)
+            {
+                if(node.Left.NodeType == ExpressionType.Call)
+                {
+                    var methodNode = node.Left as MethodCallExpression;
+                    var method = methodNode.Method;
+                    Expression leftNode = null, rightNode = null;
+                    var compareFlag = false;
+                    string @operator = null;
+                    if(method.DeclaringType == typeof(string) && method.Name == "CompareTo")
+                    {
+                        leftNode = methodNode.Object;
+                        rightNode = methodNode.Arguments[0];
+                        compareFlag = true;                       
+                    }
+                    else if(method.IsStatic && method.DeclaringType == typeof(string) && method.Name == "Compare")
+                    {
+                        leftNode = methodNode.Arguments[0];
+                        rightNode = methodNode.Arguments[1];
+                        compareFlag = true;
+                    }
+
+                    if(compareFlag)
+                    {
+                        switch (node.NodeType)
+                        {
+                            case ExpressionType.Equal:
+                                @operator = "=";
+                                break;
+                            case ExpressionType.NotEqual:
+                                @operator = "<>";
+                                break;
+                            case ExpressionType.LessThan:
+                                @operator = "<";
+                                break;
+                            case ExpressionType.LessThanOrEqual:
+                                @operator = "<=";
+                                break;
+                            case ExpressionType.GreaterThan:
+                                @operator = ">";
+                                break;
+                            case ExpressionType.GreaterThanOrEqual:
+                                @operator = ">=";
+                                break;
+                            default:
+                                throw new NotSupportedException(string.Format("string comparison symbol '{0}' is not supported", node.NodeType));
+                        }
+                        ProcessBinaryComparison(leftNode, rightNode, @operator);
+                        return node;
+                    }
+                }                
+                return base.VisitBinary(node);
             }
 
 
@@ -93,12 +148,6 @@ namespace Ancestor.DataAccess.DAO
                 }
                 return base.VisitStaticMethodCall(node);
             }
-
-            protected override void ProcessStringMethodCall(Expression objectNode, MethodInfo method, ReadOnlyCollection<Expression> args)
-            {
-                base.ProcessStringMethodCall(objectNode, method, args);
-            }
-
             protected override void ProcessTruncateMethodCall(Expression nodeObject)
             {
                 Write("Trunc(");
