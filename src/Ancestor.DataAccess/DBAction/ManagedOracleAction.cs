@@ -116,7 +116,7 @@ namespace Ancestor.DataAccess.DBAction
                                             var splited = s.Split(new[] { '=' }, StringSplitOptions.RemoveEmptyEntries);
                                             if (splited.Length > 0)
                                             {
-                                                var name = splited[0];
+                                                var name = splited[0].Trim();
                                                 var dns = sb.Insert(0, "(").Append(")").ToString();
                                                 dns = Regex.Replace(dns, @"[\r|\n|\s]", string.Empty);
                                                 TnsNamesMap.AddOrUpdate(name, dns, (n, v) => dns);

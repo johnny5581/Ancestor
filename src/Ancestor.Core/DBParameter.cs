@@ -50,6 +50,10 @@ namespace Ancestor.Core
         {
             Value = value;
         }
+        public DBParameter(string name, ParameterDirection direction, int size)
+            : this(name, DbType.String, direction, size)
+        {
+        }
         /// <summary>
         /// Parameter name
         /// </summary>
