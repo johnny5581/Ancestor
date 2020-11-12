@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data;
 using System.Linq;
 using System.Reflection;
@@ -55,8 +56,21 @@ namespace Ancestor.Core
             {
                 if (result.ReturnDataTable.Rows.Count > 0)
                 {
+                    var flag = false;
+                    TypeConverter converter = null;
                     foreach (DataRow row in result.ReturnDataTable.Rows)
-                        list.Add((T)row[0]);
+                    {
+                        var value = row[0];
+                        if(!flag)
+                        {
+                            if(value != null && !typeof(T).IsAssignableFrom(value.GetType()))
+                                converter = TypeDescriptor.GetConverter(typeof(T));
+                            flag = true;
+                        }
+                        if (converter != null)
+                            value = converter.ConvertFromString(Convert.ToString(value));
+                        list.Add((T)value);
+                    }                        
                 }
             }
             else if (result.DataList != null)
