@@ -16,8 +16,4 @@
     </PackageReference>
   </ItemGroup>
 
-  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-    <Exec Command="if &quot;$(ConfigurationName)&quot; == &quot;Debug&quot; (&#xD;&#xA;  del /s /f $(OutDir)..\*.nupkg&#xD;&#xA;)" />
-  </Target>
-
 </Project>

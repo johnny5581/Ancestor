@@ -50,7 +50,9 @@ namespace Ancestor.DataAccess.DAO
 
         #region Update
         AncestorExecuteResult UpdateEntity(object model, object whereObject, UpdateMode mode, object origin, int exceptRows, AncestorOptions options);
-        AncestorExecuteResult UpdateEntity(object model, LambdaExpression predicate, UpdateMode mode, object origin, int exceptRows, AncestorOptions options);        
+        AncestorExecuteResult UpdateEntity(object model, LambdaExpression predicate, UpdateMode mode, object origin, int exceptRows, AncestorOptions options);
+        AncestorExecuteResult UpdateEntityRef(object model, object whereObject, object refModel, object origin, int exceptRows, AncestorOptions options);
+        AncestorExecuteResult UpdateEntityRef(object model, LambdaExpression predicate, object refModel, object origin, int exceptRows, AncestorOptions options);
         #endregion Update
 
         #region Delete 

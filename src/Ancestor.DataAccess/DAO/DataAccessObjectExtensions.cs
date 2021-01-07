@@ -515,6 +515,14 @@ namespace System
         {
             return dao.UpdateEntity(valueObject, predicate, UpdateMode.All, null, exceptRows, null);
         }
+        public static AncestorExecuteResult Update<T>(this IDataAccessObjectEx dao, T model, object whereObject, T refModel, int exceptRows = -1) where T:class, new()
+        {
+            return dao.UpdateEntityRef(model, whereObject, refModel, null, exceptRows, null);
+        }
+        public static AncestorExecuteResult Update<T>(this IDataAccessObjectEx dao, T model, Expression<Func<T, bool>> predicate, T refModel, int exceptRows = -1) where T : class, new()
+        {
+            return dao.UpdateEntityRef(model, predicate, refModel, null, exceptRows, null);
+        }
         public static AncestorExecuteResult Delete(this IDataAccessObjectEx dao, object whereObject, int exceptRows = -1)
         {
             return dao.DeleteEntity(whereObject, null, exceptRows, null);

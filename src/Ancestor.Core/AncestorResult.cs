@@ -210,6 +210,10 @@ namespace Ancestor.Core
         {
             return (T)GetClassValue<T>(name);
         }
+        public string GetString(string name = DBParameter.ReturnValueName)
+        {
+            return (string)GetClassValue<string>(name);
+        }
 
         public override object ResultScalar()
         {

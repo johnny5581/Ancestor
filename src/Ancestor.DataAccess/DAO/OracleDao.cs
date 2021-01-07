@@ -62,8 +62,6 @@ namespace Ancestor.DataAccess.DAO
 
         private class OracleExpressionResolver : ExpressionResolver
         {
-            private bool _stringComparisonFlag = false;
-
             public OracleExpressionResolver(OracleDao dao, ReferenceInfo reference, ExpressionResolveOption option) : base(dao, reference, option)
             {
             }

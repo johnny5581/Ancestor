@@ -138,8 +138,8 @@ namespace Ancestor.DataAccess.DAO
         }
         protected virtual DbActionOptions CreateDbOptions(AncestorOptions options, DbActionOptions dbOptions)
         {
-            if (options != null)            
-                dbOptions.Parse(options);            
+            if (options != null)
+                dbOptions.Parse(options);
             return dbOptions;
         }
         protected abstract ExpressionResolver CreateExpressionResolver(ReferenceInfo reference, ExpressionResolver.ExpressionResolveOption option);
@@ -354,7 +354,7 @@ namespace Ancestor.DataAccess.DAO
 
                 var whereText = mergeResult.Sql2 != null ? ("Where " + mergeResult.Sql2) : "";
                 var sql = string.Format("Select {0} From {1} {2}", selectorText, tableText, whereText);
-                var dataType = mergeResult.Reference.GetReferenceType();
+                var dataType = selector == null ? mergeResult.Reference.GetReferenceType() : null;
                 var opt = CreateDbOptions(options);
                 return InternalQuery(sql, mergeResult.Parameters, dataType, firstOnly, opt);
             }, ReturnAncestorResult);
@@ -499,9 +499,47 @@ namespace Ancestor.DataAccess.DAO
                 var reference = GetReferenceInfo(model, null, predicate.Parameters[0].Type, origin);
                 var updateCommand = CreateUpdateCommand(reference, model, mode, dbParameters);
                 var name = reference.GetReferenceName();
+                ExpressionResolver.ExpressionResolveResult result = null;
+                if (predicate != null)
+                {
+                    var resolver = CreateExpressionResolver(reference, null);
+                    result = resolver.Resolve(predicate);
+                    dbParameters.AddRange(result.Parameters);
+                }
+
+                var whereCommand = result != null ? "Where " + result.Sql : "";
+                var opt = CreateDbOptions(options);
+                var sql = string.Format("Update {0} Set {1} {2}", name, updateCommand, whereCommand);
+                return _dbAction.ExecuteNonQuery(sql, dbParameters, opt);
+            }, ReturnEffectRowResult, exceptRows);
+        }
+        public AncestorExecuteResult UpdateEntityRef(object model, object whereObject, object refModel, object origin, int exceptRows, AncestorOptions options)
+        {
+            return TryCatch(() =>
+            {
+                var dbParameters = new DBParameterCollection();
+                var modelType = (model ?? refModel).GetType();
+                var reference = GetReferenceInfo(model, modelType, null, origin);
+                var updateCommand = CreateUpdateCommand(reference, model, refModel, modelType, dbParameters);
+                var name = reference.GetReferenceName();
                 var ignoreNull = true;
                 if (options != null)
                     ignoreNull = options.IgnoreNullCondition;
+                var whereCommand = CreateWhereCommand(whereObject, null, ignoreNull, dbParameters);
+                var sql = string.Format("Update {0} Set {1} {2}", name, updateCommand, whereCommand);
+                var opt = CreateDbOptions(options);
+                return _dbAction.ExecuteNonQuery(sql, dbParameters, opt);
+            }, ReturnEffectRowResult, exceptRows);
+        }
+        public AncestorExecuteResult UpdateEntityRef(object model, LambdaExpression predicate, object refModel, object origin, int exceptRows, AncestorOptions options)
+        {
+            return TryCatch(() =>
+            {
+                var dbParameters = new DBParameterCollection();
+                var modelType = (model ?? refModel).GetType();
+                var reference = GetReferenceInfo(model, modelType, null, origin);
+                var updateCommand = CreateUpdateCommand(reference, model, refModel, modelType, dbParameters);
+                var name = reference.GetReferenceName();
                 ExpressionResolver.ExpressionResolveResult result = null;
                 if (predicate != null)
                 {
@@ -868,6 +906,34 @@ namespace Ancestor.DataAccess.DAO
 
             return string.Join(", ", fieldMap.Select(kv => string.Format("{0} = {1}", kv.Key, kv.Value)));
         }
+        protected virtual string CreateUpdateCommand(ReferenceInfo info, object model, object refModel, Type modelType, DBParameterCollection parameters)
+        {
+            var refProperties = TableManager.GetBrowsableProperties(modelType);
+            var fieldMap = new Dictionary<string, string>();
+            foreach (var refProperty in refProperties)
+            {
+                var value = refProperty.GetValue(model, null);
+                var valueRef = refProperty.GetValue(refModel, null);
+                if(value != valueRef)
+                {
+                    var fname = TableManager.GetName(refProperty);
+                    var hd = HardWordManager.Get(refProperty);
+                    if (value != null)
+                    {
+                        var parameter = CreateParameter(value, fname, true, UpdateParameterPrefix, null, hd);
+                        fieldMap.Add(fname, parameter.ValueName);
+                        if (!parameter.IsSysDateConverted)
+                            parameters.Add(parameter.ValueName, parameter.Value);
+                    }
+                    else
+                    {
+                        fieldMap.Add(fname, "NULL");
+                    }
+                }
+            }
+            return string.Join(", ", fieldMap.Select(kv => string.Format("{0} = {1}", kv.Key, kv.Value)));
+        }
+
         private void CreateDBParameterFromDictionary(IDictionary<string, object> dic, ref DBParameterCollection collection)
         {
             collection.AddRange(dic.Select(r => new DBParameter(r.Key.ToUpper(), r.Value)));
@@ -2447,6 +2513,8 @@ namespace Ancestor.DataAccess.DAO
                 _dbAction = null;
             }
         }
+
+
         #endregion
     }
 }
