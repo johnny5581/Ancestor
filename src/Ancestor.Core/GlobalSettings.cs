@@ -8,7 +8,8 @@ namespace Ancestor.Core
     /// <summary>
     /// Log manager
     /// </summary>
-    public static class GlobalSetting
+    [Obsolete("use AncestorGlobalOptions instead.", true)]
+    public static class GlobalSettings
     {
         private static bool _raiseExp = false;
         internal static string TnsnamesPath;
@@ -39,19 +40,5 @@ namespace Ancestor.Core
             set { TnsnamesPath = value; }
         }
     }
-    public delegate void LoggingEventHandler(object sender, LoggingEventArgs e);
-    public class LoggingEventArgs : EventArgs
-    {
-        public LoggingEventArgs(Guid id, string tag, string name, string message)
-        {
-            Id = id;
-            Tag = tag;
-            Name = name;
-            Message = message;
-        }
-        public Guid Id { get; }
-        public string Tag { get; }
-        public string Name { get; }
-        public string Message { get; }
-    }
+    
 }

@@ -72,7 +72,7 @@ namespace Ancestor.DataAccess.DBAction
                 connStrBuilder.DataSource = dbObject.Node;
             else if (dbObject.ConnectedMode == DBObject.Mode.TNSNAME)
             {
-                if (GlobalSetting.TnsnamesPath == null && GlobalSetting.SystemTnsnamesPath == null)
+                if (AncestorGlobalOptions.TnsnamesPath == null && AncestorGlobalOptions.SystemTnsnamesPath == null)
                 {
                     string tnsnamesPath = "";
                     // try to find tnsnames.ora file for resolve name alias
@@ -83,18 +83,18 @@ namespace Ancestor.DataAccess.DBAction
                         if (File.Exists(path))
                             tnsnamesPath = path;
                     }
-                    GlobalSetting.SystemTnsnamesPath = tnsnamesPath;
+                    AncestorGlobalOptions.SystemTnsnamesPath = tnsnamesPath;
                 }
                 lock (TnsNamesMap)
                 {
-                    if (!string.IsNullOrEmpty(GlobalSetting.ManagedOracleTnsNamesLocation) && _LastTnsLocation != GlobalSetting.ManagedOracleTnsNamesLocation)
+                    if (!string.IsNullOrEmpty(AncestorGlobalOptions.ManagedOracleTnsNamesLocation) && _LastTnsLocation != AncestorGlobalOptions.ManagedOracleTnsNamesLocation)
                     {
                         TnsNamesMap.Clear();
                         // parse tnsnames.ora to TnsNamesMap
                         var stack = new Stack<StringBuilder>();
                         var sb = new StringBuilder();
                         int c;
-                        using (var fs = File.OpenRead(GlobalSetting.ManagedOracleTnsNamesLocation))
+                        using (var fs = File.OpenRead(AncestorGlobalOptions.ManagedOracleTnsNamesLocation))
                         using (var sr = new StreamReader(fs))
                         {
                             while ((c = sr.Read()) != -1)
@@ -141,7 +141,7 @@ namespace Ancestor.DataAccess.DBAction
                             }
                         }
 
-                        _LastTnsLocation = GlobalSetting.ManagedOracleTnsNamesLocation;
+                        _LastTnsLocation = AncestorGlobalOptions.ManagedOracleTnsNamesLocation;
                     }
                 }
                 var key = TnsNamesMap.Keys.FirstOrDefault(k => k.StartsWith(dbObject.Node, StringComparison.OrdinalIgnoreCase));
@@ -150,6 +150,10 @@ namespace Ancestor.DataAccess.DBAction
             }
 
             connStrBuilder.UserID = dbObject.ID;
+            if (dbObject.IsLazyPassword ?? AncestorGlobalOptions.GlobalLazyPassword)
+            {
+                dbObject.Password = LazyPassword.GetPassword(new OracleConnection(), dbObject.ID, dbObject.LazyPasswordSecretKey, dbObject.LazyPasswordSecretKeyNode);
+            }
             connStrBuilder.Password = dbObject.Password;
 
             var extra = dbObject.ConnectionString as OracleConnectionString ?? new OracleConnectionString();
@@ -356,7 +360,7 @@ namespace Ancestor.DataAccess.DBAction
                 var oracleString = (OracleString)dbValue;
                 if (!oracleString.IsNull)
                     return oracleString.Value;
-                if (GlobalSetting.UseOracleStringParameter)
+                if (AncestorGlobalOptions.UseOracleStringParameter)
                     return oracleString.ToString();
             }
             return null;

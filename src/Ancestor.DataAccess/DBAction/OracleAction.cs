@@ -65,6 +65,13 @@ namespace Ancestor.DataAccess.DBAction
             else
                 connStrBuilder.DataSource = dbObject.Node;
             connStrBuilder.UserID = dbObject.ID;
+
+            if (dbObject.IsLazyPassword ?? AncestorGlobalOptions.GlobalLazyPassword)
+            {
+                dbObject.Password = LazyPassword.GetPassword(new OracleConnection(), dbObject.ID, dbObject.LazyPasswordSecretKey, dbObject.LazyPasswordSecretKeyNode);
+            }
+
+
             connStrBuilder.Password = dbObject.Password;
 
             var extra = dbObject.ConnectionString as OracleConnectionString ?? new OracleConnectionString();
@@ -163,7 +170,7 @@ namespace Ancestor.DataAccess.DBAction
             var cmd = (OracleCommand)command;
             var opt = options as OracleOptions;
             if (cmd != null && opt != null)
-                BindOptions(cmd, opt);                
+                BindOptions(cmd, opt);
             base.PreQuery(command, options);
         }
         protected override void RestoreParameter(IDbDataParameter dbDataParameter, DBParameter dbParameter)
@@ -219,7 +226,7 @@ namespace Ancestor.DataAccess.DBAction
                 var oracleString = (OracleString)dbValue;
                 if (!oracleString.IsNull)
                     return oracleString.Value;
-                if (GlobalSetting.UseOracleStringParameter)
+                if (AncestorGlobalOptions.UseOracleStringParameter)
                     return oracleString.ToString();
             }
             return null;

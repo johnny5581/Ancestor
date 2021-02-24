@@ -370,7 +370,7 @@ namespace Ancestor.DataAccess.DBAction
                 args = string.Join(",", parameters);
             var message = string.Format("action={0} sql=\"{1}\" args=[{2}]", action, sql, args);
             _lastSqlCommand = sql;
-            GlobalSetting.Log(_dao, GetType().Name, action, message);
+            AncestorGlobalOptions.Log(_dao, GetType().Name, action, message);
         }
         private void OpenConnection()
         {

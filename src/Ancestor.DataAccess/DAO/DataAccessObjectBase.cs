@@ -108,7 +108,7 @@ namespace Ancestor.DataAccess.DAO
         /// </summary>
         public bool RaiseException
         {
-            get { return _raiseExp ?? GlobalSetting.RaiseException; }
+            get { return _raiseExp ?? AncestorGlobalOptions.RaiseException; }
             set { _raiseExp = value; }
         }
 
@@ -879,6 +879,33 @@ namespace Ancestor.DataAccess.DAO
                     {
                         fieldMap.Add(fname, "NULL");
                     }
+                }
+            }
+            else if(referenceType != model.GetType())
+            {
+                var properties = TableManager.GetBrowsableProperties(referenceType);
+                var srcProperties = model.GetType().GetProperties();
+                foreach (var property in properties)
+                {
+                    var srcProperty = srcProperties.FirstOrDefault(r => r.Name == property.Name && r.PropertyType == property.PropertyType);
+                    if(srcProperty != null)
+                    {
+                        var value = srcProperty.GetValue(model, null);
+                        var fname = TableManager.GetName(property);
+                        var hd = HardWordManager.Get(property);
+
+                        if (value != null)
+                        {
+                            var parameter = CreateParameter(value, fname, true, UpdateParameterPrefix, null, hd);
+                            fieldMap.Add(fname, parameter.ValueName);
+                            if (!parameter.IsSysDateConverted)
+                                parameters.Add(parameter.ValueName, parameter.Value);
+                        }
+                        else if (mode == UpdateMode.All)
+                        {
+                            fieldMap.Add(fname, "NULL");
+                        }
+                    }                    
                 }
             }
             else
@@ -1842,6 +1869,8 @@ namespace Ancestor.DataAccess.DAO
                     ProcessServerMemberAccess(node);
                 else if (node.Member.DeclaringType == typeof(DateTime))
                     ProcessDateTimeMemberAccess(node);
+                else
+                    ProcessConstantMember(null, node.Member);                                
                 return node;
             }
 

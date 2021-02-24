@@ -82,6 +82,19 @@ namespace Ancestor.Core
         /// Parameter postfix string
         /// </summary>
         public string ParameterPostfix { get; set; }
+
+        /// <summary>
+        /// enable lazy password system
+        /// </summary>
+        public bool? IsLazyPassword { get; set; }
+        /// <summary>
+        /// lazy password secret key
+        /// </summary>
+        public string LazyPasswordSecretKey { get; set; }
+        /// <summary>
+        /// lazy password secret key connect dsn target
+        /// </summary>
+        public string LazyPasswordSecretKeyNode { get; set; }
     }
     /// <summary>
     /// Extra connection string interface

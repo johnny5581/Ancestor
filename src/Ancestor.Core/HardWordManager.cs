@@ -33,7 +33,7 @@ namespace Ancestor.Core
 
         public static Encoding Encoding
         {
-            get { return _Encoding ?? _SystemEncoding; }
+            get { return _Encoding ?? AncestorGlobalOptions.GlobalHardwordEncoding ??_SystemEncoding; }
             set { _Encoding = value; }
         }
 
