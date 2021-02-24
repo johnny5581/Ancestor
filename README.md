@@ -1,5 +1,5 @@
 # Ancestor
-An cross-platform ORM-style database tool with lambda expression support
+An cross-platform ORM-style database tool with lambda expression supportted.
 
-## Getting start
-Please visit [the document](https://github.com/WizTonE/Ancestor/wiki) to see more usages.
+The original project is [WizTonE\Ancestor](https://github.com/wiztone/Ancestor)
+
