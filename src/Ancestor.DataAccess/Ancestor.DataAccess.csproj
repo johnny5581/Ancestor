@@ -78,7 +78,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Oracle.DataAccess">
-      <HintPath>..\..\libs\Oracle_DataAccess\Oracle.DataAccess.dll</HintPath>
+      <HintPath>..\..\libs\Oracle.DataAccess.dll</HintPath>
       <Private>false</Private>
       <SpecificVersion>false</SpecificVersion>
     </Reference>
