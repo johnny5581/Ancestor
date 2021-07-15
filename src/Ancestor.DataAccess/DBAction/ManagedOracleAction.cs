@@ -250,6 +250,8 @@ namespace Ancestor.DataAccess.DBAction
             var p = new OracleParameter(parameter.Name, parameter.Value);
             if (!parameter.ParameterType.IsLazy)
                 p.OracleDbType = GetParameterType(parameter.ParameterType);
+            else if (parameter.Value != null && parameter.Value is string && (parameter.Value as string).Length > 4000)
+                p.OracleDbType = OracleDbType.Long;
             if (parameter.Size != null)
                 p.Size = parameter.Size.Value;
             p.Direction = parameter.ParameterDirection;
