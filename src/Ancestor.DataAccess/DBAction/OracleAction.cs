@@ -56,12 +56,12 @@ namespace Ancestor.DataAccess.DBAction
             return new OracleOptions();
         }
 
-        protected override IDbConnection CreateConnection(DBObject dbObject)
+        protected override IDbConnection CreateConnection(DBObject dbObject, out string dsn)
         {
-            var dsn = dbObject.IP ?? dbObject.Node;
+            var dataSourceName = dbObject.IP ?? dbObject.Node;
             var connStrBuilder = new OracleConnectionStringBuilder();
             if (dbObject.ConnectedMode == DBObject.Mode.Direct)
-                connStrBuilder.DataSource = string.Format(@"(DESCRIPTION = (CONNECT_DATA = (SERVER=DEDICATED)(SERVICE_NAME = {0}))(ADDRESS_LIST = (ADDRESS =  (COMMUNITY = tcp.world)(PROTOCOL = TCP)(Host = {1})(Port = 1521))(ADDRESS = (COMMUNITY = tcp.world)(PROTOCOL = TCP)(Host = {1})(Port = 1526))))", dbObject.Node, dsn);
+                connStrBuilder.DataSource = string.Format(@"(DESCRIPTION = (CONNECT_DATA = (SERVER=DEDICATED)(SID = {0}))(ADDRESS_LIST = (ADDRESS =  (COMMUNITY = tcp.world)(PROTOCOL = TCP)(Host = {1})(Port = 1521))(ADDRESS = (COMMUNITY = tcp.world)(PROTOCOL = TCP)(Host = {1})(Port = 1526))))", dbObject.Node, dataSourceName);
             else
                 connStrBuilder.DataSource = dbObject.Node;
             connStrBuilder.UserID = dbObject.ID;
@@ -95,6 +95,7 @@ namespace Ancestor.DataAccess.DBAction
                 }
             }
 
+            dsn = dbObject.Node;
             return new OracleConnection(connStrBuilder.ConnectionString);
         }
 
@@ -102,9 +103,12 @@ namespace Ancestor.DataAccess.DBAction
         {
             var p = new OracleParameter(parameter.Name, parameter.Value);
             if (!parameter.ParameterType.IsLazy)
-                p.OracleDbType = GetParameterType(parameter.ParameterType);
+                p.OracleDbType = GetParameterType(parameter.ParameterType, parameter.Value);
+            else if (parameter.Value != null && parameter.Value is string && (parameter.Value as string).Length > 4000)
+                p.OracleDbType = OracleDbType.Long;
             if (parameter.Size != null)
                 p.Size = parameter.Size.Value;
+            
             p.Direction = parameter.ParameterDirection;
             var opt = options as OracleOptions;
             switch (p.OracleDbType)
@@ -297,7 +301,7 @@ namespace Ancestor.DataAccess.DBAction
             if (opt.FetchSize != null)
                 cmd.FetchSize = opt.FetchSize.Value;
         }
-        private static OracleDbType GetParameterType(DBParameterType parameterType)
+        private static OracleDbType GetParameterType(DBParameterType parameterType, object value)
         {
             OracleDbType type;
             if (parameterType.IsDbType)

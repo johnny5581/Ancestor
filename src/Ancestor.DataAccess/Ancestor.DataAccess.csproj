@@ -4,6 +4,7 @@
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <UserSecretsId>1886080f-6369-4495-a4ac-e1d24c185897</UserSecretsId>
+    <AssemblyName>AncestorEx.DataAccess</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Properties\**" />

@@ -62,15 +62,15 @@ namespace Ancestor.DataAccess.DBAction
             return new OracleOptions();
         }
 
-        protected override IDbConnection CreateConnection(DBObject dbObject)
+        protected override IDbConnection CreateConnection(DBObject dbObject, out string dsn)
         {
-            var dsn = dbObject.IP ?? dbObject.Node;
+            var dataSourceName = dbObject.IP ?? dbObject.Node;
             var connStrBuilder = new OracleConnectionStringBuilder();
             if (dbObject.ConnectedMode == DBObject.Mode.Direct)
-                connStrBuilder.DataSource = string.Format(@"(DESCRIPTION = (CONNECT_DATA = (SERVER=DEDICATED)(SERVICE_NAME = {0}))(ADDRESS_LIST = (ADDRESS =  (COMMUNITY = tcp.world)(PROTOCOL = TCP)(Host = {1})(Port = 1521))(ADDRESS = (COMMUNITY = tcp.world)(PROTOCOL = TCP)(Host = {1})(Port = 1526))))", dbObject.Node, dsn);
+                connStrBuilder.DataSource = string.Format(@"(DESCRIPTION = (CONNECT_DATA = (SERVER=DEDICATED)(SID = {0}))(ADDRESS_LIST = (ADDRESS =  (COMMUNITY = tcp.world)(PROTOCOL = TCP)(Host = {1})(Port = 1521))(ADDRESS = (COMMUNITY = tcp.world)(PROTOCOL = TCP)(Host = {1})(Port = 1526))))", dbObject.Node, dataSourceName);
             else if (dbObject.ConnectedMode == DBObject.Mode.DSN)
                 connStrBuilder.DataSource = dbObject.Node;
-            else if (dbObject.ConnectedMode == DBObject.Mode.TNSNAME)
+            else if (dbObject.ConnectedMode == DBObject.Mode.TNSNAME || (dbObject.IsLazyPassword ?? AncestorGlobalOptions.GlobalLazyPassword))
             {
                 if (AncestorGlobalOptions.TnsnamesPath == null && AncestorGlobalOptions.SystemTnsnamesPath == null)
                 {
@@ -144,15 +144,13 @@ namespace Ancestor.DataAccess.DBAction
                         _LastTnsLocation = AncestorGlobalOptions.ManagedOracleTnsNamesLocation;
                     }
                 }
-                var key = TnsNamesMap.Keys.FirstOrDefault(k => k.StartsWith(dbObject.Node, StringComparison.OrdinalIgnoreCase));
-                if (key != null)
-                    connStrBuilder.DataSource = TnsNamesMap[key];
+                connStrBuilder.DataSource = FindDataSource(dbObject.Node);                                    
             }
 
             connStrBuilder.UserID = dbObject.ID;
             if (dbObject.IsLazyPassword ?? AncestorGlobalOptions.GlobalLazyPassword)
             {
-                dbObject.Password = LazyPassword.GetPassword(new OracleConnection(), dbObject.ID, dbObject.LazyPasswordSecretKey, dbObject.LazyPasswordSecretKeyNode);
+                dbObject.Password = LazyPassword.GetPassword(new OracleConnection(), dbObject.ID, dbObject.LazyPasswordSecretKey, dbObject.LazyPasswordSecretKeyNode, GetLazyPasswordConnectionString);
             }
             connStrBuilder.Password = dbObject.Password;
 
@@ -176,8 +174,23 @@ namespace Ancestor.DataAccess.DBAction
                     typeof(OracleConnectionStringBuilder).GetProperty(p.DisplayName).SetValue(connStrBuilder, value, null);
                 }
             }
-
+            dsn = dbObject.Node;
             return new OracleConnection(connStrBuilder.ConnectionString);
+        }
+
+        private static string GetLazyPasswordConnectionString(string connStr)
+        {
+            var builder = new OracleConnectionStringBuilder(connStr);
+            builder.DataSource = FindDataSource(builder.DataSource);
+            return builder.ConnectionString;
+        }
+
+        private static string FindDataSource(string key) 
+        {
+            var tnsnameKey= TnsNamesMap.Keys.FirstOrDefault(k => k.StartsWith(key, StringComparison.OrdinalIgnoreCase));
+            if (tnsnameKey != null)
+                return TnsNamesMap[tnsnameKey];
+            return null;
         }
 
         private static string FindOracleHome()

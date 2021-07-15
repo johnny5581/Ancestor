@@ -19,7 +19,7 @@ namespace Ancestor.DataAccess.DBAction
             throw new NotImplementedException();
         }
 
-        protected override IDbConnection CreateConnection(DBObject dbObject)
+        protected override IDbConnection CreateConnection(DBObject dbObject, out string dsn)
         {
             throw new NotImplementedException();
         }

@@ -49,7 +49,7 @@ namespace Ancestor.DataAccess.DAO
             value = null;
             var key = GetSourceKey(sourceType);
             ReferenceStruct v;
-            if(_referenceMap.TryGetValue(key, out v))
+            if(_referenceMap.TryGetValue(key, out v) || (_referenceMap.Count == 1 && _referenceMap.TryGetValue("", out v)))
             {
                 value = Tuple.Create(v.ReferenceType, v.ReferenceName);
                 return true;

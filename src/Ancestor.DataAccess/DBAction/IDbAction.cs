@@ -12,9 +12,12 @@ namespace Ancestor.DataAccess.DBAction
 {
     public interface IDbAction : IDisposable
     {
+        #region Properties
         bool IsTransacting { get; }
         bool AutoCloseConnection { get; set; }
         IDbConnection Connection { get; }
+        string DataSource { get; }
+        #endregion
         void BeginTransaction();
         void BeginTransaction(IsolationLevel isolationLevel);
         void Commit();

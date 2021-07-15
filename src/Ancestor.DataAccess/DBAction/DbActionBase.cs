@@ -44,13 +44,16 @@ namespace Ancestor.DataAccess.DBAction
         protected readonly object Locker = new object();
         private readonly DataAccessObjectBase _dao;
         private string _lastSqlCommand;
+        
         private bool _autoCloseConnection = true;
 
         public DbActionBase(DataAccessObjectBase dao, DBObject dbObject)
         {
-            _connection = CreateConnection(dbObject);
+            string dsn;
+            _connection = CreateConnection(dbObject, out dsn);
             if (_connection == null)
                 throw new InvalidOperationException("no connection found");
+            DataSource = dsn;
             _dao = dao;
         }
 
@@ -73,6 +76,10 @@ namespace Ancestor.DataAccess.DBAction
         internal IDbTransaction Transaction
         {
             get { return _transaction; }
+        }
+        public virtual string DataSource
+        {
+            get; set;
         }
         #endregion Property
 
@@ -240,7 +247,7 @@ namespace Ancestor.DataAccess.DBAction
         #endregion Public
 
         #region Protected / Private
-        protected abstract IDbConnection CreateConnection(DBObject dbObject);
+        protected abstract IDbConnection CreateConnection(DBObject dbObject, out string dataSource);
         protected abstract IDbDataAdapter CreateAdapter(IDbCommand command);
         protected abstract IDbDataParameter CreateParameter(DBParameter parameter, DbActionOptions options);
         protected abstract DbActionOptions CreateOption();

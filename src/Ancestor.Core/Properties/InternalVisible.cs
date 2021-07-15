@@ -1,3 +1,3 @@
 ﻿using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("Ancestor.DataAccess")]
+[assembly: InternalsVisibleTo("AncestorEx.DataAccess")]

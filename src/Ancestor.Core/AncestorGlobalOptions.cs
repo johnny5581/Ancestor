@@ -19,6 +19,7 @@ namespace Ancestor.Core
         internal static string TnsnamesPath;
         internal static string SystemTnsnamesPath;
         private static Encoding _gHwEnc;
+        private static readonly Guid _staticId = new Guid("00000000000000000000000000000000");
         
         public static event LoggingEventHandler Logging;
         static AncestorGlobalOptions()
@@ -106,7 +107,10 @@ namespace Ancestor.Core
         {            
             var handler = Logging;
             if (handler != null)
-                handler(sender, new LoggingEventArgs(sender.Guid, tag, name, message));
+            {
+                var guid = sender != null ? sender.Guid : _staticId;
+                handler(sender, new LoggingEventArgs(guid, tag, name, message));
+            }
         }       
     }
     public delegate void LoggingEventHandler(object sender, LoggingEventArgs e);

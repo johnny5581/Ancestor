@@ -586,6 +586,7 @@ namespace Ancestor.DataAccess.DAO
                 {
                     var resolver = CreateExpressionResolver(reference, null);
                     result = resolver.Resolve(predicate);
+                    dbParameters.AddRange(result.Parameters);
                 }
 
                 var whereCommand = result != null ? "Where " + result.Sql : "";
@@ -783,13 +784,16 @@ namespace Ancestor.DataAccess.DAO
                 if (dataProperty != null)
                 {
                     var value = dataProperty.GetValue(model, null);
-                    var hd = HardWordManager.Get(refProperty);
-                    var fname = TableManager.GetName(refProperty);
-                    var oarameter = CreateParameter(value, fname, true, hardWord: hd);
-                    fields.Add(fname);
-                    values.Add(oarameter.ValueName);
-                    if (!oarameter.IsSysDateConverted)
-                        parameters.Add(oarameter.ValueName, oarameter.Value);
+                    if (value != null)
+                    {
+                        var hd = HardWordManager.Get(refProperty);
+                        var fname = TableManager.GetName(refProperty);
+                        var parameter = CreateParameter(value, fname, true, hardWord: hd);
+                        fields.Add(fname);
+                        values.Add(parameter.ValueName);
+                        if (!parameter.IsSysDateConverted)
+                            parameters.Add(parameter.ValueName, parameter.Value);
+                    }
                 }
 
             }

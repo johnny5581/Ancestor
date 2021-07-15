@@ -20,16 +20,26 @@ namespace Ancestor.DataAccess.DBAction
             {
                 try
                 {
-                    var s = ConfigurationManager.ConnectionStrings["123"];
-                    return true;
+                    var connectionStringsSection = ConfigurationManager.GetSection("connectionStrings") as ConnectionStringsSection;
+                    // must have ConnectionStringsSection
+                    if (connectionStringsSection != null)
+                    {
+                        Core.AncestorGlobalOptions.Log(null, "LazyPassword", "GetPasswordInternal", "connectionStrings checked");
+                        // must have protected attribute
+                        var @protected = connectionStringsSection.SectionInformation.IsProtected;
+                        Core.AncestorGlobalOptions.Log(null, "LazyPassword", "GetPasswordInternal", "protected: " + @protected);
+                        return @protected;
+                    }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    return false;
+                    if (Core.AncestorGlobalOptions.Debug)
+                        Console.WriteLine("avaliable checked fail:" + ex.Message);
                 }
+                return false;
             }
         }
-        public static string GetPassword(string user, string secret = null, string keyNode = null)
+        public static string GetPassword(string user, string secret = null, string keyNode = null, Func<string, string> connStrFactory = null)
         {
             // auto detected connection type
             // if 64bit use managed else use legency oracle
@@ -37,16 +47,16 @@ namespace Ancestor.DataAccess.DBAction
                 ? Assembly.Load("Oracle.ManagedDataAccess").GetType("Oracle.ManagedDataAccess.Client.OracleConnection", true, true)
                 : Assembly.Load("Oracle.DataAccess").GetType("Oracle.DataAccess.Client.OracleConnection", true, true);
             var conn = (IDbConnection)Activator.CreateInstance(connType);
-            return GetPassword(conn, user, secret, keyNode);
+            return GetPassword(conn, user, secret, keyNode, connStrFactory);
         }
-        public static string GetPassword(IDbConnection conn, string user, string secret = null, string keyNode = null)
+        public static string GetPassword(IDbConnection conn, string user, string secret = null, string keyNode = null, Func<string, string> connStrFactory = null)
         {
             if (user == null)
                 throw new NullReferenceException("user can not be null");
             var secretKey = secret ?? GetLazyPasswordSecretKey(user);
-            return GetPasswordInternal(conn, user, secretKey, keyNode);
+            return GetPasswordInternal(conn, user, secretKey, keyNode, connStrFactory);
         }
-        internal static string GetPasswordInternal(IDbConnection conn, string user, string secretKey, string keyNode = null)
+        internal static string GetPasswordInternal(IDbConnection conn, string user, string secretKey, string keyNode = null, Func<string, string> connStrFactory = null)
         {
             if (user == null)
                 throw new NullReferenceException("user can not be null");
@@ -56,26 +66,32 @@ namespace Ancestor.DataAccess.DBAction
             if (keyNode == null)
                 keyNode = GetLazyPasswordSecretKeyNode(user);
 
-            if (Core.AncestorGlobalOptions.Debug)
-            {
-                Console.WriteLine("schema=" + user);
-                Console.WriteLine("secretKey=" + secretKey);
-                Console.WriteLine("keyNode=" + keyNode);
-            }
+            Core.AncestorGlobalOptions.Log(null, "LazyPassword", "GetPasswordInternal", "schema=" + user);
+            Core.AncestorGlobalOptions.Log(null, "LazyPassword", "GetPasswordInternal", "secretKey=" + secretKey);
+            Core.AncestorGlobalOptions.Log(null, "LazyPassword", "GetPasswordInternal", "keyNode=" + keyNode);
+
+
+
             string pwd;
             if (!SchemaPasswords.TryGetValue(user, out pwd))
-            {
-                var connStr = ConfigurationManager.ConnectionStrings[keyNode].ConnectionString;
-                conn.ConnectionString = connStr;
-                if (Core.AncestorGlobalOptions.Debug)
-                {
-                    Console.WriteLine("connStr=" + connStr);
-                }
+            {                
                 var opened = !conn.State.HasFlag(ConnectionState.Open);
+                
                 try
                 {
                     if (opened)
+                    {
+                        var connStr = ConfigurationManager.ConnectionStrings[keyNode].ConnectionString;
+                        //var connStr = "User Id=cghuky;Password=uky";
+                        Core.AncestorGlobalOptions.Log(null, "LazyPassword", "GetPasswordInternal", "connStr=" + connStr);
+                        if (connStrFactory != null)
+                        {
+                            connStr = connStrFactory(connStr);
+                            Core.AncestorGlobalOptions.Log(null, "LazyPassword", "GetPasswordInternal", "connStrFactory=" + connStr);
+                        }
+                        conn.ConnectionString = connStr;
                         conn.Open();
+                    }
                     using (var cmd = conn.CreateCommand())
                     {
                         cmd.CommandText = "FGET_USER_PASSWORD";
@@ -110,10 +126,7 @@ namespace Ancestor.DataAccess.DBAction
                         if (value != "null")
                         {
                             pwd = value;
-                            if (Core.AncestorGlobalOptions.Debug)
-                            {
-                                Console.WriteLine("pwd=" + pwd);
-                            }
+                            Core.AncestorGlobalOptions.Log(null, "LazyPassword", "GetPasswordInternal", "pwd=" + pwd);
                             SchemaPasswords.Add(user, pwd);
                         }
                         else
@@ -125,7 +138,7 @@ namespace Ancestor.DataAccess.DBAction
                 catch (Exception ex)
                 {
                     if (Core.AncestorGlobalOptions.Debug)
-                        Console.WriteLine(ex.ToString());
+                        Core.AncestorGlobalOptions.Log(null, "LazyPassword", "GetPasswordInternal", ex.ToString());
                 }
                 finally
                 {
