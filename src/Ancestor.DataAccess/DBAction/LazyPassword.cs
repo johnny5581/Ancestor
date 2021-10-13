@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -46,8 +47,8 @@ namespace Ancestor.DataAccess.DBAction
             var connType = Environment.Is64BitProcess
                 ? Assembly.Load("Oracle.ManagedDataAccess").GetType("Oracle.ManagedDataAccess.Client.OracleConnection", true, true)
                 : Assembly.Load("Oracle.DataAccess").GetType("Oracle.DataAccess.Client.OracleConnection", true, true);
-            var conn = (IDbConnection)Activator.CreateInstance(connType);
-            return GetPassword(conn, user, secret, keyNode, connStrFactory);
+            using (var conn = (IDbConnection)Activator.CreateInstance(connType))
+                return GetPassword(conn, user, secret, keyNode, connStrFactory);
         }
         public static string GetPassword(IDbConnection conn, string user, string secret = null, string keyNode = null, Func<string, string> connStrFactory = null)
         {
@@ -74,9 +75,9 @@ namespace Ancestor.DataAccess.DBAction
 
             string pwd;
             if (!SchemaPasswords.TryGetValue(user, out pwd))
-            {                
+            {
                 var opened = !conn.State.HasFlag(ConnectionState.Open);
-                
+
                 try
                 {
                     if (opened)
@@ -89,6 +90,9 @@ namespace Ancestor.DataAccess.DBAction
                             connStr = connStrFactory(connStr);
                             Core.AncestorGlobalOptions.Log(null, "LazyPassword", "GetPasswordInternal", "connStrFactory=" + connStr);
                         }
+
+                        connStr = ReplaceMinPoolSize(conn, connStr);
+
                         conn.ConnectionString = connStr;
                         conn.Open();
                     }
@@ -143,10 +147,43 @@ namespace Ancestor.DataAccess.DBAction
                 finally
                 {
                     if (conn.State.HasFlag(ConnectionState.Open) && opened)
+                    {
+                        //TODO: do not use oracle conn
+                        if (conn is Oracle.DataAccess.Client.OracleConnection)
+                            Oracle.DataAccess.Client.OracleConnection.ClearPool(conn as Oracle.DataAccess.Client.OracleConnection);
+                        else if(conn is Oracle.ManagedDataAccess.Client.OracleConnection)
+                            Oracle.ManagedDataAccess.Client.OracleConnection.ClearPool(conn as Oracle.ManagedDataAccess.Client.OracleConnection);
                         conn.Close();
+                    }
                 }
             }
             return pwd;
+        }
+        private static string ReplaceMinPoolSize(IDbConnection conn, string connStr)
+        {
+            if (conn == null)
+                throw new ArgumentNullException("conn", "connection cant be null");
+            string connStrBuilderTypeName = null;
+            if (conn.GetType().FullName == "Oracle.DataAccess.Client.OracleConnection")
+                connStrBuilderTypeName = "Oracle.DataAccess.Client.OracleConnectionStringBuilder";
+            else if (conn.GetType().FullName == "Oracle.ManagedDataAccess.Client.OracleConnection")
+                connStrBuilderTypeName = "Oracle.ManagedDataAccess.Client.OracleConnectionStringBuilder";
+            System.Diagnostics.Trace.WriteLine("DbConnectionStringBuilder type: " + connStrBuilderTypeName);
+            var connStrBuilderType = conn.GetType().Assembly.GetType(connStrBuilderTypeName, true, true);
+            if (connStrBuilderType == null)
+                throw new NullReferenceException("can not found type: " + connStrBuilderTypeName);
+            var connStrBuilder = (DbConnectionStringBuilder)Activator.CreateInstance(connStrBuilderType, connStr);
+            PropertyInfo property = null;
+            switch (connStrBuilderTypeName)
+            {
+                case "Oracle.DataAccess.Client.OracleConnectionStringBuilder":
+                case "Oracle.ManagedDataAccess.Client.OracleConnectionStringBuilder":
+                    property = connStrBuilderType.GetProperty("MinPoolSize");
+                    if (property != null)
+                        property.SetValue(connStrBuilder, 0, null);
+                    break;
+            }
+            return connStrBuilder.ConnectionString;
         }
         private static string GetLazyPasswordSecretKey(string user)
         {

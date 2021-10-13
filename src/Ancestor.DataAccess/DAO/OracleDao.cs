@@ -15,6 +15,9 @@ namespace Ancestor.DataAccess.DAO
         public OracleDao(DBObject dbObject) : base(dbObject)
         {
         }
+        public OracleDao(string connStr) : base(connStr)
+        {
+        }
 
         public override string ParameterSymbol
         {
@@ -42,13 +45,23 @@ namespace Ancestor.DataAccess.DAO
                     return null;
             }
         }
+        protected override IDbAction CreateDbAction(string connStr)
+        {
+            if (Environment.Is64BitProcess)
+                return new ManagedOracleAction(this, connStr);
+            else
+                return new OracleAction(this, connStr);
+        }
         public override string ConvertFromHardWord(string name, HardWordAttribute attribute)
         {
             return string.Format("RawToHex({0})", name);
         }
         public override string ConvertToHardWord(string name, HardWordAttribute attribute)
         {
+            if (attribute.IgnorePrefix)
+                return base.ConvertToHardWord(name, attribute);
             return string.Format("UTL_RAW.Cast_To_VARCHAR2({0})", name);
+
         }
         //public override string GetServerTime()
         //{
@@ -72,27 +85,27 @@ namespace Ancestor.DataAccess.DAO
             }
             protected override Expression VisitBinary(BinaryExpression node)
             {
-                if(node.Left.NodeType == ExpressionType.Call)
+                if (node.Left.NodeType == ExpressionType.Call)
                 {
                     var methodNode = node.Left as MethodCallExpression;
                     var method = methodNode.Method;
                     Expression leftNode = null, rightNode = null;
                     var compareFlag = false;
                     string @operator = null;
-                    if(method.DeclaringType == typeof(string) && method.Name == "CompareTo")
+                    if (method.DeclaringType == typeof(string) && method.Name == "CompareTo")
                     {
                         leftNode = methodNode.Object;
                         rightNode = methodNode.Arguments[0];
-                        compareFlag = true;                       
+                        compareFlag = true;
                     }
-                    else if(method.IsStatic && method.DeclaringType == typeof(string) && method.Name == "Compare")
+                    else if (method.IsStatic && method.DeclaringType == typeof(string) && method.Name == "Compare")
                     {
                         leftNode = methodNode.Arguments[0];
                         rightNode = methodNode.Arguments[1];
                         compareFlag = true;
                     }
 
-                    if(compareFlag)
+                    if (compareFlag)
                     {
                         switch (node.NodeType)
                         {
@@ -120,7 +133,7 @@ namespace Ancestor.DataAccess.DAO
                         ProcessBinaryComparison(leftNode, rightNode, @operator);
                         return node;
                     }
-                }                
+                }
                 return base.VisitBinary(node);
             }
 

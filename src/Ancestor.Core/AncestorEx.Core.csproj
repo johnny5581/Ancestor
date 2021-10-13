@@ -3,9 +3,11 @@
   <PropertyGroup>
     <TargetFrameworks>net40;netstandard2.0</TargetFrameworks>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <AssemblyName>AncestorEx.Core</AssemblyName>
     <Version>1.5</Version>
+    <Company>Ancestor Team</Company>
+    <Product>AncestorEx</Product>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net40'">
@@ -20,5 +22,5 @@
       <Version>5.0.0</Version>
     </PackageReference>
   </ItemGroup>
-
+  
 </Project>

@@ -56,7 +56,15 @@ namespace Ancestor.DataAccess.DBAction
             DataSource = dsn;
             _dao = dao;
         }
-
+        public DbActionBase(DataAccessObjectBase dao, string connStr)
+        {
+            string dsn;
+            _connection = CreateConnection(connStr, out dsn);
+            if (_connection == null)
+                throw new InvalidOperationException("no connection found");
+            DataSource = dsn;
+            _dao = dao;
+        }
         #region Property
         /// <summary>
         /// Is transacting
@@ -248,6 +256,7 @@ namespace Ancestor.DataAccess.DBAction
 
         #region Protected / Private
         protected abstract IDbConnection CreateConnection(DBObject dbObject, out string dataSource);
+        protected abstract IDbConnection CreateConnection(string connStr, out string dataSource);
         protected abstract IDbDataAdapter CreateAdapter(IDbCommand command);
         protected abstract IDbDataParameter CreateParameter(DBParameter parameter, DbActionOptions options);
         protected abstract DbActionOptions CreateOption();

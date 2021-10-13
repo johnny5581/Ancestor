@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29411.108
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ancestor.Core", "Ancestor.Core\Ancestor.Core.csproj", "{93E503F4-2FC4-407C-BE4F-7302855C1BDE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AncestorEx.Core", "Ancestor.Core\AncestorEx.Core.csproj", "{93E503F4-2FC4-407C-BE4F-7302855C1BDE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ancestor.DataAccess", "Ancestor.DataAccess\Ancestor.DataAccess.csproj", "{FA803211-43EA-42E0-8894-4AA9F97A16EF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AncestorEx.DataAccess", "Ancestor.DataAccess\AncestorEx.DataAccess.csproj", "{FA803211-43EA-42E0-8894-4AA9F97A16EF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

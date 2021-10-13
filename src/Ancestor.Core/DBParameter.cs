@@ -62,6 +62,16 @@ namespace Ancestor.Core
         {
             Value = value;
         }
+        public DBParameter(string name, object value, DbType type)
+            : this(name, type, ParameterDirection.Input)
+        {
+            Value = value;
+        }
+        public DBParameter(string name, object value, string type)
+            : this(name, type, ParameterDirection.Input)
+        {
+            Value = value;
+        }
         public DBParameter(string name, ParameterDirection direction, int size)
             : this(name, DbType.String, direction, size)
         {
@@ -260,7 +270,17 @@ namespace Ancestor.Core
             return parameter;
         }
 
-
-
+        public DBParameter Add(string name, object value, DbType type)
+        {
+            var parameter = new DBParameter(name, value, type);
+            Add(parameter);
+            return parameter;
+        }
+        public DBParameter Add(string name, object value, string type)
+        {
+            var parameter = new DBParameter(name, value, type);
+            Add(parameter);
+            return parameter;
+        }
     }
 }

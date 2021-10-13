@@ -637,6 +637,12 @@ namespace System
         {
             return dao.QueryFromModel(null, typeof(T), realType, false, null);
         }
+
+        public static AncestorResult QueryAll<T>(this IDataAccessObjectEx dao, Expression<Func<T, object>> selector)
+        {
+            return dao.QueryFromLambda(null, selector, null, false, null);
+        }
+
         public static AncestorResult GroupFrom<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate, Expression<Func<T, object>> selector, Expression<Func<T, object>> groupBy)
         {
             return dao.GroupFromLambda(predicate, selector, groupBy, null, null);

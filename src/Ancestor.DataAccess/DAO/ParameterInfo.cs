@@ -7,21 +7,25 @@ namespace Ancestor.DataAccess.DAO
 {
     public class ParameterInfo
     {
-        private readonly string _name;
+        private readonly string _valueName;
         private readonly object _value;
         private readonly bool _isSysDateConverted;
+        private readonly Core.HardWordAttribute _hardword;
+        private readonly bool _isHardword;
+        private readonly string _paraName;
 
-
-        public ParameterInfo(string name, object value, bool isSysDateConverted)
+        public ParameterInfo(string paraName, string valueName, object value, bool isSysDateConverted, Core.HardWordAttribute hardword)
         {
-            _name = name;
+            _paraName = paraName;
+            _valueName = valueName;
             _value = value;
             _isSysDateConverted = isSysDateConverted;
+            _hardword = hardword;
         }
 
         public string ValueName
         {
-            get { return _name; }
+            get { return _valueName ?? ParameterName; }
         }
         public object Value
         {
@@ -36,6 +40,20 @@ namespace Ancestor.DataAccess.DAO
         public bool IsSysDateConverted
         {
             get { return _isSysDateConverted; }
+        }
+
+        public string ParameterName
+        {
+            get { return _paraName; }
+        }
+
+        public bool IsHardword
+        {
+            get { return _hardword != null; }
+        }
+        public Core.HardWordAttribute Hardword
+        {
+            get { return _hardword; }
         }
     }
 }

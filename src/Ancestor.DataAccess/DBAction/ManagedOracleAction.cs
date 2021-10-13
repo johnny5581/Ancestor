@@ -47,11 +47,14 @@ namespace Ancestor.DataAccess.DBAction
                 { "REFCURSOR", OracleDbType.RefCursor },
                 { "CLOB", OracleDbType.Clob },
                 { "LONG", OracleDbType.Long },
+                { "LONGRAW", OracleDbType.LongRaw },
            };
         public ManagedOracleAction(DataAccessObjectBase dao, DBObject dbObject) : base(dao, dbObject)
         {
         }
-
+        public ManagedOracleAction(DataAccessObjectBase dao, string connStr) : base(dao, connStr)
+        {
+        }
         #region Protected / Private
         protected override IDbDataAdapter CreateAdapter(IDbCommand command)
         {
@@ -177,7 +180,11 @@ namespace Ancestor.DataAccess.DBAction
             dsn = dbObject.Node;
             return new OracleConnection(connStrBuilder.ConnectionString);
         }
-
+        protected override IDbConnection CreateConnection(string connStr, out string dataSource)
+        {
+            dataSource = null;
+            return new OracleConnection(connStr);
+        }
         private static string GetLazyPasswordConnectionString(string connStr)
         {
             var builder = new OracleConnectionStringBuilder(connStr);
@@ -250,8 +257,6 @@ namespace Ancestor.DataAccess.DBAction
             var p = new OracleParameter(parameter.Name, parameter.Value);
             if (!parameter.ParameterType.IsLazy)
                 p.OracleDbType = GetParameterType(parameter.ParameterType);
-            else if (parameter.Value != null && parameter.Value is string && (parameter.Value as string).Length > 4000)
-                p.OracleDbType = OracleDbType.Long;
             if (parameter.Size != null)
                 p.Size = parameter.Size.Value;
             p.Direction = parameter.ParameterDirection;

@@ -41,11 +41,14 @@ namespace Ancestor.DataAccess.DBAction
                 { "REFCURSOR", OracleDbType.RefCursor },
                 { "CLOB", OracleDbType.Clob },
                 { "LONG", OracleDbType.Long },
+                { "LONGRAW", OracleDbType.LongRaw },
            };
         public OracleAction(DataAccessObjectBase dao, DBObject dbObject) : base(dao, dbObject)
         {
         }
-
+        public OracleAction(DataAccessObjectBase dao, string connStr) : base(dao, connStr)
+        {
+        }
         #region Protected / Private
         protected override IDbDataAdapter CreateAdapter(IDbCommand command)
         {
@@ -90,7 +93,7 @@ namespace Ancestor.DataAccess.DBAction
             {
                 var value = p.Value ?? p.DefaultValue;
                 if (value != null)
-                {
+                {                    
                     typeof(OracleConnectionStringBuilder).GetProperty(p.DisplayName).SetValue(connStrBuilder, value, null);
                 }
             }
@@ -98,14 +101,16 @@ namespace Ancestor.DataAccess.DBAction
             dsn = dbObject.Node;
             return new OracleConnection(connStrBuilder.ConnectionString);
         }
-
+        protected override IDbConnection CreateConnection(string connStr, out string dataSource)
+        {
+            dataSource = null;
+            return new OracleConnection(connStr);
+        }
         protected override IDbDataParameter CreateParameter(DBParameter parameter, DbActionOptions options)
         {
             var p = new OracleParameter(parameter.Name, parameter.Value);
             if (!parameter.ParameterType.IsLazy)
                 p.OracleDbType = GetParameterType(parameter.ParameterType, parameter.Value);
-            else if (parameter.Value != null && parameter.Value is string && (parameter.Value as string).Length > 4000)
-                p.OracleDbType = OracleDbType.Long;
             if (parameter.Size != null)
                 p.Size = parameter.Size.Value;
             
@@ -357,8 +362,8 @@ namespace Ancestor.DataAccess.DBAction
                 case DbType.Object:
                     return OracleDbType.Blob;
                 case DbType.Guid:
-                    return OracleDbType.Raw;
-                case DbType.Boolean:
+                    return OracleDbType.Raw;                
+                case DbType.Boolean:                    
                 default:
                     throw new NotSupportedException("not supported type: " + dbType);
             }

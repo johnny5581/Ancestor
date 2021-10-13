@@ -13,13 +13,20 @@ namespace Ancestor.DataAccess.DBAction
         public MSSqlAction(DataAccessObjectBase dao, DBObject dbObject) : base(dao, dbObject)
         {
         }
-
+        public MSSqlAction(DataAccessObjectBase dao, string connStr) : base(dao, connStr)
+        {
+        }
         protected override IDbDataAdapter CreateAdapter(IDbCommand command)
         {
             throw new NotImplementedException();
         }
 
         protected override IDbConnection CreateConnection(DBObject dbObject, out string dsn)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override IDbConnection CreateConnection(string connStr, out string dataSource)
         {
             throw new NotImplementedException();
         }

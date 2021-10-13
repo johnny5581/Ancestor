@@ -56,5 +56,6 @@ namespace Ancestor.Core
         {
             get { return _encoding ?? DefaultEncoding; }
         }
+        public bool IgnorePrefix { get; set; }
     }
 }

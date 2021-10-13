@@ -31,6 +31,10 @@ namespace Ancestor.DataAccess.DAO
             throw new NotImplementedException();
         }
 
+        protected override IDbAction CreateDbAction(string connStr)
+        {
+            throw new NotImplementedException();
+        }
 
         protected override ExpressionResolver CreateExpressionResolver(ReferenceInfo reference, ExpressionResolver.ExpressionResolveOption option)
         {
