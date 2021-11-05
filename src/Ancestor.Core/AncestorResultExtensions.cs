@@ -28,6 +28,18 @@ namespace Ancestor.Core
             var m = mode ?? (objectFactory != null ? ResultListMode.Value : ResultListMode.All);
             return (T)AncestorResultHelper.ResultFirst(result, typeof(T), objectFactory, m, hardwordEncoding);
         }
+        #region Tuple result
+        public static IList<Tuple<T1, T2>> ResultList<T1, T2>(this IAncestorResult result, Func<Tuple<T1, T2>> objectFactory = null, ResultListMode? mode = null, Encoding hardwordEncoding = null)
+        {
+            var m = mode ?? (objectFactory != null ? ResultListMode.Value : ResultListMode.All);
+            return (IList<Tuple<T1, T2>>)AncestorResultHelper.ResultList(result, new Type[] { typeof(T1), typeof(T2) }, objectFactory, m, hardwordEncoding);
+        }
+        public static Tuple<T1, T2> ResultFirst<T1, T2>(this IAncestorResult result, Func<Tuple<T1, T2>> objectFactory = null, ResultListMode? mode = null, Encoding hardwordEncoding = null)
+        {
+            var m = mode ?? (objectFactory != null ? ResultListMode.Value : ResultListMode.All);
+            return (Tuple<T1, T2>)AncestorResultHelper.ResultFirst(result, new Type[] { typeof(T1), typeof(T2) }, objectFactory, m, hardwordEncoding);
+        }
+        #endregion
 
         public static T ResultScalar<T>(this IAncestorResult result, T defaultValue = default(T))
         {

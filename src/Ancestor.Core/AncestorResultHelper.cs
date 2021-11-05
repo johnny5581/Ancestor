@@ -27,6 +27,11 @@ namespace Ancestor.Core
             var list = InternalResultList(result, dataType, objectFactory, true, mode, hardwordEncoding);
             return list.Count == 0 ? null : list[0];
         }
+        public static object ResultFirst(IAncestorResult result, Type[] dataTypes, Delegate objectFactory, ResultListMode mode, Encoding hardwordEncoding)
+        {
+            var list = InternalResultList(result, dataTypes, objectFactory, true, mode, hardwordEncoding);
+            return list.Count == 0 ? null : list[0];
+        }
         public static object ResultScalar(IAncestorResult result)
         {
             object value = null;
@@ -61,16 +66,16 @@ namespace Ancestor.Core
                     foreach (DataRow row in result.ReturnDataTable.Rows)
                     {
                         var value = row[0];
-                        if(!flag)
+                        if (!flag)
                         {
-                            if(value != null && !typeof(T).IsAssignableFrom(value.GetType()))
+                            if (value != null && !typeof(T).IsAssignableFrom(value.GetType()))
                                 converter = TypeDescriptor.GetConverter(typeof(T));
                             flag = true;
                         }
                         if (converter != null)
                             value = converter.ConvertFromString(Convert.ToString(value));
                         list.Add((T)value);
-                    }                        
+                    }
                 }
             }
             else if (result.DataList != null)
@@ -88,6 +93,10 @@ namespace Ancestor.Core
         public static IList ResultList(IAncestorResult result, Type dataType, Delegate objectFactory, ResultListMode mode, Encoding hardwordEncoding)
         {
             return InternalResultList(result, dataType, objectFactory, false, mode, hardwordEncoding);
+        }
+        public static IList ResultList(IAncestorResult result, Type[] dataTypes, Delegate objectFactory, ResultListMode mode, Encoding hardwordEncoding)
+        {
+            return InternalResultList(result, dataTypes, objectFactory, false, mode, hardwordEncoding);
         }
         internal static IList InternalResultList(IAncestorResult result, Type dataType, Delegate objectFactory, bool firstOnly, ResultListMode mode, Encoding hardwordEncoding)
         {
@@ -142,6 +151,70 @@ namespace Ancestor.Core
                         rowObjectFactory = row => factory();
                     foreach (var item in TableToCollection(result.ReturnDataTable, dataType, rowObjectFactory, firstOnly, mode, hardwordEncoding))
                         list.Add(item);
+                    break;
+            }
+            return list;
+        }
+        internal static IList InternalResultList(IAncestorResult result, Type[] dataTypes, Delegate objectFactory, bool firstOnly, ResultListMode mode, Encoding hardwordEncoding)
+        {
+            var baseTupleType = Type.GetType("System.Tuple`" + dataTypes.Length);
+            var tupleType = baseTupleType.MakeGenericType(dataTypes);
+            IList list = Activator.CreateInstance(typeof(List<>).MakeGenericType(tupleType)) as IList;
+
+            switch (result.DataType)
+            {
+                case AncestorResultDataType.List:
+                    if (result.DataList.Count > 0) // if has item than find anonymouse creation info
+                    {
+                        var hdMap = new Dictionary<Type, IDictionary<PropertyInfo, HardWordAttribute>>();
+                        foreach (var dataType in dataTypes)
+                        {
+                            var hds = HardWordManager.Get(dataType);
+                            hdMap.Add(dataType, hds);
+                        }
+                        var map = new Dictionary<Type, Dictionary<PropertyInfo, Tuple<PropertyInfo, Func<object, object>>>>();
+                        var itemList = CastToItem(result.DataList,
+                            o =>
+                            {
+                                var args = new object[dataTypes.Length];
+                                for (var i = 0; i < dataTypes.Length; i++)
+                                {
+                                    Dictionary<PropertyInfo, Tuple<PropertyInfo, Func<object, object>>> propertyMap;
+                                    map.TryGetValue(dataTypes[i], out propertyMap);
+                                    var flgPropertyMapEmpty = propertyMap == null;
+                                    IDictionary<PropertyInfo, HardWordAttribute> hds;
+                                    hdMap.TryGetValue(dataTypes[i], out hds);
+                                    var ins = Activator.CreateInstance(dataTypes[i]);
+                                    DeepCloneItem(o, ins, ref propertyMap, hds, mode, hardwordEncoding);
+                                    if (flgPropertyMapEmpty)
+                                        map.Add(dataTypes[i], propertyMap);
+                                    args[i] = ins;
+                                }
+                                return Activator.CreateInstance(tupleType, args);
+                            });
+                        foreach (var item in itemList)
+                        {
+                            list.Add(item);
+                            if (firstOnly)
+                                break;
+                        }
+
+                    }
+                    break;
+                case AncestorResultDataType.DataTable:
+                    var rowObjectFactory = objectFactory as Func<DataRow, object>;
+                    var listArray = new IEnumerable[dataTypes.Length];
+                    for (var i = 0; i < dataTypes.Length; i++)
+                    {
+                        listArray[i] = TableToCollection(result.ReturnDataTable, dataTypes[i], rowObjectFactory, firstOnly, mode, hardwordEncoding);
+                    }
+                    var enumerators = listArray.Select(r => r.GetEnumerator()).ToArray();
+
+                    while (enumerators.All(r => r.MoveNext()))
+                    {
+                        var listItem = Activator.CreateInstance(tupleType, enumerators.Select(r => r.Current).ToArray());
+                        list.Add(listItem);
+                    }
                     break;
             }
             return list;
@@ -312,7 +385,7 @@ namespace Ancestor.Core
                         var attribute = HardWordManager.Get(property);
                         if (attribute != null)
                         {
-                            
+
                             wrapper.Encoding = hardwordEncoding ?? attribute.Encoding;
                         }
                         seed.List.Add(wrapper);

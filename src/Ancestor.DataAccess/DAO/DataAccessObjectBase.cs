@@ -827,8 +827,8 @@ namespace Ancestor.DataAccess.DAO
         protected virtual IEnumerable<Tuple<string, string, DBParameterCollection>> CreateInsertCommands(ReferenceInfo info, IEnumerable models, Type dataType)
         {
             var fields = new List<string>();
-            var referenceType = info.GetReferenceType();
-            var refProperties = TableManager.GetBrowsableProperties(referenceType);
+            var referenceType = info.GetReferenceType();            
+            var refProperties = TableManager.GetBrowsableProperties(referenceType ?? dataType);
             var cache = new Dictionary<PropertyInfo, Tuple<string, HardWordAttribute>>();
             string field = null;
             foreach (var model in models)
