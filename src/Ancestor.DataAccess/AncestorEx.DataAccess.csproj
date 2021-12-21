@@ -2,7 +2,9 @@
   <PropertyGroup>
     <TargetFrameworks>net40;netstandard2.0</TargetFrameworks>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+		<IncludeSymbols>false</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <UserSecretsId>1886080f-6369-4495-a4ac-e1d24c185897</UserSecretsId>
     <AssemblyName>AncestorEx.DataAccess</AssemblyName>
     <Version>1.5.0</Version>
