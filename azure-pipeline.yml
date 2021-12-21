@@ -45,4 +45,7 @@ jobs:
       clean: all      
     steps:
       - template: azure-pipeline-build.yml@PipelineTemplate  
+        parameters:
+          id: 'Ancestor'
+          ignoreBuild: ${{ parameters.ignoreBuild }}
       - template: azure-pipeline-artifact.yml@PipelineTemplate
