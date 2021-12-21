@@ -69,7 +69,7 @@ namespace Ancestor.DataAccess.DBAction
                 connStrBuilder.DataSource = dbObject.Node;
             connStrBuilder.UserID = dbObject.ID;
 
-            if (dbObject.IsLazyPassword ?? AncestorGlobalOptions.GlobalLazyPassword)
+            if (LazyPassword.GetLazyPasswordEnabled(dbObject))
             {
                 dbObject.Password = LazyPassword.GetPassword(new OracleConnection(), dbObject.ID, dbObject.LazyPasswordSecretKey, dbObject.LazyPasswordSecretKeyNode);
             }
@@ -235,7 +235,7 @@ namespace Ancestor.DataAccess.DBAction
                 var oracleString = (OracleString)dbValue;
                 if (!oracleString.IsNull)
                     return oracleString.Value;
-                if (AncestorGlobalOptions.UseOracleStringParameter)
+                if (AncestorGlobalOptions.GetBoolean("option.oracle.OracleString"))
                     return oracleString.ToString();
             }
             return null;

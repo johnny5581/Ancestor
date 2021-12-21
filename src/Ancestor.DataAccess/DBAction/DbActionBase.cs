@@ -44,7 +44,7 @@ namespace Ancestor.DataAccess.DBAction
         protected readonly object Locker = new object();
         private readonly DataAccessObjectBase _dao;
         private string _lastSqlCommand;
-        
+        internal Core.Logging.ILogger logger;
         private bool _autoCloseConnection = true;
 
         public DbActionBase(DataAccessObjectBase dao, DBObject dbObject)
@@ -55,6 +55,7 @@ namespace Ancestor.DataAccess.DBAction
                 throw new InvalidOperationException("no connection found");
             DataSource = dsn;
             _dao = dao;
+            logger = Core.Logging.Logger.CreateInstance(GetType().Name);
         }
         public DbActionBase(DataAccessObjectBase dao, string connStr)
         {
@@ -64,6 +65,7 @@ namespace Ancestor.DataAccess.DBAction
                 throw new InvalidOperationException("no connection found");
             DataSource = dsn;
             _dao = dao;
+            logger = Core.Logging.Logger.CreateInstance(GetType().Name);
         }
         #region Property
         /// <summary>
@@ -386,7 +388,7 @@ namespace Ancestor.DataAccess.DBAction
                 args = string.Join(",", parameters);
             var message = string.Format("action={0} sql=\"{1}\" args=[{2}]", action, sql, args);
             _lastSqlCommand = sql;
-            AncestorGlobalOptions.Log(_dao, GetType().Name, action, message);
+            //AncestorGlobalOptions.Log(_dao, GetType().Name, action, message);
         }
         private void OpenConnection()
         {

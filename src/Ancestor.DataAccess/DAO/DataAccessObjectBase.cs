@@ -115,7 +115,7 @@ namespace Ancestor.DataAccess.DAO
         /// </summary>
         public bool RaiseException
         {
-            get { return _raiseExp ?? AncestorGlobalOptions.RaiseException; }
+            get { return _raiseExp ?? AncestorGlobalOptions.GetBoolean("ThrowOnError"); }
             set { _raiseExp = value; }
         }
 

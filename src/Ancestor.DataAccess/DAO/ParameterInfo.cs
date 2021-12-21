@@ -11,7 +11,6 @@ namespace Ancestor.DataAccess.DAO
         private readonly object _value;
         private readonly bool _isSysDateConverted;
         private readonly Core.HardWordAttribute _hardword;
-        private readonly bool _isHardword;
         private readonly string _paraName;
 
         public ParameterInfo(string paraName, string valueName, object value, bool isSysDateConverted, Core.HardWordAttribute hardword)

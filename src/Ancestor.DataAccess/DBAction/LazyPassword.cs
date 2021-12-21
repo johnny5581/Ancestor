@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -15,30 +16,37 @@ namespace Ancestor.DataAccess.DBAction
             = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private static readonly IDictionary<string, string> Cache
             = new Dictionary<string, string>();
+        private static Core.Logging.ILogger logger
+            = Core.Logging.Logger.CreateInstance("LazyPassword");
         public static bool IsAvaliable
         {
             get
             {
                 try
                 {
+                    logger.WriteLog(TraceEventType.Information, "checking connectionStrings section");
                     var connectionStringsSection = ConfigurationManager.GetSection("connectionStrings") as ConnectionStringsSection;
                     // must have ConnectionStringsSection
                     if (connectionStringsSection != null)
                     {
-                        Core.AncestorGlobalOptions.Log(null, "LazyPassword", "GetPasswordInternal", "connectionStrings checked");
+                        logger.WriteLog(TraceEventType.Verbose, "checking section security state");
                         // must have protected attribute
                         var @protected = connectionStringsSection.SectionInformation.IsProtected;
-                        Core.AncestorGlobalOptions.Log(null, "LazyPassword", "GetPasswordInternal", "protected: " + @protected);
+                        logger.WriteLog(TraceEventType.Information, "connectionStrings section IsProtected: " + @protected);
                         return @protected;
                     }
                 }
                 catch (Exception ex)
                 {
-                    if (Core.AncestorGlobalOptions.Debug)
-                        Console.WriteLine("avaliable checked fail:" + ex.Message);
+                    logger.WriteLog(TraceEventType.Information, "check connectionStrings fail: " + ex.Message);
                 }
                 return false;
             }
+        }
+
+        public static bool GetLazyPasswordEnabled(Core.DBObject dbObject)
+        {
+            return dbObject.IsLazyPassword ?? Core.AncestorGlobalOptions.GetBoolean("option.lzpw");
         }
         public static string GetPassword(string user, string secret = null, string keyNode = null, Func<string, string> connStrFactory = null)
         {
@@ -59,36 +67,35 @@ namespace Ancestor.DataAccess.DBAction
         }
         internal static string GetPasswordInternal(IDbConnection conn, string user, string secretKey, string keyNode = null, Func<string, string> connStrFactory = null)
         {
+            logger.WriteLog(TraceEventType.Verbose, "user=" + user);
             if (user == null)
                 throw new NullReferenceException("user can not be null");
+
+            logger.WriteLog(TraceEventType.Verbose, "secretKey=" + secretKey);
             if (secretKey == null)
                 throw new NullReferenceException("secretKey can not be null");
 
+            logger.WriteLog(TraceEventType.Verbose, "keyNode=" + keyNode);
             if (keyNode == null)
+            {
                 keyNode = GetLazyPasswordSecretKeyNode(user);
-
-            Core.AncestorGlobalOptions.Log(null, "LazyPassword", "GetPasswordInternal", "schema=" + user);
-            Core.AncestorGlobalOptions.Log(null, "LazyPassword", "GetPasswordInternal", "secretKey=" + secretKey);
-            Core.AncestorGlobalOptions.Log(null, "LazyPassword", "GetPasswordInternal", "keyNode=" + keyNode);
-
+                logger.WriteLog(TraceEventType.Information, "resolved keyNode: " + keyNode);
+            }
 
 
             string pwd;
             if (!SchemaPasswords.TryGetValue(user, out pwd))
             {
-                var opened = !conn.State.HasFlag(ConnectionState.Open);
-
+                var opened = !conn.State.HasFlag(ConnectionState.Open);                
                 try
                 {
                     if (opened)
                     {
                         var connStr = ConfigurationManager.ConnectionStrings[keyNode].ConnectionString;
-                        //var connStr = "User Id=cghuky;Password=uky";
-                        Core.AncestorGlobalOptions.Log(null, "LazyPassword", "GetPasswordInternal", "connStr=" + connStr);
                         if (connStrFactory != null)
                         {
                             connStr = connStrFactory(connStr);
-                            Core.AncestorGlobalOptions.Log(null, "LazyPassword", "GetPasswordInternal", "connStrFactory=" + connStr);
+                            logger.WriteLog(TraceEventType.Verbose, "connStrFactory=" + connStr);
                         }
 
                         connStr = ReplaceMinPoolSize(conn, connStr);
@@ -127,48 +134,53 @@ namespace Ancestor.DataAccess.DBAction
                         cmd.ExecuteNonQuery();
 
                         var value = p0.Value.ToString();
-                        if (value != "null")
-                        {
-                            pwd = value;
-                            Core.AncestorGlobalOptions.Log(null, "LazyPassword", "GetPasswordInternal", "pwd=" + pwd);
-                            SchemaPasswords.Add(user, pwd);
-                        }
-                        else
-                        {
-                            SchemaPasswords.Add(user, null);
-                        }
+                        logger.WriteLog(TraceEventType.Information, "lazy pass successed");
+                        logger.WriteLog(TraceEventType.Verbose, "pass=" + value);
+                        SchemaPasswords.Add(user, value);
                     }
                 }
                 catch (Exception ex)
                 {
-                    if (Core.AncestorGlobalOptions.Debug)
-                        Core.AncestorGlobalOptions.Log(null, "LazyPassword", "GetPasswordInternal", ex.ToString());
+                    logger.WriteLog(TraceEventType.Error, "lazy pass failed: " + ex.ToString());
                 }
                 finally
                 {
                     if (conn.State.HasFlag(ConnectionState.Open) && opened)
                     {
-                        //TODO: do not use oracle conn
-                        if (conn is Oracle.DataAccess.Client.OracleConnection)
-                            Oracle.DataAccess.Client.OracleConnection.ClearPool(conn as Oracle.DataAccess.Client.OracleConnection);
-                        else if(conn is Oracle.ManagedDataAccess.Client.OracleConnection)
-                            Oracle.ManagedDataAccess.Client.OracleConnection.ClearPool(conn as Oracle.ManagedDataAccess.Client.OracleConnection);
+
+                        logger.WriteLog(TraceEventType.Information, "close conection");
                         conn.Close();
+
+                        // check if needs to clear pool, will ignore when using web
+                        if (Core.AncestorGlobalOptions.GetBoolean("option.lzpw.clearpool", true))
+                        {
+                            logger.WriteLog(TraceEventType.Verbose, "clearing pool");
+                            // clear pool
+                            var mClearPool = conn.GetType().GetMethod("ClearPool", BindingFlags.Public | BindingFlags.Static);
+                            if (mClearPool != null)
+                            {                                
+                                mClearPool.Invoke(null, new object[] { conn });
+                                logger.WriteLog(TraceEventType.Information, "pool cleared");
+                            }
+                        }
                     }
                 }
+
+                if (!SchemaPasswords.ContainsKey(user))
+                    SchemaPasswords.Add(user, null);
             }
             return pwd;
         }
         private static string ReplaceMinPoolSize(IDbConnection conn, string connStr)
         {
             if (conn == null)
-                throw new ArgumentNullException("conn", "connection cant be null");
+                throw new ArgumentNullException("conn", "connection cannot be null");
             string connStrBuilderTypeName = null;
             if (conn.GetType().FullName == "Oracle.DataAccess.Client.OracleConnection")
                 connStrBuilderTypeName = "Oracle.DataAccess.Client.OracleConnectionStringBuilder";
             else if (conn.GetType().FullName == "Oracle.ManagedDataAccess.Client.OracleConnection")
                 connStrBuilderTypeName = "Oracle.ManagedDataAccess.Client.OracleConnectionStringBuilder";
-            System.Diagnostics.Trace.WriteLine("DbConnectionStringBuilder type: " + connStrBuilderTypeName);
+            logger.WriteLog(TraceEventType.Verbose, "DbConnectionStringBuilder type=" + connStrBuilderTypeName);
             var connStrBuilderType = conn.GetType().Assembly.GetType(connStrBuilderTypeName, true, true);
             if (connStrBuilderType == null)
                 throw new NullReferenceException("can not found type: " + connStrBuilderTypeName);
@@ -187,7 +199,7 @@ namespace Ancestor.DataAccess.DBAction
         }
         private static string GetLazyPasswordSecretKey(string user)
         {
-            var secretKeyName = Core.AncestorGlobalOptions.LazyPasswordSecretKeyPrefix + user.ToUpper();
+            var secretKeyName = Core.AncestorGlobalOptions.GetString("option.lzpw.prefix") + user.ToUpper();
             var cacheKey = "K:" + secretKeyName;
             string secretKey;
             if (!Cache.TryGetValue(cacheKey, out secretKey))
@@ -199,12 +211,12 @@ namespace Ancestor.DataAccess.DBAction
         }
         private static string GetLazyPasswordSecretKeyNode(string user)
         {
-            var secretKeyNodeName = Core.AncestorGlobalOptions.LazyPasswordSecretKeyNodePrefix + user.ToUpper();
+            var secretKeyNodeName = Core.AncestorGlobalOptions.GetString("option.lzpw.node.prefix") + user.ToUpper();
             var cacheKey = "KN:" + secretKeyNodeName;
             string secretKeyNode;
             if (!Cache.TryGetValue(cacheKey, out secretKeyNode))
             {
-                secretKeyNode = ConfigurationManager.AppSettings[secretKeyNodeName] ?? Core.AncestorGlobalOptions.LazyPasswordSecretKeyNode;
+                secretKeyNode = ConfigurationManager.AppSettings[secretKeyNodeName] ?? Core.AncestorGlobalOptions.GetString("option.lzpw.node");
                 Cache.Add(cacheKey, secretKeyNode);
             }
             return secretKeyNode;

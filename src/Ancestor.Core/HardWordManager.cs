@@ -21,7 +21,6 @@ namespace Ancestor.Core
             = new Dictionary<PropertyInfo, HardWordAttribute>();
         private static readonly Encoding _SystemEncoding;
         private static Encoding _Encoding;
-
         static HardWordManager()
         {
             var sysCodePage = CultureInfo.CurrentCulture.TextInfo.ANSICodePage;
@@ -33,7 +32,7 @@ namespace Ancestor.Core
 
         public static Encoding Encoding
         {
-            get { return _Encoding ?? AncestorGlobalOptions.GlobalHardwordEncoding ??_SystemEncoding; }
+            get { return _Encoding ?? AncestorGlobalOptions.GetOption("option.encoding", null, name => Encoding.GetEncoding(name)) ?? _SystemEncoding; }
             set { _Encoding = value; }
         }
 
@@ -65,19 +64,19 @@ namespace Ancestor.Core
             PropertyInfo[] properties;
             if (!PropertyCaches.TryGetValue(type, out properties))
             {
-                properties = type.GetProperties().Where(p=>TableManager.GetBrowsable(p)).ToArray();
+                properties = type.GetProperties().Where(p => TableManager.GetBrowsable(p)).ToArray();
                 PropertyCaches.AddOrUpdate(type, properties, (k, v) => properties);
             }
             return properties.Aggregate(new Dictionary<PropertyInfo, HardWordAttribute>(), (seed, p) =>
             {
                 var attr = Get(p);
-                if(attr != null)
+                if (attr != null)
                     seed.Add(p, attr);
                 return seed;
             });
         }
         public static HardWordAttribute GetHardWordAttribute(PropertyInfo property)
-        {            
+        {
             HardWordAttribute attr = null;
             if (property != null && !AttributeCaches.TryGetValue(property, out attr))
             {
