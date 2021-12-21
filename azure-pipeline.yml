@@ -24,7 +24,7 @@ variables:
   - name: buildPlatform
     value: 'Any CPU'
   - name: buildConfiguration
-    value: 'Debug'
+    value: 'Release'
   - name: version
     value: '1.0.0.0'
   - name: updatorBuildDate
