@@ -26,7 +26,7 @@
 		</PackageReference>
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="Dev.Logger.Internal" Version="1.0.9">
+		<PackageReference Include="Dev.Logger.Internal" Version="1.0.11">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
 		</PackageReference>
