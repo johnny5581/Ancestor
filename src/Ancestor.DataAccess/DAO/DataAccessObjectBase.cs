@@ -1089,6 +1089,8 @@ namespace Ancestor.DataAccess.DAO
                         continue;
                     }
                 }
+                else
+                    origin = type;
                 tuple = CreateReferenceTuple(null, null, type, origin);
                 reference.Add(type, tuple.Item2, tuple.Item3);
             }
@@ -1812,8 +1814,7 @@ namespace Ancestor.DataAccess.DAO
             protected abstract void ProcessTruncateMethodCall(Expression nodeObject);
             protected virtual void ProcessFuncMethodCall(string name, ReadOnlyCollection<Expression> parameters)
             {
-                Write(name);
-                Write("(");
+                Write("{0}(", name);                
                 ProcessParameters(parameters);
                 Write(")");
             }
@@ -2294,10 +2295,11 @@ namespace Ancestor.DataAccess.DAO
                     var argument = node.Arguments[index];
                     var member = node.Members[index];
                     if (_option.NewAs)
-                    {
-                        Write("(");
+                    {                        
+                        //Write("(");
                         Visit(argument);
-                        Write(") As ");
+                        //Write(") As ");
+                        Write(" As ");
                         Write(member.Name);
                     }
                     else
@@ -2322,7 +2324,7 @@ namespace Ancestor.DataAccess.DAO
                 if (sb.Length > 0 && sb[sb.Length - 1] != ' ' && !text.StartsWith(" "))
                     sb.Append(" ");
                 sb.Append(text);
-            }
+            }            
             protected virtual void Write(string format, params string[] args)
             {
                 var text = string.Format(format, args);
@@ -2397,7 +2399,8 @@ namespace Ancestor.DataAccess.DAO
 
             protected virtual ExpressionScope CreateScope()
             {
-                var scope = _scope == null ? new ExpressionScope(this) : new ExpressionScope(this, _scope);
+                var rb = _option.ScopeBucket;
+                var scope = _scope == null ? new ExpressionScope(this, rb) : new ExpressionScope(this, _scope, rb);
                 return _scope = scope;
             }
             protected ExpressionResolver Clone()
@@ -2464,17 +2467,19 @@ namespace Ancestor.DataAccess.DAO
 
                 public static readonly ExpressionResolveOption Default = new ExpressionResolveOption();
                 public static readonly ExpressionResolveOption GroupBy = new ExpressionResolveOption { AppendAs = false, UseHardWord = false, NewAs = false, };
-                public static readonly ExpressionResolveOption Selector = new ExpressionResolveOption { AppendAs = false, UseHardWord = true, NewAs = true };
+                public static readonly ExpressionResolveOption Selector = new ExpressionResolveOption { AppendAs = false, UseHardWord = true, NewAs = true, ScopeBucket = false };
 
                 public ExpressionResolveOption()
                 {
                     AppendAs = true;
                     UseHardWord = true;
                     NewAs = true;
+                    ScopeBucket = true;
                 }
                 public bool AppendAs { get; set; }
                 public bool UseHardWord { get; set; }
                 public bool NewAs { get; set; }
+                public bool ScopeBucket { get; set; }
             }
 
             /// <summary>
