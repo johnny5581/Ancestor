@@ -74,7 +74,6 @@ namespace Ancestor.DataAccess.DAO
         ///     //Will Select X.F1, X.F2, .... , Y.F1
         ///     Query&#60X,Y&#62;((x, y)=>..., (x, y)=>new [] { x.SelectAll(), y.F1  }  ))
         /// </example>
-        [Obsolete("Obsoleted, use SqlStatement.SelectAll() instead.")]
         public static object SelectAll<T>(this T t)
         {
             return t;
