@@ -795,7 +795,7 @@ namespace Ancestor.DataAccess.DAO
             selecteds.Add(index + 100, asterisk);
 
             return string.Join(", ", selecteds.Values);
-        }        
+        }
         protected virtual Tuple<string, string> CreateInsertCommand(ReferenceInfo info, object model, DBParameterCollection parameters)
         {
             var fields = new List<string>();
@@ -827,7 +827,7 @@ namespace Ancestor.DataAccess.DAO
         protected virtual IEnumerable<Tuple<string, string, DBParameterCollection>> CreateInsertCommands(ReferenceInfo info, IEnumerable models, Type dataType)
         {
             var fields = new List<string>();
-            var referenceType = info.GetReferenceType();            
+            var referenceType = info.GetReferenceType();
             var refProperties = TableManager.GetBrowsableProperties(referenceType ?? dataType);
             var cache = new Dictionary<PropertyInfo, Tuple<string, HardWordAttribute>>();
             string field = null;
@@ -1019,7 +1019,7 @@ namespace Ancestor.DataAccess.DAO
         }
         protected void BindParameter(DBParameterCollection parameters, ParameterInfo parameter)
         {
-            if(parameter.IsHardword && parameter.Hardword.IgnorePrefix)
+            if (parameter.IsHardword && parameter.Hardword.IgnorePrefix)
                 parameters.Add(parameter.ParameterName, parameter.Value, "Long");
             else
                 parameters.Add(parameter.ParameterName, parameter.Value);
@@ -1286,6 +1286,16 @@ namespace Ancestor.DataAccess.DAO
                 return node;
             }
 
+            protected virtual void ProcessParameters(ReadOnlyCollection<Expression> nodes)
+            {
+                for (var i = 0; i < nodes.Count; i++)
+                {
+                    Visit(nodes[i]);
+                    if (i != nodes.Count - 1)
+                        Write(",");
+                }                
+            }
+
             protected virtual void ProcessUnaryNot(Expression node)
             {
                 using (var scope = CreateScope())
@@ -1541,6 +1551,10 @@ namespace Ancestor.DataAccess.DAO
                 {
                     return VisitCollectionStaticMethodCall(node);
                 }
+                else if (node.Method.DeclaringType == typeof(SqlStatement))
+                {
+                    return VisitSqlStatementMethodCall(node);
+                }
                 else if (node.Method.DeclaringType == typeof(string))
                 {
                     return VisitStringStaticMethodCall(node);
@@ -1553,6 +1567,7 @@ namespace Ancestor.DataAccess.DAO
                 {
                     ProcessTypeConvert(node.Arguments[0].Type, node.Method.DeclaringType, node.Arguments[0], CreateReadOnlyCollection(node.Arguments.Skip(1)));
                 }
+                // TODO: obsoleted
                 else if (node.Method.Name == "Between")
                 {
                     ProcessBetweenMethodCall(node.Arguments[0], node.Arguments[1], node.Arguments[2]);
@@ -1589,6 +1604,65 @@ namespace Ancestor.DataAccess.DAO
                 return node;
             }
 
+            protected virtual Expression VisitSqlStatementMethodCall(MethodCallExpression node)
+            {
+                switch (node.Method.Name)
+                {
+                    case "ToString":
+                        Type fromType = node.Arguments[0].Type;
+                        fromType = Nullable.GetUnderlyingType(fromType) ?? fromType;
+                        ReadOnlyCollection<Expression> arguments = null;
+                        var parameters = node.Method.GetParameters();
+                        bool flgFmt = false;
+                        if (parameters.Length > 1)
+                        {
+                            flgFmt = true;
+                            if (parameters.Length == 3)
+                            {
+                                object argStr2;
+                                if (TryResolveValue(node.Arguments[2], out argStr2))
+                                    flgFmt = Convert.ToBoolean(argStr2);
+                            }
+                            arguments = CreateReadOnlyCollection(node.Arguments[1]);
+                        }
+                        else
+                        {
+                            arguments = CreateReadOnlyCollection();
+                        }
+                        ProcessConvertToString(fromType, node.Arguments[0], arguments, flgFmt);
+                        break;
+                    case "Truncate":
+                        ProcessTruncateMethodCall(node.Arguments[0]);
+                        break;
+                    case "NotNull":
+                        Write("Nvl(");
+                        Visit(node.Arguments[0]);
+                        Write(",");
+                        if (node.Arguments.Count > 1)
+                            Visit(node.Arguments[1]);
+                        else
+                            Write("'!EMPTY!'");
+                        Write(")");
+                        break;
+                    case "Between":
+                        ProcessBetweenMethodCall(node.Arguments[0], node.Arguments[1], node.Arguments[2]);
+                        break;
+                    case "JoinEquals":
+                        SqlStatement.Joins join = SqlStatement.Joins.Inner;
+                        if (node.Arguments.Count > 2)
+                            TryResolveValue(node.Arguments[2], out join);
+                        ProcessJoinMethodCall(node.Arguments[0], node.Arguments[1], join);
+                        break;
+                    case "Func":
+                        string name;
+                        if (!TryResolveValue(node.Arguments[0], out name))
+                            throw new InvalidOperationException("invalid func name");
+                        var arrExp = node.Arguments[1] as NewArrayExpression;
+                        ProcessFuncMethodCall(name, arrExp.Expressions);
+                        break;
+                }
+                return node;
+            }
             protected virtual Expression VisitMathStaticMethodCall(MethodCallExpression node)
             {
                 Write(node.Method.Name.ToUpper());
@@ -1734,7 +1808,15 @@ namespace Ancestor.DataAccess.DAO
                 Write("And");
                 Visit(to);
             }
+            protected abstract void ProcessJoinMethodCall(Expression left, Expression right, SqlStatement.Joins joins);
             protected abstract void ProcessTruncateMethodCall(Expression nodeObject);
+            protected virtual void ProcessFuncMethodCall(string name, ReadOnlyCollection<Expression> parameters)
+            {
+                Write(name);
+                Write("(");
+                ProcessParameters(parameters);
+                Write(")");
+            }
             protected virtual void ProcessGroupBy(Expression nodeObject, string symbol)
             {
                 _groupByFlag = true;
@@ -1830,7 +1912,7 @@ namespace Ancestor.DataAccess.DAO
                 switch (code)
                 {
                     case TypeCode.String:
-                        ProcessConvertToString(fromType, objectNode, args);
+                        ProcessConvertToString(fromType, objectNode, args, true);
                         break;
                     case TypeCode.DateTime:
                         ProcessConvertToDateTime(fromType, objectNode, args);
@@ -1855,7 +1937,7 @@ namespace Ancestor.DataAccess.DAO
                 }
             }
 
-            protected abstract void ProcessConvertToString(Type fromType, Expression objectNode, ReadOnlyCollection<Expression> args);
+            protected abstract void ProcessConvertToString(Type fromType, Expression objectNode, ReadOnlyCollection<Expression> args, bool useFmtConvert);
             protected abstract void ProcessConvertToDateTime(Type fromType, Expression objectNode, ReadOnlyCollection<Expression> args);
             protected abstract void ProcessConvertToDecimal(Type fromType, Type toType, Expression objectNode, ReadOnlyCollection<Expression> args);
             /// <summary>
@@ -2054,11 +2136,11 @@ namespace Ancestor.DataAccess.DAO
                 return tableName;
             }
 
-            protected bool IsParameterMemberExpression(Expression node)
+            protected bool IsConstantResolvable(Expression node)
             {
-                var visitor = new ExpressionMemberResolver();
+                var visitor = new ExpressionNodeResolver();
                 visitor.Visit(node);
-                return visitor.IsParameterMemberExpression;
+                return !visitor.IsParameterMemberExpression && !visitor.IsFuncExpression;
             }
             protected virtual object ResolveValue(Expression node)
             {
@@ -2080,7 +2162,7 @@ namespace Ancestor.DataAccess.DAO
             protected virtual bool TryResolveValue(Expression node, out object value, out Exception error)
             {
                 error = null;
-                if (!IsParameterMemberExpression(node))
+                if (IsConstantResolvable(node))
                 {
                     try
                     {
@@ -2094,6 +2176,18 @@ namespace Ancestor.DataAccess.DAO
                 }
                 value = null;
                 return false;
+            }
+            protected virtual bool TryResolveValue<T>(Expression node, out T value)
+            {
+                Exception error;
+                return TryResolveValue(node, out value, out error);
+            }
+            protected virtual bool TryResolveValue<T>(Expression node, out T value, out Exception error)
+            {
+                object v;
+                bool res;
+                value = (res = TryResolveValue(node, out v, out error)) ? (T)v : default(T);
+                return res;
             }
             #endregion
 
@@ -2214,11 +2308,14 @@ namespace Ancestor.DataAccess.DAO
             }
             #endregion
 
-            private static ReadOnlyCollection<Expression> CreateReadOnlyCollection(IEnumerable<Expression> expressions)
+            public static ReadOnlyCollection<Expression> CreateReadOnlyCollection(IEnumerable<Expression> expressions)
             {
                 return new ReadOnlyCollection<Expression>(expressions.ToList());
             }
-
+            public static ReadOnlyCollection<Expression> CreateReadOnlyCollection(params Expression[] expressions)
+            {
+                return new ReadOnlyCollection<Expression>(expressions.ToList());
+            }
             protected virtual void Write(string text)
             {
                 var sb = StringBuilder;
@@ -2567,9 +2664,10 @@ namespace Ancestor.DataAccess.DAO
 
         }
 
-        protected sealed class ExpressionMemberResolver : ExpressionVisitor
+        protected sealed class ExpressionNodeResolver : ExpressionVisitor
         {
             public bool IsParameterMemberExpression { get; private set; }
+            public bool IsFuncExpression { get; private set; }
             protected override Expression VisitMember(MemberExpression node)
             {
                 if (node.Expression != null && node.Expression.NodeType == ExpressionType.Parameter)
@@ -2579,8 +2677,16 @@ namespace Ancestor.DataAccess.DAO
                 }
                 return base.VisitMember(node);
             }
+            protected override Expression VisitMethodCall(MethodCallExpression node)
+            {
+                if (node.Object == null && node.Method.DeclaringType == typeof(SqlStatement) && node.Method.Name == "Func")
+                {
+                    IsFuncExpression = true;
+                    return node;
+                }
+                return base.VisitMethodCall(node);
+            }
         }
-
         #endregion
 
         #region Dispose

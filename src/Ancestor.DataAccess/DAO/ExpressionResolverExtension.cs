@@ -15,6 +15,7 @@ namespace Ancestor.DataAccess.DAO
         ///     // The result is X.PID = y.PID(+)
         ///     x.PID = y.PID.Plus()
         /// </example>
+        [Obsolete("Obsoleted, use SqlStatement.Join() instead.", true)]
         public static T Plus<T>(this T t)
         {
             return t;
@@ -30,6 +31,7 @@ namespace Ancestor.DataAccess.DAO
         ///     //The result is X.BIRTHDATE BETWEEN :dateBgn AND :dateEnd
         ///     x.BIRTHDATE.Between(dateBgn, dateEnd);
         /// </example>
+        [Obsolete("Obsoleted, use SqlStatement.Between() instead.", true)]
         public static bool Between(this DateTime? dt, DateTime? begin, DateTime? end)
         {
             return dt >= begin && dt <= end;
@@ -44,6 +46,7 @@ namespace Ancestor.DataAccess.DAO
         ///     //The result is X.BIRTHDATE BETWEEN :dateBgn AND :dateEnd
         ///     x.BIRTHDATE.Between(dateBgn, dateEnd);
         /// </example>
+        [Obsolete("Obsoleted, use SqlStatement.Between() instead.", true)]
         public static bool Between(this DateTime dt, DateTime? begin, DateTime? end)
         {
             return dt >= begin && dt <= end;
@@ -58,6 +61,7 @@ namespace Ancestor.DataAccess.DAO
         ///     //The result is X.BIRTHDATE BETWEEN '20170101' AND '20170201'
         ///     x.BIRTHDATE.Between("20170101", "20170201");
         /// </example>
+        [Obsolete("Obsoleted, use SqlStatement.Between() instead.", true)]
         public static bool Between(this string dattm, string begin, string end)
         {
             return string.Compare(dattm, begin) >= 0 && string.Compare(dattm, end) <= 0;
@@ -70,6 +74,7 @@ namespace Ancestor.DataAccess.DAO
         ///     //Will Select X.F1, X.F2, .... , Y.F1
         ///     Query&#60X,Y&#62;((x, y)=>..., (x, y)=>new [] { x.SelectAll(), y.F1  }  ))
         /// </example>
+        [Obsolete("Obsoleted, use SqlStatement.SelectAll() instead.")]
         public static object SelectAll<T>(this T t)
         {
             return t;
@@ -81,6 +86,7 @@ namespace Ancestor.DataAccess.DAO
         ///     //In Oracle, the result is NVL(X.NAME, :defaultValue) = 'Alice'
         ///     x.NAME.NotNull() == "Alice"
         /// </example>
+        [Obsolete("Obsoleted, use SqlStatement.NotNull() instead.", true)]
         public static T NotNull<T>(this T property, T defaultValue)
         {
             return Equals(property, default(T)) ? defaultValue : property;
@@ -93,13 +99,15 @@ namespace Ancestor.DataAccess.DAO
         ///     //In Oracle, the result is NVL(X.NAME, 'this field is null') = 'Alice'
         ///     x.NAME.NotNull() == "Alice"
         /// </example>
+        [Obsolete("Obsoleted, use SqlStatement.NotNull() instead.", true)]
         public static T NotNull<T>(this T property)
         {
             return NotNull(property, default(T));
         }
         /// <summary>
         /// Truncate date 
-        /// </summary>
+        /// </summary>        
+        [Obsolete("Obsoleted, use SqlStatement.Truncate() instead.", true)]
         public static DateTime Truncate(this DateTime value)
         {
             if (value != null)
@@ -111,6 +119,7 @@ namespace Ancestor.DataAccess.DAO
         /// <summary>
         /// Truncate date
         /// </summary>
+        [Obsolete("Obsoleted, use SqlStatement.Truncate() instead.", true)]
         public static DateTime? Truncate(this DateTime? value)
         {
             if (value != null)
@@ -122,7 +131,8 @@ namespace Ancestor.DataAccess.DAO
         }
         /// <summary>
         /// Truncate decimal
-        /// </summary>        
+        /// </summary>    
+        [Obsolete("Obsoleted, use SqlStatement.Truncate() instead.", true)]
         public static decimal? Truncate(this decimal? value)
         {
             if (value != null)
@@ -133,7 +143,8 @@ namespace Ancestor.DataAccess.DAO
         }
         /// <summary>
         /// Truncate double
-        /// </summary>        
+        /// </summary>       
+        [Obsolete("Obsoleted, use SqlStatement.Truncate() instead.", true)]
         public static double? Truncate(this double? value)
         {
             if (value != null)
@@ -145,7 +156,8 @@ namespace Ancestor.DataAccess.DAO
 
         /// <summary>
         /// Group count()
-        /// </summary>        
+        /// </summary>       
+        [Obsolete("Obsoleted, use SqlStatement.GroupCount() instead.", true)]
         public static T GroupCount<T>(this T value)
         {
             return value;
@@ -153,13 +165,15 @@ namespace Ancestor.DataAccess.DAO
         /// <summary>
         /// Group max
         /// </summary>        
+        [Obsolete("Obsoleted, use SqlStatement.GroupMax() instead.", true)]
         public static T GroupMax<T>(this T value)
         {
             return value;
         }
         /// <summary>
         /// Group min
-        /// </summary>        
+        /// </summary> 
+        [Obsolete("Obsoleted, use SqlStatement.GroupMin() instead.", true)]
         public static T GroupMin<T>(this T value)
         {
             return value;

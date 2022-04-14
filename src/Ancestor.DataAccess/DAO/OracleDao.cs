@@ -165,6 +165,31 @@ namespace Ancestor.DataAccess.DAO
                 Visit(nodeObject);
                 Write(")");
             }
+            protected override void ProcessJoinMethodCall(Expression left, Expression right, SqlStatement.Joins joins = SqlStatement.Joins.Inner)
+            {
+                switch(joins)
+                {
+                    case SqlStatement.Joins.Inner:
+                        Visit(left);
+                        Write("=");
+                        Visit(right);
+                        break;
+                    case SqlStatement.Joins.Outer:
+                        break;
+                    case SqlStatement.Joins.Left:
+                        Visit(left);
+                        Write("(+)");
+                        Write("=");
+                        Visit(right);
+                        break;
+                    case SqlStatement.Joins.Right:
+                        Visit(left);                        
+                        Write("=");
+                        Visit(right);
+                        Write("(+)");
+                        break;
+                }
+            }
 
             protected override void ProcessBinaryCoalesce(Expression left, Expression right)
             {
@@ -236,7 +261,7 @@ namespace Ancestor.DataAccess.DAO
                 base.ProcessDateTimeMethodCall(objectNode, method, args);
             }
 
-            protected override void ProcessConvertToString(Type fromType, Expression objectNode, ReadOnlyCollection<Expression> args)
+            protected override void ProcessConvertToString(Type fromType, Expression objectNode, ReadOnlyCollection<Expression> args, bool useFmtConvert)
             {
                 if (fromType == typeof(DateTime))
                 {
@@ -251,8 +276,10 @@ namespace Ancestor.DataAccess.DAO
                         object value;
                         if (TryResolveValue(formatExpression, out value) && value is string)
                         {
-                            var formattedValue = ConvertFromDateFormat((string)value);
-                            Write(formattedValue);
+                            var formattedValue = value as string;
+                            if(useFmtConvert)
+                                formattedValue = ConvertFromDateFormat(formattedValue);                            
+                            Write("'{0}'", formattedValue);
                         }
                         else
                             Visit(formatExpression);
@@ -324,14 +351,18 @@ namespace Ancestor.DataAccess.DAO
 
             private static string ConvertFromDateFormat(string format)
             {
+                // TODO: Convert c# DateTime.ToString format to Oracle.To_Char format
                 format = format.Replace("HH", "HH24");
                 format = format.Replace("mm", "MI");
+                format = format.ToUpper();
                 return format;
             }
             private static string ConvertFromDecimalFormat(string format)
             {
                 return format;
             }
+
+            
         }
     }
 }
