@@ -16,6 +16,8 @@ namespace Ancestor.DataAccess.Factory
             _dbObject = dbObject;
         }
 
+        public Func<DBObject, IDataAccessObjectEx> CustomFactory { get; set; }
+
         public DBObject DbObject
         {
             get { return _dbObject; }
@@ -29,7 +31,9 @@ namespace Ancestor.DataAccess.Factory
                 _dbObject = value;
             }
         }
-        
+
+
+
         public IDataAccessObjectEx GetDataAccessObjectFactory()
         {
             if (_dbObject == null)
@@ -42,6 +46,11 @@ namespace Ancestor.DataAccess.Factory
                     case DBObject.DataBase.Oracle:
                     case DBObject.DataBase.ManagedOracle:
                         _daoCache = new OracleDao(_dbObject);
+                        break;
+                    case DBObject.DataBase.Custom:
+                        if (CustomFactory == null)
+                            throw new NotImplementedException("custom factory is empty");
+                        _daoCache = CustomFactory(_dbObject);
                         break;
                     case DBObject.DataBase.MSSQL:
                     case DBObject.DataBase.MySQL:

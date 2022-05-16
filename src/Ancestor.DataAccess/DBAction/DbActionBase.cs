@@ -45,28 +45,35 @@ namespace Ancestor.DataAccess.DBAction
         private readonly DataAccessObjectBase _dao;
         private string _lastSqlCommand;
         internal Core.Logging.ILogger logger;
-        private bool _autoCloseConnection = true;
+        internal Core.Logging.ILogger sqlLogger;
+        private bool? _autoCloseConnection;
 
         public DbActionBase(DataAccessObjectBase dao, DBObject dbObject)
         {
+            var loggerName = "Ancestor." + GetType().Name;
+            logger = Core.Logging.Logger.CreateInstance(loggerName);
+            sqlLogger = Core.Logging.Logger.CreateInstance(loggerName + ".Sql");
             string dsn;
             _connection = CreateConnection(dbObject, out dsn);
             if (_connection == null)
                 throw new InvalidOperationException("no connection found");
             DataSource = dsn;
             _dao = dao;
-            logger = Core.Logging.Logger.CreateInstance(GetType().Name);
+            
         }
         public DbActionBase(DataAccessObjectBase dao, string connStr)
         {
+            var loggerName = "Ancestor." + GetType().Name;
+            logger = Core.Logging.Logger.CreateInstance(loggerName);
+            sqlLogger = Core.Logging.Logger.CreateInstance(loggerName + ".Sql");
             string dsn;
             _connection = CreateConnection(connStr, out dsn);
             if (_connection == null)
                 throw new InvalidOperationException("no connection found");
             DataSource = dsn;
             _dao = dao;
-            logger = Core.Logging.Logger.CreateInstance(GetType().Name);
-        }
+        }        
+
         #region Property
         /// <summary>
         /// Is transacting
@@ -80,7 +87,7 @@ namespace Ancestor.DataAccess.DBAction
         /// </summary>
         public bool AutoCloseConnection
         {
-            get { return _autoCloseConnection; }
+            get { return _autoCloseConnection ?? !"manual".Equals(AncestorGlobalOptions.GetString("option.close"), StringComparison.OrdinalIgnoreCase); }
             set { _autoCloseConnection = value; }
         }
         internal IDbTransaction Transaction
@@ -130,12 +137,10 @@ namespace Ancestor.DataAccess.DBAction
         void IDbAction.OpenConnection()
         {
             OpenConnection(_connection);
-            _autoCloseConnection = false;
         }
         void IDbAction.CloseConnection()
         {
-            CloseConnection(_connection, _transaction);
-            _autoCloseConnection = true;
+            CloseConnection(_connection, _transaction, true);
         }
         public IDbConnection Connection
         {
@@ -387,8 +392,9 @@ namespace Ancestor.DataAccess.DBAction
             if (parameters != null)
                 args = string.Join(",", parameters);
             var message = string.Format("action={0} sql=\"{1}\" args=[{2}]", action, sql, args);
+            sqlLogger.WriteLog(System.Diagnostics.TraceEventType.Verbose, message);
             _lastSqlCommand = sql;
-            //AncestorGlobalOptions.Log(_dao, GetType().Name, action, message);
+            
         }
         private void OpenConnection()
         {
@@ -396,22 +402,24 @@ namespace Ancestor.DataAccess.DBAction
         }
         private void CloseConnection()
         {
-            if (_autoCloseConnection)
+            if (AutoCloseConnection)
             {
-                CloseConnection(_connection, _transaction);
+                CloseConnection(_connection, _transaction, false);
             }
         }
         private bool IsDbNull(object value)
         {
             return value == null || value.GetType() == typeof(DBNull);
         }
-        private static void CloseConnection(IDbConnection connection, IDbTransaction transaction)
+        private static void CloseConnection(IDbConnection connection, IDbTransaction transaction, bool throwOnTransactionNotEmpty)
         {
             if (transaction == null)
             {
                 if (connection.State.HasFlag(ConnectionState.Open))
                     connection.Close();
             }
+            else if (throwOnTransactionNotEmpty)
+                throw new InvalidOperationException("transaction is not null");
         }
         private static void OpenConnection(IDbConnection connection)
         {
@@ -445,7 +453,7 @@ namespace Ancestor.DataAccess.DBAction
             if (_transaction != null)
                 Rollback();
             if (_connection != null)
-                CloseConnection(_connection, null);
+                CloseConnection(_connection, null, false);
         }
 
 

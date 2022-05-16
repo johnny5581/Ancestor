@@ -10,6 +10,12 @@ namespace Ancestor.Core
     /// </summary>
     public class DBObject
     {
+        public DBObject()
+        {
+            // default use TNSNAMES mode
+            ConnectedMode = Mode.TNSNAME;
+        }
+
         /// <summary>
         /// Database IP (direct connect used only)
         /// </summary>
@@ -63,7 +69,8 @@ namespace Ancestor.Core
             MySQL,
             Sybase,
             ManagedOracle,
-            OracleClient
+            OracleClient,
+            Custom,
         }
         /// <summary>
         /// Connection mode
@@ -72,8 +79,12 @@ namespace Ancestor.Core
         {
             Direct, 
             DSN,
-            TNSNAME,
+            TNSNAME,           
         }
+        /// <summary>
+        /// Service Prefix for Direct connection
+        /// </summary>
+        public string ServicePrefix { get; set; }
         /// <summary>
         /// Parameter prefix string
         /// </summary>
@@ -95,6 +106,14 @@ namespace Ancestor.Core
         /// lazy password secret key connect dsn target
         /// </summary>
         public string LazyPasswordSecretKeyNode { get; set; }
+        /// <summary>
+        /// lazy password data source 
+        /// </summary>
+        public string LazyPasswordDataSource { get; set; }
+        /// <summary>
+        /// lazy password connection string
+        /// </summary>
+        public string LazyPasswordConnectionString { get; set; }
     }
     /// <summary>
     /// Extra connection string interface

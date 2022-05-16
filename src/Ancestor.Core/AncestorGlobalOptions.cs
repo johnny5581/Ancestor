@@ -12,6 +12,13 @@ namespace Ancestor.Core
         private const string SettingPrefix = "ancestor.";
         static AncestorGlobalOptions()
         {
+            // default values
+            SetOption("option.lzpw.prefix", "LZPW_");
+            SetOption("option.lzpw.node.prefix", "LZPWN_");
+            SetOption("option.lzpw.clearpool", "Y");
+            SetOption("option.close", "auto");
+
+
             var settings = System.Configuration.ConfigurationManager.AppSettings;
             foreach (string key in settings.Keys)
             {
@@ -61,10 +68,12 @@ namespace Ancestor.Core
                 case "y":
                 case "t":
                 case "true":
+                case "1":
                     return true;
                 case "n":
                 case "f":
                 case "false":
+                case "0":
                     return false;
                 default:
                     throw new InvalidCastException("cannot cast to boolean:" + value);

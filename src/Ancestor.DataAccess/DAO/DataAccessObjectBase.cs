@@ -461,7 +461,7 @@ namespace Ancestor.DataAccess.DAO
                             _dbAction.ExecuteNonQuery(insertSql, insertInfo.Item3);
                             successed++;
                         }
-                        catch
+                        catch(Exception ex)
                         {
                             if (raiseError)
                                 throw;
@@ -1295,7 +1295,7 @@ namespace Ancestor.DataAccess.DAO
                     Visit(nodes[i]);
                     if (i != nodes.Count - 1)
                         Write(",");
-                }                
+                }
             }
 
             protected virtual void ProcessUnaryNot(Expression node)
@@ -1396,10 +1396,10 @@ namespace Ancestor.DataAccess.DAO
                         ProcessBinaryComparison(node.Left, node.Right, "Or");
                         break;
                     case ExpressionType.Equal:
-                        ProcessBinaryComparison(node.Left, node.Right, IsNullConstant(node.Right) ? "Is" : "=");
+                        ProcessBinaryComparison(node.Left, node.Right, "=");
                         break;
                     case ExpressionType.NotEqual:
-                        ProcessBinaryComparison(node.Left, node.Right, IsNullConstant(node.Right) ? "Is Not" : "<>");
+                        ProcessBinaryComparison(node.Left, node.Right, "<>");
                         break;
                     case ExpressionType.LessThan:
                         ProcessBinaryComparison(node.Left, node.Right, "<");
@@ -1430,6 +1430,13 @@ namespace Ancestor.DataAccess.DAO
                 var resolver = new ExpressionTypeResolver(node);
                 return resolver.ResultType == typeof(string);
             }
+            protected bool IsExpressionHardwordMember(Expression node, out HardWordAttribute hardWord)
+            {
+                var resolver = new ExpressionNodeResolver();
+                resolver.Visit(node);
+                hardWord = resolver.HardWord;
+                return resolver.IsParameterMemberExpression && resolver.IsMemberHardword;
+            }
             protected virtual void ProcessBinaryAdd(Expression left, Expression right)
             {
                 string @operator = "+";
@@ -1447,8 +1454,34 @@ namespace Ancestor.DataAccess.DAO
                 using (var scope = CreateScope())
                 {
                     Visit(left);
+                    // if right exp is constant
+                    if (TryResolveValue(right, out object value))
+                    {
+                        if (value == null) // right is null
+                        {
+                            switch (@operator)
+                            {
+                                case "=":
+                                    @operator = "Is";
+                                    break;
+                                case "<>":
+                                    @operator = "Is Not";
+                                    break;
+                            }
+                            Write(" {0} ", @operator);
+                            ProcessConstantNull();
+                            return; // process end
+                        }
+                        else if (IsExpressionHardwordMember(left, out HardWordAttribute hd))
+                        {
+                            ProcessConstant(value, hd);
+                            return; // process end
+                        }
+                    }
+
                     Write(" {0} ", @operator);
                     Visit(right);
+
                 }
             }
             /// <summary>
@@ -1499,13 +1532,14 @@ namespace Ancestor.DataAccess.DAO
                 return node;
             }
 
+
             protected virtual void ProcessConstantEnumerable(IEnumerable list)
             {
                 WriteParameters(list.OfType<object>().ToArray());
             }
-            protected virtual void ProcessConstant(object value)
+            protected virtual void ProcessConstant(object value, HardWordAttribute hardWord = null)
             {
-                WriteParameter(value);
+                WriteParameter(value, hardWord);
             }
             protected virtual void ProcessConstantNull()
             {
@@ -1814,7 +1848,7 @@ namespace Ancestor.DataAccess.DAO
             protected abstract void ProcessTruncateMethodCall(Expression nodeObject);
             protected virtual void ProcessFuncMethodCall(string name, ReadOnlyCollection<Expression> parameters)
             {
-                Write("{0}(", name);                
+                Write("{0}(", name);
                 ProcessParameters(parameters);
                 Write(")");
             }
@@ -2295,7 +2329,7 @@ namespace Ancestor.DataAccess.DAO
                     var argument = node.Arguments[index];
                     var member = node.Members[index];
                     if (_option.NewAs)
-                    {                        
+                    {
                         //Write("(");
                         Visit(argument);
                         //Write(") As ");
@@ -2324,16 +2358,16 @@ namespace Ancestor.DataAccess.DAO
                 if (sb.Length > 0 && sb[sb.Length - 1] != ' ' && !text.StartsWith(" "))
                     sb.Append(" ");
                 sb.Append(text);
-            }            
+            }
             protected virtual void Write(string format, params string[] args)
             {
                 var text = string.Format(format, args);
                 Write(text);
             }
-            protected virtual ParameterInfo GetParameter(object value)
+            protected virtual ParameterInfo GetParameter(object value, HardWordAttribute hardWord)
             {
                 var name = _index.ToString();
-                var parameter = DataAccessObject.CreateParameter(value, name, true);
+                var parameter = DataAccessObject.CreateParameter(value, name, true, hardWord: hardWord);
                 if (!parameter.IsSysDateConverted)
                     MoveNextParameter();
                 return parameter;
@@ -2343,9 +2377,9 @@ namespace Ancestor.DataAccess.DAO
                 Write(result.Sql);
                 _dbParameters.AddRange(result.Parameters);
             }
-            protected virtual DBParameter WriteParameter(object value)
+            protected virtual DBParameter WriteParameter(object value, HardWordAttribute hardWord = null)
             {
-                var parameter = GetParameter(value);
+                var parameter = GetParameter(value, hardWord);
                 return WriteParameter(parameter);
             }
             protected virtual DBParameter WriteParameter(ParameterInfo parameter)
@@ -2366,7 +2400,7 @@ namespace Ancestor.DataAccess.DAO
             }
             protected virtual void WriteParameters(object[] values)
             {
-                var parameters = values.Select(v => GetParameter(v)).ToArray();
+                var parameters = values.Select(v => GetParameter(v, null)).ToArray();
                 var appendTexts = string.Join(" , ", parameters.Select(p => p.ValueName));
                 if (appendTexts.Length > 0)
                 {
@@ -2467,11 +2501,11 @@ namespace Ancestor.DataAccess.DAO
 
                 public static readonly ExpressionResolveOption Default = new ExpressionResolveOption();
                 public static readonly ExpressionResolveOption GroupBy = new ExpressionResolveOption { AppendAs = false, UseHardWord = false, NewAs = false, };
-                public static readonly ExpressionResolveOption Selector = new ExpressionResolveOption { AppendAs = false, UseHardWord = true, NewAs = true, ScopeBucket = false };
+                public static readonly ExpressionResolveOption Selector = new ExpressionResolveOption { AppendAs = true, UseHardWord = true, NewAs = true, ScopeBucket = false };
 
                 public ExpressionResolveOption()
                 {
-                    AppendAs = true;
+                    AppendAs = false;
                     UseHardWord = true;
                     NewAs = true;
                     ScopeBucket = true;
@@ -2672,12 +2706,22 @@ namespace Ancestor.DataAccess.DAO
         protected sealed class ExpressionNodeResolver : ExpressionVisitor
         {
             public bool IsParameterMemberExpression { get; private set; }
+            public bool IsMemberHardword { get; private set; }
+
             public bool IsFuncExpression { get; private set; }
+            public HardWordAttribute HardWord { get; private set; }
             protected override Expression VisitMember(MemberExpression node)
             {
                 if (node.Expression != null && node.Expression.NodeType == ExpressionType.Parameter)
                 {
                     IsParameterMemberExpression = true;
+                    var property = node.Member as PropertyInfo;
+                    if (property != null)
+                    {
+                        var hd = HardWordManager.Get(property);
+                        HardWord = hd;
+                        IsMemberHardword = hd != null;
+                    }
                     return node;
                 }
                 return base.VisitMember(node);

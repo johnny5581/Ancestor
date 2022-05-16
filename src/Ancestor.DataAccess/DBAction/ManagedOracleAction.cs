@@ -2,6 +2,7 @@
 using Ancestor.DataAccess.DAO;
 using Ancestor.DataAccess.DBAction.Mapper;
 using Ancestor.DataAccess.DBAction.Options;
+using Ancestor.DataAccess.Connections;
 using Microsoft.Win32;
 using Oracle.ManagedDataAccess.Client;
 using Oracle.ManagedDataAccess.Types;
@@ -59,7 +60,7 @@ namespace Ancestor.DataAccess.DBAction
           (Port = {2})
         )
     )
-    (CONNECT_DATA = (SID = {1})
+    (CONNECT_DATA = ({3} = {1})
     )
 )";
         public ManagedOracleAction(DataAccessObjectBase dao, DBObject dbObject) : base(dao, dbObject)
@@ -80,17 +81,19 @@ namespace Ancestor.DataAccess.DBAction
 
         protected override IDbConnection CreateConnection(DBObject dbObject, out string dsn)
         {
-
             var connStrBuilder = new OracleConnectionStringBuilder();
+            string dataSource = null;
+            logger.WriteLog(System.Diagnostics.TraceEventType.Verbose, "connection mode: " + dbObject.ConnectedMode);
             if (dbObject.ConnectedMode == DBObject.Mode.Direct)
-            {
+            {               
                 var dataSourceName = dbObject.IP ?? dbObject.Node;
                 var port = dbObject.Port ?? "1521";
-                connStrBuilder.DataSource = string.Format(ConnectionStringPattern, dataSourceName, dbObject.Node, port);
+                var servicePrefix = dbObject.ServicePrefix ?? "SID";
+                dataSource = string.Format(ConnectionStringPattern, dataSourceName, dbObject.Node, port, servicePrefix);
             }
             else if (dbObject.ConnectedMode == DBObject.Mode.DSN)
             {
-                connStrBuilder.DataSource = dbObject.Node;
+                dataSource = System.Configuration.ConfigurationManager.ConnectionStrings[dbObject.Node].ConnectionString;
             }
             else if (dbObject.ConnectedMode == DBObject.Mode.TNSNAME || LazyPassword.GetLazyPasswordEnabled(dbObject))
             {
@@ -175,13 +178,17 @@ namespace Ancestor.DataAccess.DBAction
                     }
                     catch { }
                 }
-                connStrBuilder.DataSource = FindDataSource(dbObject.Node);
+                dataSource = FindDataSource(dbObject.Node);
             }
-
+            logger.WriteLog(System.Diagnostics.TraceEventType.Verbose, "DataSource=" + dataSource);
+            connStrBuilder.DataSource = dataSource;
             connStrBuilder.UserID = dbObject.ID;
             if (LazyPassword.GetLazyPasswordEnabled(dbObject))
             {
-                dbObject.Password = LazyPassword.GetPassword(new OracleConnection(), dbObject.ID, dbObject.LazyPasswordSecretKey, dbObject.LazyPasswordSecretKeyNode, GetLazyPasswordConnectionString);
+                logger.WriteLog(System.Diagnostics.TraceEventType.Verbose, "use lazy password");
+                dbObject.Password = LazyPassword.GetPassword(new OracleConnection(), 
+                    dbObject.ID, dbObject.LazyPasswordSecretKey, 
+                    dbObject.LazyPasswordSecretKeyNode, dbObject.LazyPasswordDataSource, dbObject.LazyPasswordConnectionString);
             }
             connStrBuilder.Password = dbObject.Password;
 
@@ -228,7 +235,7 @@ namespace Ancestor.DataAccess.DBAction
                 string dsn;
                 if (TnsNamesMap.TryGetValue(tnsnameKey, out dsn))
                     return dsn;
-            }                
+            }
             return null;
         }
 

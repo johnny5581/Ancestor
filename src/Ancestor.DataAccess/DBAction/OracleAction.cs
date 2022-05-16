@@ -2,6 +2,7 @@
 using Ancestor.DataAccess.DAO;
 using Ancestor.DataAccess.DBAction.Mapper;
 using Ancestor.DataAccess.DBAction.Options;
+using Ancestor.DataAccess.Connections;
 using Oracle.DataAccess.Client;
 using Oracle.DataAccess.Types;
 using System;
@@ -17,6 +18,18 @@ namespace Ancestor.DataAccess.DBAction
 {
     public class OracleAction : DbActionBase
     {
+        private static readonly string ConnectionStringPattern = @"(DESCRIPTION = 
+(CONNECT_DATA = 
+    (SERVER=DEDICATED)
+    ({3} = {1}))
+(ADDRESS_LIST = 
+    (ADDRESS = 
+        (COMMUNITY = tcp.world)
+        (PROTOCOL = TCP)
+        (Host = {0})
+        (Port = {2}))    
+))";
+        
         private static readonly Dictionary<string, OracleDbType> TypeNameMap
            = new Dictionary<string, OracleDbType>(StringComparer.OrdinalIgnoreCase)
            {
@@ -61,20 +74,36 @@ namespace Ancestor.DataAccess.DBAction
 
         protected override IDbConnection CreateConnection(DBObject dbObject, out string dsn)
         {
-            var dataSourceName = dbObject.IP ?? dbObject.Node;
+            string dataSource = null;
             var connStrBuilder = new OracleConnectionStringBuilder();
+            logger.WriteLog(System.Diagnostics.TraceEventType.Verbose, "connection mode: " + dbObject.ConnectedMode);
             if (dbObject.ConnectedMode == DBObject.Mode.Direct)
-                connStrBuilder.DataSource = string.Format(@"(DESCRIPTION = (CONNECT_DATA = (SERVER=DEDICATED)(SID = {0}))(ADDRESS_LIST = (ADDRESS =  (COMMUNITY = tcp.world)(PROTOCOL = TCP)(Host = {1})(Port = 1521))(ADDRESS = (COMMUNITY = tcp.world)(PROTOCOL = TCP)(Host = {1})(Port = 1526))))", dbObject.Node, dataSourceName);
-            else
-                connStrBuilder.DataSource = dbObject.Node;
+            {
+                var dataSourceName = dbObject.IP ?? dbObject.Node;
+                var servicePrefix = dbObject.ServicePrefix ?? "SID";
+                var port = dbObject.Port ?? "1521";
+                dataSource = string.Format(ConnectionStringPattern, dataSourceName, dbObject.Node, port, servicePrefix);
+            }
+            else if (dbObject.ConnectedMode == DBObject.Mode.DSN)
+            {
+                dataSource = System.Configuration.ConfigurationManager.ConnectionStrings[dbObject.Node].ConnectionString;
+            }
+            else if (dbObject.ConnectedMode == DBObject.Mode.TNSNAME)
+            {
+                dataSource = dbObject.Node;
+            }
+
+            logger.WriteLog(System.Diagnostics.TraceEventType.Verbose, "DataSource=" + dataSource);
+            connStrBuilder.DataSource = dataSource;
             connStrBuilder.UserID = dbObject.ID;
 
             if (LazyPassword.GetLazyPasswordEnabled(dbObject))
             {
-                dbObject.Password = LazyPassword.GetPassword(new OracleConnection(), dbObject.ID, dbObject.LazyPasswordSecretKey, dbObject.LazyPasswordSecretKeyNode);
+                logger.WriteLog(System.Diagnostics.TraceEventType.Verbose, "use lazy password");
+                dbObject.Password = LazyPassword.GetPassword(new OracleConnection(),
+                    dbObject.ID, dbObject.LazyPasswordSecretKey,
+                    dbObject.LazyPasswordSecretKeyNode, dbObject.LazyPasswordDataSource, dbObject.LazyPasswordConnectionString);
             }
-
-
             connStrBuilder.Password = dbObject.Password;
 
             var extra = dbObject.ConnectionString as OracleConnectionString ?? new OracleConnectionString();
@@ -93,7 +122,7 @@ namespace Ancestor.DataAccess.DBAction
             {
                 var value = p.Value ?? p.DefaultValue;
                 if (value != null)
-                {                    
+                {
                     typeof(OracleConnectionStringBuilder).GetProperty(p.DisplayName).SetValue(connStrBuilder, value, null);
                 }
             }
@@ -113,7 +142,7 @@ namespace Ancestor.DataAccess.DBAction
                 p.OracleDbType = GetParameterType(parameter.ParameterType, parameter.Value);
             if (parameter.Size != null)
                 p.Size = parameter.Size.Value;
-            
+
             p.Direction = parameter.ParameterDirection;
             var opt = options as OracleOptions;
             switch (p.OracleDbType)
@@ -362,8 +391,8 @@ namespace Ancestor.DataAccess.DBAction
                 case DbType.Object:
                     return OracleDbType.Blob;
                 case DbType.Guid:
-                    return OracleDbType.Raw;                
-                case DbType.Boolean:                    
+                    return OracleDbType.Raw;
+                case DbType.Boolean:
                 default:
                     throw new NotSupportedException("not supported type: " + dbType);
             }
