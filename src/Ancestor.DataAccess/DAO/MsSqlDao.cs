@@ -9,7 +9,7 @@ namespace Ancestor.DataAccess.DAO
 {
     public class MsSqlDao : DataAccessObjectBase
     {
-        public MsSqlDao(DBObject dbObject) : base(dbObject)
+        public MsSqlDao(Factory.DAOFactoryEx factory, DBObject dbObject) : base(factory, dbObject)
         {
         }
 

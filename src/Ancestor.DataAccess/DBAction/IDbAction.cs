@@ -32,7 +32,7 @@ namespace Ancestor.DataAccess.DBAction
         DbActionResult<DataTable> Query(string sql, DBParameterCollection dbParameters, DbActionOptions options = null);
         DbActionResult<DataTable> QueryFirst(string sql, DBParameterCollection dbParameters, DbActionOptions options = null);
         DbActionResult<int> ExecuteNonQuery(string sql, DBParameterCollection dbParameters, DbActionOptions options = null);
-        DbActionResult<object> ExecuteStoreProcedure(string name, DBParameterCollection dbParameter, DbActionOptions options = null);
+        DbActionResult<object> ExecuteStoreProcedure(string name, DBParameterCollection dbParameters, DbActionOptions options = null);
         DbActionResult<object> ExecuteScalar(string sql, DBParameterCollection dbParameters, DbActionOptions options = null);
     }
 

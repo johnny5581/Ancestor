@@ -35,17 +35,20 @@ namespace Ancestor.DataAccess.DAO
         private string _parameterPostfix;
         private string _mergeParameterPostfix;
         private string _connStr;
-        public DataAccessObjectBase(DBObject dbObject)
+        private readonly DAOFactoryEx _factory;
+        public DataAccessObjectBase(DAOFactoryEx factory, DBObject dbObject)
         {
             _dbObject = dbObject;
             ParameterPrefix = dbObject.ParameterPrefix;
             ParameterPostfix = dbObject.ParameterPostfix;
+            _factory = factory;
             _dbAction = CreateDbAction(dbObject);
         }
 
-        public DataAccessObjectBase(string connStr)
+        public DataAccessObjectBase(DAOFactoryEx factory, string connStr)
         {
             _connStr = connStr;
+            _factory = factory;
             _dbAction = CreateDbAction(connStr);
         }
         #region Property
@@ -132,6 +135,10 @@ namespace Ancestor.DataAccess.DAO
             get { return _dbObject; }
         }
 
+        public DAOFactoryEx Factory
+        {
+            get { return _factory; }
+        }
         #endregion Property
 
         IDataAccessObjectEx IDataAccessObjectEx.Clone()
@@ -2510,8 +2517,6 @@ namespace Ancestor.DataAccess.DAO
                                     WriteToStringBuilder(sb, name, null);
                             }
                             extraSql = sb.ToString();
-
-
                             //extraSql = Regex.Replace(extraSql, Regex.Escape(extraParameters[i].Name) + "\\s?", name + " ");
                             //extraSql = extraSql.Replace(extraParameters[i].Name + " ", name + " ");
                         }

@@ -46,7 +46,7 @@ namespace Ancestor.Core
             {
 #if NET40
                 var attr = type.GetCustomAttributes(typeof(System.Data.Linq.Mapping.TableAttribute), false).FirstOrDefault() as System.Data.Linq.Mapping.TableAttribute;
-                name = attr != null ? attr.Name.ToUpper() : type.Name.ToUpper();
+                name = attr != null ? attr.Name : type.Name;
 #elif NETSTANDARD2_0
                 var attr = type.GetCustomAttributes(typeof(System.ComponentModel.DataAnnotations.Schema.TableAttribute), false).FirstOrDefault() as System.ComponentModel.DataAnnotations.Schema.TableAttribute;
                 name = attr != null ? attr.Name.ToUpper() : type.Name.ToUpper();

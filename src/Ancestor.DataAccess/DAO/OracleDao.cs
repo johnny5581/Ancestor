@@ -12,10 +12,10 @@ namespace Ancestor.DataAccess.DAO
 {
     public class OracleDao : DataAccessObjectBase
     {
-        public OracleDao(DBObject dbObject) : base(dbObject)
+        public OracleDao(Factory.DAOFactoryEx factory, DBObject dbObject) : base(factory, dbObject)
         {
         }
-        public OracleDao(string connStr) : base(connStr)
+        public OracleDao(Factory.DAOFactoryEx factory, string connStr) : base(factory, connStr)
         {
         }
 
@@ -41,6 +41,8 @@ namespace Ancestor.DataAccess.DAO
                     return new OracleAction(this, dbObject);
                 case DBObject.DataBase.ManagedOracle:
                     return new ManagedOracleAction(this, dbObject);
+                case DBObject.DataBase.Custom:
+                    return Factory.CustomDbFactory(Factory, this, dbObject);
                 default:
                     return null;
             }
@@ -167,7 +169,7 @@ namespace Ancestor.DataAccess.DAO
             }
             protected override void ProcessJoinMethodCall(Expression left, Expression right, SqlStatement.Joins joins = SqlStatement.Joins.Inner)
             {
-                switch(joins)
+                switch (joins)
                 {
                     case SqlStatement.Joins.Inner:
                         Visit(left);
@@ -183,7 +185,7 @@ namespace Ancestor.DataAccess.DAO
                         Visit(right);
                         break;
                     case SqlStatement.Joins.Right:
-                        Visit(left);                        
+                        Visit(left);
                         Write("=");
                         Visit(right);
                         Write("(+)");
@@ -277,8 +279,8 @@ namespace Ancestor.DataAccess.DAO
                         if (TryResolveValue(formatExpression, out value) && value is string)
                         {
                             var formattedValue = value as string;
-                            if(useFmtConvert)
-                                formattedValue = ConvertFromDateFormat(formattedValue);                            
+                            if (useFmtConvert)
+                                formattedValue = ConvertFromDateFormat(formattedValue);
                             Write("'{0}'", formattedValue);
                         }
                         else
@@ -362,7 +364,7 @@ namespace Ancestor.DataAccess.DAO
                 return format;
             }
 
-            
+
         }
     }
 }
