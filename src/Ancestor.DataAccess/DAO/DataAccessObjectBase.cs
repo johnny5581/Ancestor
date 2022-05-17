@@ -461,7 +461,7 @@ namespace Ancestor.DataAccess.DAO
                             _dbAction.ExecuteNonQuery(insertSql, insertInfo.Item3);
                             successed++;
                         }
-                        catch(Exception ex)
+                        catch (Exception ex)
                         {
                             if (raiseError)
                                 throw;
@@ -1302,7 +1302,7 @@ namespace Ancestor.DataAccess.DAO
             {
                 using (var scope = CreateScope())
                 {
-                    Write("NOT ");
+                    Write("NOT");
                     Visit(node);
                 }
             }
@@ -1349,7 +1349,7 @@ namespace Ancestor.DataAccess.DAO
                 {
                     using (var scope = CreateScope())
                     {
-                        Write("NOT ");
+                        Write("NOT");
                         Visit(node);
                     }
                 }
@@ -1474,6 +1474,7 @@ namespace Ancestor.DataAccess.DAO
                         }
                         else if (IsExpressionHardwordMember(left, out HardWordAttribute hd))
                         {
+                            Write(" {0} ", @operator);
                             ProcessConstant(value, hd);
                             return; // process end
                         }
@@ -1790,6 +1791,19 @@ namespace Ancestor.DataAccess.DAO
                         Visit(objectNode);
                         Write(")");
                         break;
+                    case "PadLeft":
+                    case "PadRight":
+                        Write((method.Name == "PadLeft" ? "L" : "R") + "Pad(");
+                        Visit(objectNode);
+                        if (args.Count > 0)
+                        {
+                            Write(",");
+                            Visit(args.ElementAtOrDefault(0));
+                        }
+                        Write(")");
+                        break;
+
+                        break;
                     case "IndexOf":
                         Write("CharIndex(");
                         Visit(args[0]);
@@ -1848,7 +1862,8 @@ namespace Ancestor.DataAccess.DAO
             protected abstract void ProcessTruncateMethodCall(Expression nodeObject);
             protected virtual void ProcessFuncMethodCall(string name, ReadOnlyCollection<Expression> parameters)
             {
-                Write("{0}(", name);
+                Write(name);
+                Write("(");
                 ProcessParameters(parameters);
                 Write(")");
             }
@@ -2274,7 +2289,7 @@ namespace Ancestor.DataAccess.DAO
                         Write(name);
                     }
                     if (index != properties.Length - 1)
-                        Write(", ");
+                        Write(",");
                 }
                 //for (var index = 0; index < node.Bindings.Count; index++)
                 //{
@@ -2314,7 +2329,7 @@ namespace Ancestor.DataAccess.DAO
                 foreach (var expression in node.Expressions)
                 {
                     if (flag)
-                        Write(", ");
+                        Write(",");
                     else
                         flag = true;
                     Visit(expression);
@@ -2330,16 +2345,14 @@ namespace Ancestor.DataAccess.DAO
                     var member = node.Members[index];
                     if (_option.NewAs)
                     {
-                        //Write("(");
                         Visit(argument);
-                        //Write(") As ");
-                        Write(" As ");
+                        Write("As");
                         Write(member.Name);
                     }
                     else
                         Visit(argument);
                     if (index != node.Members.Count - 1)
-                        Write(", ");
+                        Write(",");
                 }
             }
             #endregion
@@ -2352,17 +2365,19 @@ namespace Ancestor.DataAccess.DAO
             {
                 return new ReadOnlyCollection<Expression>(expressions.ToList());
             }
-            protected virtual void Write(string text)
+            protected virtual void Write(string text, bool? space = null)
             {
                 var sb = StringBuilder;
-                if (sb.Length > 0 && sb[sb.Length - 1] != ' ' && !text.StartsWith(" "))
-                    sb.Append(" ");
-                sb.Append(text);
+                WriteToStringBuilder(sb, text, space);
+            }
+            protected virtual void Write(string format, bool? space, params string[] args)
+            {
+                var text = string.Format(format, args);
+                Write(text, space);
             }
             protected virtual void Write(string format, params string[] args)
             {
-                var text = string.Format(format, args);
-                Write(text);
+                Write(format, null, args);
             }
             protected virtual ParameterInfo GetParameter(object value, HardWordAttribute hardWord)
             {
@@ -2386,7 +2401,7 @@ namespace Ancestor.DataAccess.DAO
             {
                 DBParameter p = null;
                 if (!parameter.IsSysDateConverted)
-                    p = _dbParameters.Add(parameter.ValueName, parameter.Value);
+                    p = _dbParameters.Add(parameter.ParameterName, parameter.Value);
                 Write(parameter.ValueName);
                 return p;
             }
@@ -2485,7 +2500,19 @@ namespace Ancestor.DataAccess.DAO
                         name += postfix;
                         if (extraSql != null)
                         {
-                            extraSql = Regex.Replace(extraSql, Regex.Escape(extraParameters[i].Name) + "\\s?", name + " ");
+                            var pattern = Regex.Escape(extraParameters[i].Name) + "\\s?";
+                            var parts = Regex.Split(extraSql, pattern);
+                            var sb = new StringBuilder();
+                            for (var j  = 0; j < parts.Length; j++)
+                            {
+                                WriteToStringBuilder(sb, parts[j], null);
+                                if (j != parts.Length - 1)
+                                    WriteToStringBuilder(sb, name, null);
+                            }
+                            extraSql = sb.ToString();
+
+
+                            //extraSql = Regex.Replace(extraSql, Regex.Escape(extraParameters[i].Name) + "\\s?", name + " ");
                             //extraSql = extraSql.Replace(extraParameters[i].Name + " ", name + " ");
                         }
                         extraParameters[i].Name = name;
@@ -2495,6 +2522,20 @@ namespace Ancestor.DataAccess.DAO
                     merged.Reference.Add(result2.Reference);
                 }
                 return merged;
+            }
+            public static void WriteToStringBuilder(StringBuilder sb, string text, bool? space)
+            {
+                var textChecklist = new char[] { ',', '(', ')', ' ' };                
+                var lastChecklist = new char[] { ' ', '(' };
+                var flgSpace = false;
+                if (space.HasValue)
+                    flgSpace = space.Value;
+                else if ((text != null && text.Length > 0 && !textChecklist.Contains(text[0]))  // text first char check
+                    && (sb.Length > 0 && !lastChecklist.Contains(sb[sb.Length - 1]))) // last char check
+                    flgSpace = true;
+                if (flgSpace)
+                    sb.Append(" ");
+                sb.Append(text);
             }
             public class ExpressionResolveOption
             {
@@ -2620,20 +2661,13 @@ namespace Ancestor.DataAccess.DAO
                         _disposed = true;
                     }
                 }
-
-                public string GetText()
+                public static void AppendText(StringBuilder sb, string text, bool? space = null)
                 {
-                    return _sb.ToString() + ")";
+                    WriteToStringBuilder(sb, text, space);
                 }
-                public static void AppendText(StringBuilder sb, string text)
+                private void AppendText(string text, bool? space = null)
                 {
-                    if (sb.Length > 0 && sb[sb.Length - 1] != ' ' && !text.StartsWith(" "))
-                        sb.Append(" ");
-                    sb.Append(text);
-                }
-                private void AppendText(string text)
-                {
-                    AppendText(_sb, text);
+                    AppendText(_sb, text, space);
                 }
             }
 
