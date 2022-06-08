@@ -214,7 +214,7 @@ namespace Ancestor.DataAccess.DBAction
             var queryParameter = new QueryParameter(sql, dbParameters, options, null);
             return ActionWithConnectionHandler(() =>
             {
-                Log("QueryTable", sql, dbParameters);
+                Log("ExecuteNonQuery", sql, dbParameters);
                 using (var cmd = _connection.CreateCommand())
                 {
                     cmd.CommandText = sql;
@@ -233,6 +233,7 @@ namespace Ancestor.DataAccess.DBAction
             var queryParameter = new QueryParameter(name, dbParameters, options, null);
             return ActionWithConnectionHandler(() =>
             {
+                Log("ExecuteStorePrecedure", name, dbParameters);
                 using (var cmd = _connection.CreateCommand())
                 {
                     cmd.CommandText = name;
@@ -251,6 +252,7 @@ namespace Ancestor.DataAccess.DBAction
             var queryParameter = new QueryParameter(sql, dbParameters, options, null);
             return ActionWithConnectionHandler(() =>
             {
+                Log("ExecuteScalar", sql, dbParameters);
                 var dynamicParameter = CreateDynamicParameters(dbParameters);
                 return _connection.ExecuteScalar(sql, dynamicParameter, _transaction);
             }, queryParameter);
