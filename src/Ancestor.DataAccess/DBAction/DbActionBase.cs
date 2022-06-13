@@ -59,7 +59,7 @@ namespace Ancestor.DataAccess.DBAction
                 throw new InvalidOperationException("no connection found");
             DataSource = dsn;
             _dao = dao;
-            
+
         }
         public DbActionBase(DataAccessObjectBase dao, string connStr)
         {
@@ -72,7 +72,7 @@ namespace Ancestor.DataAccess.DBAction
                 throw new InvalidOperationException("no connection found");
             DataSource = dsn;
             _dao = dao;
-        }        
+        }
 
         #region Property
         /// <summary>
@@ -158,6 +158,7 @@ namespace Ancestor.DataAccess.DBAction
                 IList list = _connection.Query(dataType, sql, dynamicParameter, _transaction).ToList();
                 if (dataType != null)
                     list = AncestorResultHelper.MakeList(list, dataType);
+                LogRes("QueryList", list.Count);
                 return list;
             }, queryParameter);
         }
@@ -176,7 +177,9 @@ namespace Ancestor.DataAccess.DBAction
                     cmd.Transaction = _transaction;
                     BindParameters(cmd, dbParameters, options);
                     PreQuery(cmd, options);
-                    return CreateDataTable(cmd, 0, 0);
+                    var table = CreateDataTable(cmd, 0, 0);
+                    LogRes("QueryTable", table.Rows.Count);
+                    return table;
                 }
             }, queryParameter);
         }
@@ -188,7 +191,8 @@ namespace Ancestor.DataAccess.DBAction
             {
                 Log("QueryFirst", sql, dbParameters);
                 var dynamicParameter = CreateDynamicParameters(dbParameters);
-                var data = _connection.QueryFirstOrDefault(dataType, sql, dynamicParameter, _transaction);                
+                var data = _connection.QueryFirstOrDefault(dataType, sql, dynamicParameter, _transaction);
+                LogRes("QueryFirst", data == null ? 0 : 1);
                 return data;
             }, queryParameter);
         }
@@ -205,7 +209,9 @@ namespace Ancestor.DataAccess.DBAction
                     cmd.Transaction = _transaction;
                     BindParameters(cmd, dbParameters, options);
                     PreQuery(cmd, options);
-                    return CreateDataTable(cmd, 0, 1);
+                    var table = CreateDataTable(cmd, 0, 1);
+                    LogRes("QueryFirstRow", table.Rows.Count);
+                    return table;
                 }
             }, queryParameter);
         }
@@ -224,6 +230,7 @@ namespace Ancestor.DataAccess.DBAction
                     PreExecute(cmd, options);
                     var effectRows = cmd.ExecuteNonQuery();
                     RestoreParameters(cmd, dbParameters);
+                    LogRes("ExecuteNonQuery", effectRows);
                     return effectRows;
                 }
             }, queryParameter);
@@ -241,7 +248,8 @@ namespace Ancestor.DataAccess.DBAction
                     cmd.Transaction = _transaction;
                     BindParameters(cmd, dbParameters, options);
                     PreExecute(cmd, options);
-                    cmd.ExecuteNonQuery();
+                    var effectRows = cmd.ExecuteNonQuery();
+                    LogRes("ExecuteStorePrecedure", effectRows);
                     return RestoreParameters(cmd, dbParameters);
                 }
             }, queryParameter);
@@ -254,7 +262,9 @@ namespace Ancestor.DataAccess.DBAction
             {
                 Log("ExecuteScalar", sql, dbParameters);
                 var dynamicParameter = CreateDynamicParameters(dbParameters);
-                return _connection.ExecuteScalar(sql, dynamicParameter, _transaction);
+                var scalarValue = _connection.ExecuteScalar(sql, dynamicParameter, _transaction);
+                LogRes("ExecuteScalar", scalarValue);
+                return scalarValue;
             }, queryParameter);
         }
         DbActionOptions IDbAction.CreateOptions()
@@ -294,7 +304,7 @@ namespace Ancestor.DataAccess.DBAction
                         RestoreParameter(dbDataParameter, dbParameters[index]);
                         if (direction == ParameterDirection.ReturnValue)
                             returnValue = dbParameters[index].Value;
-                    }                    
+                    }
                 }
             }
             return returnValue;
@@ -374,7 +384,7 @@ namespace Ancestor.DataAccess.DBAction
                     return new DbActionResult<T>
                     {
                         Result = result,
-                        Parameter = parameter,                        
+                        Parameter = parameter,
                     };
                 }
                 catch (Exception ex)
@@ -387,7 +397,7 @@ namespace Ancestor.DataAccess.DBAction
                 }
             }
         }
-        
+
         protected void Log(string action, string sql, IEnumerable<DBParameter> parameters)
         {
             string args = null;
@@ -396,7 +406,16 @@ namespace Ancestor.DataAccess.DBAction
             var message = string.Format("action={0} sql=\"{1}\" args=[{2}]", action, sql, args);
             sqlLogger.WriteLog(System.Diagnostics.TraceEventType.Verbose, message);
             _lastSqlCommand = sql;
-            
+        }
+        protected void LogRes(string action, int effectRows)
+        {
+            var message = string.Format("action={0} effectRows={1}", action, effectRows);
+            sqlLogger.WriteLog(System.Diagnostics.TraceEventType.Verbose, message);
+        }
+        protected void LogRes(string action, object scalar)
+        {
+            var message = string.Format("action={0} scalar={1}", action, scalar);
+            sqlLogger.WriteLog(System.Diagnostics.TraceEventType.Verbose, message);
         }
         private void OpenConnection()
         {
@@ -425,7 +444,7 @@ namespace Ancestor.DataAccess.DBAction
         }
         private static void OpenConnection(IDbConnection connection)
         {
-            if (connection.State == ConnectionState.Closed)
+            if (!connection.State.HasFlag(ConnectionState.Open))
                 connection.Open();
         }
         #endregion Protected / Private
