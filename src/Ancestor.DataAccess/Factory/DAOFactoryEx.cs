@@ -9,7 +9,7 @@ namespace Ancestor.DataAccess.Factory
 {
     public class DAOFactoryEx : IDAOFactory
     {
-        private IDBConnection _conn;
+        private System.Data.IDbConnection _conn;
         private string _connStr;
         private DBObject _dbObject;
         private IDataAccessObjectEx _daoCache;
@@ -22,11 +22,11 @@ namespace Ancestor.DataAccess.Factory
         {
             ResetSource(connStr, database);
         }
-        public DAOFactoryEx(IDBConnection conn, DBObject.DataBase database)
+        public DAOFactoryEx(System.Data.IDbConnection conn, DBObject.DataBase database)
         {
             ResetSource(conn, database);
         }
-        public DAOFactoryEx(IDBConnection conn)
+        public DAOFactoryEx(System.Data.IDbConnection conn)
         {
             ResetSource(conn);
         }        
@@ -125,7 +125,7 @@ namespace Ancestor.DataAccess.Factory
             ResetDaoCache();
         }
 
-        public void ResetSource(IDBConnection conn)
+        public void ResetSource(System.Data.IDbConnection conn)
         {
             if (conn == null) throw new ArgumentNullException("conn");
             var connType = conn.GetType();
@@ -142,7 +142,7 @@ namespace Ancestor.DataAccess.Factory
                     throw new InvalidOperationException("unknown connection: " + connTypeName);
             }
         }
-        public void ResetSource(IDBConnection conn, DBObject.DataBase database)
+        public void ResetSource(System.Data.IDbConnection conn, DBObject.DataBase database)
         {
             if (conn == null) throw new ArgumentNullException("conn");
             _conn = conn;
