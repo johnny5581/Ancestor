@@ -22,7 +22,7 @@ namespace Ancestor.DataAccess.DAO
     public abstract class DataAccessObjectBase : IDataAccessObjectEx, IInternalDataAccessObject, IIdentifiable
     {
         private readonly Guid _id = Guid.NewGuid();
-        private readonly DBObject _dbObject;
+        //private readonly DBObject _dbObject;
         private IDbAction _dbAction;
         private bool _disposed = false;
         private bool? _raiseExp;
@@ -34,23 +34,16 @@ namespace Ancestor.DataAccess.DAO
         private string _updateParameterPrefix;
         private string _parameterPostfix;
         private string _mergeParameterPostfix;
-        private string _connStr;
-        private readonly DAOFactoryEx _factory;
-        public DataAccessObjectBase(DAOFactoryEx factory, DBObject dbObject)
-        {
-            _dbObject = dbObject;
-            ParameterPrefix = dbObject.ParameterPrefix;
-            ParameterPostfix = dbObject.ParameterPostfix;
-            _factory = factory;
-            _dbAction = CreateDbAction(dbObject);
-        }
+        //private string _connStr;
 
-        public DataAccessObjectBase(DAOFactoryEx factory, string connStr)
-        {
-            _connStr = connStr;
-            _factory = factory;
-            _dbAction = CreateDbAction(connStr);
+        private DAOFactoryEx _factory;
+        
+        public DataAccessObjectBase(DAOFactoryEx factory)
+        {             
+            _factory = factory;            
         }
+        
+
         #region Property
 
         public string ParameterPrefix
@@ -130,10 +123,6 @@ namespace Ancestor.DataAccess.DAO
         {
             get { return _dbAction; }
         }
-        public DBObject DbObject
-        {
-            get { return _dbObject; }
-        }
 
         public DAOFactoryEx Factory
         {
@@ -143,10 +132,28 @@ namespace Ancestor.DataAccess.DAO
 
         IDataAccessObjectEx IDataAccessObjectEx.Clone()
         {
-            return new DAOFactoryEx(_dbObject).GetDataAccessObjectFactory();
+            // recreate from factory
+            return new DAOFactoryEx(Factory).GetDataAccessObjectFactory();
         }
         protected abstract IDbAction CreateDbAction(DBObject dbObject);
         protected abstract IDbAction CreateDbAction(string connStr);
+        protected abstract IDbAction CreateDbAction(IDbConnection conn);
+        protected virtual IDbAction CreateDbAction(DAOFactoryEx factory)
+        {
+            switch(factory.Mode)
+            {
+                case DAOFactoryEx.SourceMode.DBObject:
+                    return CreateDbAction((DBObject)factory.Source);
+                case DAOFactoryEx.SourceMode.ConnectionString:
+                    return CreateDbAction((string)factory.Source);
+                case DAOFactoryEx.SourceMode.Connection:
+                    return CreateDbAction((IDbConnection)factory.Source);
+                default:
+                    if (factory.Database == DBObject.DataBase.Custom)
+                        return factory.CustomDbFactory(factory, this);
+                    throw new InvalidOperationException("invalid factory mode:" + factory.Mode);
+            }
+        }
         protected DbActionOptions CreateDbOptions(AncestorOptions options)
         {
             return CreateDbOptions(options ?? new AncestorOptions(), _dbAction.CreateOptions());

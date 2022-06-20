@@ -35,9 +35,9 @@ namespace Ancestor.Core
         public bool? Load_Balancing { get; set; }
         [DisplayName("IncrPoolSize")]
         public int? Incr_Pool_Size { get; set; }
-        [DisplayName("Pooling")]        
+        [DisplayName("Pooling")]
         public bool? Pooling { set; get; }
-        [DisplayName("MaxPoolSize")]        
+        [DisplayName("MaxPoolSize")]
         public int? Max_Pool_Size { get; set; }
         [DisplayName("MinPoolSize")]
         public int? Min_Pool_Size { get; set; }
@@ -52,7 +52,31 @@ namespace Ancestor.Core
         [DisplayName("StatementCacheSize")]
         public int? Statement_Cache_Size { get; set; }
         [DisplayName("ValidateConnection")]
-        public bool? Validate_Connection { get; set; }        
+        public bool? Validate_Connection { get; set; }
 
+        public object Clone()
+        {
+            return new OracleConnectionString
+            {
+                Connection_Lifetime = Connection_Lifetime,
+                Connection_Timeout = Connection_Timeout,
+                Context_Connection = Context_Connection,
+                DBA_Privilege = DBA_Privilege,
+                Decr_Pool_Size = Decr_Pool_Size,
+                Enlist = Enlist,
+                HA_Events = HA_Events,
+                Incr_Pool_Size = Incr_Pool_Size,
+                Load_Balancing = Load_Balancing,
+                Max_Pool_Size = Max_Pool_Size,
+                Min_Pool_Size = Min_Pool_Size,
+                Persist_Security_Info = Persist_Security_Info,
+                Pooling = Pooling,
+                Proxy_Password = Proxy_Password,
+                Proxy_User_Id = Proxy_User_Id,
+                Statement_Cache_Purge = Statement_Cache_Purge,
+                Statement_Cache_Size = Statement_Cache_Size,
+                Validate_Connection = Validate_Connection
+            };
+        }
     }
 }

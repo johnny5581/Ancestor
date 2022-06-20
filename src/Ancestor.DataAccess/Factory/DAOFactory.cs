@@ -41,7 +41,7 @@ namespace Ancestor.DataAccess.Factory
 
         DBObject IDataAccessObject.DbObject
         {
-            get { return _dao.DbObject; }
+            get { return _dao.Factory.Source as DBObject; }
         }
         IDbConnection IDataAccessObject.DBConnection
         {

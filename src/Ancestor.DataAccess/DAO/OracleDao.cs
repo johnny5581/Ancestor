@@ -3,6 +3,7 @@ using Ancestor.DataAccess.DBAction;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -12,10 +13,7 @@ namespace Ancestor.DataAccess.DAO
 {
     public class OracleDao : DataAccessObjectBase
     {
-        public OracleDao(Factory.DAOFactoryEx factory, DBObject dbObject) : base(factory, dbObject)
-        {
-        }
-        public OracleDao(Factory.DAOFactoryEx factory, string connStr) : base(factory, connStr)
+        public OracleDao(Factory.DAOFactoryEx factory) : base(factory)
         {
         }
 
@@ -38,11 +36,9 @@ namespace Ancestor.DataAccess.DAO
             switch (dbObject.DataBaseType)
             {
                 case DBObject.DataBase.Oracle:
-                    return new OracleAction(this, dbObject);
+                    return new OracleAction(this);
                 case DBObject.DataBase.ManagedOracle:
-                    return new ManagedOracleAction(this, dbObject);
-                case DBObject.DataBase.Custom:
-                    return Factory.CustomDbFactory(Factory, this, dbObject);
+                    return new ManagedOracleAction(this);
                 default:
                     return null;
             }
@@ -50,9 +46,13 @@ namespace Ancestor.DataAccess.DAO
         protected override IDbAction CreateDbAction(string connStr)
         {
             if (Environment.Is64BitProcess)
-                return new ManagedOracleAction(this, connStr);
+                return new ManagedOracleAction(this);
             else
-                return new OracleAction(this, connStr);
+                return new OracleAction(this);
+        }
+        protected override IDbAction CreateDbAction(IDbConnection conn)
+        {
+            throw new NotImplementedException();
         }
         public override string ConvertFromHardWord(string name, HardWordAttribute attribute)
         {
@@ -74,6 +74,8 @@ namespace Ancestor.DataAccess.DAO
         {
             return new OracleExpressionResolver(this, reference, option);
         }
+
+
 
         private class OracleExpressionResolver : ExpressionResolver
         {

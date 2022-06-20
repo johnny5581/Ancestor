@@ -10,10 +10,7 @@ namespace Ancestor.DataAccess.DBAction
 {
     public class MSSqlAction : DbActionBase
     {
-        public MSSqlAction(DataAccessObjectBase dao, DBObject dbObject) : base(dao, dbObject)
-        {
-        }
-        public MSSqlAction(DataAccessObjectBase dao, string connStr) : base(dao, connStr)
+        public MSSqlAction(DataAccessObjectBase dao) : base(dao)
         {
         }
         protected override IDbDataAdapter CreateAdapter(IDbCommand command)
@@ -27,6 +24,11 @@ namespace Ancestor.DataAccess.DBAction
         }
 
         protected override IDbConnection CreateConnection(string connStr, out string dataSource)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override IDbConnection CreateConnection(IDbConnection conn, out string dataSource)
         {
             throw new NotImplementedException();
         }

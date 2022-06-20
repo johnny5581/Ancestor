@@ -8,7 +8,7 @@ namespace Ancestor.Core
     /// <summary>
     /// Database profile object
     /// </summary>
-    public class DBObject
+    public class DBObject : ICloneable
     {
         public DBObject()
         {
@@ -77,9 +77,9 @@ namespace Ancestor.Core
         /// </summary>
         public enum Mode
         {
-            Direct, 
+            Direct,
             DSN,
-            TNSNAME,           
+            TNSNAME,
         }
         /// <summary>
         /// Service Prefix for Direct connection
@@ -114,11 +114,37 @@ namespace Ancestor.Core
         /// lazy password connection string
         /// </summary>
         public string LazyPasswordConnectionString { get; set; }
+
+        public object Clone()
+        {
+            var instance = new DBObject
+            {
+                IP = IP,
+                ConnectedMode = ConnectedMode,
+                ConnectionString = (IConnectionString)ConnectionString.Clone(),
+                DataBaseType = DataBaseType,
+                Hostname = Hostname,
+                ID = ID,
+                IsLazyPassword = IsLazyPassword,
+                LazyPasswordConnectionString = LazyPasswordConnectionString,
+                LazyPasswordDataSource = LazyPasswordDataSource,
+                LazyPasswordSecretKey = LazyPasswordSecretKey,
+                LazyPasswordSecretKeyNode = LazyPasswordSecretKeyNode,
+                Node = Node,
+                ParameterPostfix = ParameterPostfix,
+                ParameterPrefix = ParameterPrefix,
+                Password = Password,
+                Port = Port,
+                Schema = Schema,
+                ServicePrefix = ServicePrefix
+            };
+            return instance;
+        }
     }
     /// <summary>
     /// Extra connection string interface
     /// </summary>
-    public interface IConnectionString
+    public interface IConnectionString : ICloneable
     {
     }
 }

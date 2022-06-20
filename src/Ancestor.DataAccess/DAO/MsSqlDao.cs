@@ -2,6 +2,7 @@
 using Ancestor.DataAccess.DBAction;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 
@@ -9,7 +10,7 @@ namespace Ancestor.DataAccess.DAO
 {
     public class MsSqlDao : DataAccessObjectBase
     {
-        public MsSqlDao(Factory.DAOFactoryEx factory, DBObject dbObject) : base(factory, dbObject)
+        public MsSqlDao(Factory.DAOFactoryEx factory) : base(factory)
         {
         }
 
@@ -32,6 +33,11 @@ namespace Ancestor.DataAccess.DAO
         }
 
         protected override IDbAction CreateDbAction(string connStr)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override IDbAction CreateDbAction(IDbConnection conn)
         {
             throw new NotImplementedException();
         }

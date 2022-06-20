@@ -56,10 +56,7 @@ namespace Ancestor.DataAccess.DBAction
                 { "LONG", OracleDbType.Long },
                 { "LONGRAW", OracleDbType.LongRaw },
            };
-        public OracleAction(DataAccessObjectBase dao, DBObject dbObject) : base(dao, dbObject)
-        {
-        }
-        public OracleAction(DataAccessObjectBase dao, string connStr) : base(dao, connStr)
+        public OracleAction(DataAccessObjectBase dao) : base(dao)
         {
         }
         #region Protected / Private
@@ -132,8 +129,15 @@ namespace Ancestor.DataAccess.DBAction
         }
         protected override IDbConnection CreateConnection(string connStr, out string dataSource)
         {
-            dataSource = null;
+            var connSb = new OracleConnectionStringBuilder(connStr);
+            dataSource = connSb.DataSource;
             return new OracleConnection(connStr);
+        }
+        protected override IDbConnection CreateConnection(IDbConnection conn, out string dataSource)
+        {
+            var oraConn = (OracleConnection)conn;            
+            dataSource = oraConn.DataSource;            
+            return oraConn;
         }
         protected override IDbDataParameter CreateParameter(DBParameter parameter, DbActionOptions options)
         {
@@ -397,6 +401,8 @@ namespace Ancestor.DataAccess.DBAction
                     throw new NotSupportedException("not supported type: " + dbType);
             }
         }
+
+
         #endregion Protected / Private
 
 

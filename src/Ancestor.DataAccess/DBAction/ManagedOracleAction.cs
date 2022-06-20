@@ -63,10 +63,7 @@ namespace Ancestor.DataAccess.DBAction
     (CONNECT_DATA = ({3} = {1})
     )
 )";
-        public ManagedOracleAction(DataAccessObjectBase dao, DBObject dbObject) : base(dao, dbObject)
-        {
-        }
-        public ManagedOracleAction(DataAccessObjectBase dao, string connStr) : base(dao, connStr)
+        public ManagedOracleAction(DataAccessObjectBase dao) : base(dao)
         {
         }
         #region Protected / Private
@@ -217,8 +214,15 @@ namespace Ancestor.DataAccess.DBAction
         }
         protected override IDbConnection CreateConnection(string connStr, out string dataSource)
         {
-            dataSource = null;
+            var connSb = new OracleConnectionStringBuilder(connStr);
+            dataSource = connSb.DataSource;
             return new OracleConnection(connStr);
+        }
+        protected override IDbConnection CreateConnection(IDbConnection conn, out string dataSource)
+        {
+            var oraConn = (OracleConnection)conn;
+            dataSource = oraConn.DataSource;
+            return oraConn;
         }
         private static string GetLazyPasswordConnectionString(string connStr)
         {
@@ -552,6 +556,7 @@ namespace Ancestor.DataAccess.DBAction
                     throw new NotSupportedException("not supported type: " + dbType);
             }
         }
+
         #endregion Protected / Private
 
 

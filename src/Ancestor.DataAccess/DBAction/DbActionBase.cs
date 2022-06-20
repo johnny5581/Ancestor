@@ -48,13 +48,26 @@ namespace Ancestor.DataAccess.DBAction
         internal Core.Logging.ILogger sqlLogger;
         private bool? _autoCloseConnection;
 
-        public DbActionBase(DataAccessObjectBase dao, DBObject dbObject)
+        public DbActionBase(DataAccessObjectBase dao)
         {
             var loggerName = "Ancestor." + GetType().Name;
             logger = Core.Logging.Logger.CreateInstance(loggerName);
             sqlLogger = Core.Logging.Logger.CreateInstance(loggerName + ".Sql");
-            string dsn;
-            _connection = CreateConnection(dbObject, out dsn);
+            string dsn = null;
+
+            switch (dao.Factory.Mode)
+            {
+                case Factory.DAOFactoryEx.SourceMode.DBObject:
+                    _connection = CreateConnection((DBObject)dao.Factory.Source, out dsn);
+                    break;
+                case Factory.DAOFactoryEx.SourceMode.ConnectionString:
+                    _connection = CreateConnection((string)dao.Factory.Source, out dsn);
+                    break;
+                case Factory.DAOFactoryEx.SourceMode.Connection:
+                    _connection = CreateConnection((string)dao.Factory.Source, out dsn);
+                    break;                
+            }
+
             if (_connection == null)
                 throw new InvalidOperationException("no connection found");
             DataSource = dsn;
@@ -276,6 +289,7 @@ namespace Ancestor.DataAccess.DBAction
         #region Protected / Private
         protected abstract IDbConnection CreateConnection(DBObject dbObject, out string dataSource);
         protected abstract IDbConnection CreateConnection(string connStr, out string dataSource);
+        protected abstract IDbConnection CreateConnection(IDbConnection conn, out string dataSource);
         protected abstract IDbDataAdapter CreateAdapter(IDbCommand command);
         protected abstract IDbDataParameter CreateParameter(DBParameter parameter, DbActionOptions options);
         protected abstract DbActionOptions CreateOption();
