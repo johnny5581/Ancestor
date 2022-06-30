@@ -40,7 +40,7 @@ namespace Ancestor.DataAccess.DAO
         
         public DataAccessObjectBase(DAOFactoryEx factory)
         {             
-            _factory = factory;            
+            _factory = factory;
         }
         
 
@@ -69,7 +69,7 @@ namespace Ancestor.DataAccess.DAO
 
         public bool IsTransacting
         {
-            get { return _dbAction.IsTransacting; }
+            get { return DbAction.IsTransacting; }
         }
         Guid IIdentifiable.Guid
         {
@@ -117,11 +117,11 @@ namespace Ancestor.DataAccess.DAO
 
         IDbConnection IDataAccessObjectEx.DBConnection
         {
-            get { return _dbAction.Connection; }
+            get { return DbAction.Connection; }
         }
         public IDbAction DbAction
         {
-            get { return _dbAction; }
+            get { return _dbAction ?? (_dbAction = CreateDbAction()); }
         }
 
         public DAOFactoryEx Factory
@@ -138,9 +138,10 @@ namespace Ancestor.DataAccess.DAO
         protected abstract IDbAction CreateDbAction(DBObject dbObject);
         protected abstract IDbAction CreateDbAction(string connStr);
         protected abstract IDbAction CreateDbAction(IDbConnection conn);
-        protected virtual IDbAction CreateDbAction(DAOFactoryEx factory)
+        protected virtual IDbAction CreateDbAction()
         {
-            switch(factory.Mode)
+            var factory = Factory;
+            switch (factory.Mode)
             {
                 case DAOFactoryEx.SourceMode.DBObject:
                     return CreateDbAction((DBObject)factory.Source);
@@ -156,7 +157,7 @@ namespace Ancestor.DataAccess.DAO
         }
         protected DbActionOptions CreateDbOptions(AncestorOptions options)
         {
-            return CreateDbOptions(options ?? new AncestorOptions(), _dbAction.CreateOptions());
+            return CreateDbOptions(options ?? new AncestorOptions(), DbAction.CreateOptions());
         }
         protected virtual DbActionOptions CreateDbOptions(AncestorOptions options, DbActionOptions dbOptions)
         {
@@ -284,32 +285,32 @@ namespace Ancestor.DataAccess.DAO
         }
         public void BeginTransaction()
         {
-            _dbAction.BeginTransaction();
+            DbAction.BeginTransaction();
         }
 
         public void BeginTransaction(IsolationLevel isoLationLevel)
         {
-            _dbAction.BeginTransaction(isoLationLevel);
+            DbAction.BeginTransaction(isoLationLevel);
         }
 
         public void Commit()
         {
-            _dbAction.Commit();
+            DbAction.Commit();
         }
 
         public void Rollback()
         {
-            _dbAction.Rollback();
+            DbAction.Rollback();
         }
 
         public void Open()
         {
-            _dbAction.OpenConnection();
+            DbAction.OpenConnection();
         }
 
         public void Close()
         {
-            _dbAction.CloseConnection();
+            DbAction.CloseConnection();
         }
         public virtual AncestorResult QueryFromSqlString(string sql, object parameter, Type dataType, bool firstOnly, AncestorOptions options)
         {
@@ -441,7 +442,7 @@ namespace Ancestor.DataAccess.DAO
                 var values = insertInfo.Item2;
                 var sql = string.Format("Insert Into {0} {1} Values ({2})", name, fields, values);
                 var opt = CreateDbOptions(options);
-                return _dbAction.ExecuteNonQuery(sql, dbParameters, opt);
+                return DbAction.ExecuteNonQuery(sql, dbParameters, opt);
             }, ReturnEffectRowResult);
         }
 
@@ -452,7 +453,7 @@ namespace Ancestor.DataAccess.DAO
                 var reference = GetReferenceInfo(null, typeof(T), null, origin);
                 var insertInfos = CreateInsertCommands(reference, models, typeof(T));
                 var name = reference.GetReferenceName();
-                var connCloseFlag = _dbAction.AutoCloseConnection;
+                var connCloseFlag = DbAction.AutoCloseConnection;
                 var raiseError = false;
                 if (options != null)
                     raiseError = options.BulkStopWhenError;
@@ -460,7 +461,7 @@ namespace Ancestor.DataAccess.DAO
                 string field = null;
                 try
                 {
-                    _dbAction.OpenConnection();
+                    DbAction.OpenConnection();
                     foreach (var insertInfo in insertInfos)
                     {
                         if (field == null)
@@ -472,7 +473,7 @@ namespace Ancestor.DataAccess.DAO
                         string insertSql = string.Format("Insert Into {0} {1} Values ({2})", name, field, insertInfo.Item2);
                         try
                         {
-                            _dbAction.ExecuteNonQuery(insertSql, insertInfo.Item3);
+                            DbAction.ExecuteNonQuery(insertSql, insertInfo.Item3);
                             successed++;
                         }
                         catch (Exception ex)
@@ -486,8 +487,8 @@ namespace Ancestor.DataAccess.DAO
                 {
                     if (connCloseFlag)
                     {
-                        _dbAction.CloseConnection();
-                        _dbAction.AutoCloseConnection = connCloseFlag;
+                        DbAction.CloseConnection();
+                        DbAction.AutoCloseConnection = connCloseFlag;
                     }
                 }
                 return successed;
@@ -507,7 +508,7 @@ namespace Ancestor.DataAccess.DAO
                 var whereCommand = CreateWhereCommand(whereObject, null, ignoreNull, dbParameters);
                 var sql = string.Format("Update {0} Set {1} {2}", name, updateCommand, whereCommand);
                 var opt = CreateDbOptions(options);
-                return _dbAction.ExecuteNonQuery(sql, dbParameters, opt);
+                return DbAction.ExecuteNonQuery(sql, dbParameters, opt);
             }, ReturnEffectRowResult, exceptRows);
         }
         public AncestorExecuteResult UpdateEntity(object model, LambdaExpression predicate, UpdateMode mode, object origin, int exceptRows, AncestorOptions options)
@@ -529,7 +530,7 @@ namespace Ancestor.DataAccess.DAO
                 var whereCommand = result != null ? "Where " + result.Sql : "";
                 var opt = CreateDbOptions(options);
                 var sql = string.Format("Update {0} Set {1} {2}", name, updateCommand, whereCommand);
-                return _dbAction.ExecuteNonQuery(sql, dbParameters, opt);
+                return DbAction.ExecuteNonQuery(sql, dbParameters, opt);
             }, ReturnEffectRowResult, exceptRows);
         }
         public AncestorExecuteResult UpdateEntityRef(object model, object whereObject, object refModel, object origin, int exceptRows, AncestorOptions options)
@@ -547,7 +548,7 @@ namespace Ancestor.DataAccess.DAO
                 var whereCommand = CreateWhereCommand(whereObject, null, ignoreNull, dbParameters);
                 var sql = string.Format("Update {0} Set {1} {2}", name, updateCommand, whereCommand);
                 var opt = CreateDbOptions(options);
-                return _dbAction.ExecuteNonQuery(sql, dbParameters, opt);
+                return DbAction.ExecuteNonQuery(sql, dbParameters, opt);
             }, ReturnEffectRowResult, exceptRows);
         }
         public AncestorExecuteResult UpdateEntityRef(object model, LambdaExpression predicate, object refModel, object origin, int exceptRows, AncestorOptions options)
@@ -570,7 +571,7 @@ namespace Ancestor.DataAccess.DAO
                 var whereCommand = result != null ? "Where " + result.Sql : "";
                 var opt = CreateDbOptions(options);
                 var sql = string.Format("Update {0} Set {1} {2}", name, updateCommand, whereCommand);
-                return _dbAction.ExecuteNonQuery(sql, dbParameters, opt);
+                return DbAction.ExecuteNonQuery(sql, dbParameters, opt);
             }, ReturnEffectRowResult, exceptRows);
         }
         // TODO
@@ -587,7 +588,7 @@ namespace Ancestor.DataAccess.DAO
                 var whereCommand = CreateWhereCommand(whereObject, null, ignoreNull, dbParameters);
                 var opt = CreateDbOptions(options);
                 var sql = string.Format("Delete From {0} {1}", tableName, whereCommand);
-                return _dbAction.ExecuteNonQuery(sql, dbParameters, opt);
+                return DbAction.ExecuteNonQuery(sql, dbParameters, opt);
             }, ReturnEffectRowResult, exceptRows);
         }
         public AncestorExecuteResult DeleteEntity(LambdaExpression predicate, object origin, int exceptRows, AncestorOptions options)
@@ -611,7 +612,7 @@ namespace Ancestor.DataAccess.DAO
                 var whereCommand = result != null ? "Where " + result.Sql : "";
                 var opt = CreateDbOptions(options);
                 var sql = string.Format("Delete From {0} {1}", name, whereCommand);
-                return _dbAction.ExecuteNonQuery(sql, dbParameters, opt);
+                return DbAction.ExecuteNonQuery(sql, dbParameters, opt);
             }, ReturnEffectRowResult, exceptRows);
         }
         public AncestorExecuteResult ExecuteNonQuery(string sql, object parameter, int exceptRows, AncestorOptions options)
@@ -620,7 +621,7 @@ namespace Ancestor.DataAccess.DAO
             {
                 var dbParameters = CreateDBParameters(parameter);
                 var dbOpt = CreateDbOptions(options);
-                return _dbAction.ExecuteNonQuery(sql, dbParameters, dbOpt);
+                return DbAction.ExecuteNonQuery(sql, dbParameters, dbOpt);
             }, ReturnEffectRowResult, exceptRows);
         }
 
@@ -630,7 +631,7 @@ namespace Ancestor.DataAccess.DAO
             {
                 var dbParameters = CreateDBParameters(parameter);
                 var dbOpt = CreateDbOptions(options);
-                return _dbAction.ExecuteStoreProcedure(name, dbParameters, dbOpt);
+                return DbAction.ExecuteStoreProcedure(name, dbParameters, dbOpt);
             }, ReturnAncestorExecuteResult);
         }
         public AncestorExecuteResult ExecuteScalar(string sql, object parameter, AncestorOptions options)
@@ -639,7 +640,7 @@ namespace Ancestor.DataAccess.DAO
             {
                 var dbParameters = CreateDBParameters(parameter);
                 var dbOpt = CreateDbOptions(options);
-                return _dbAction.ExecuteScalar(sql, dbParameters, dbOpt);
+                return DbAction.ExecuteScalar(sql, dbParameters, dbOpt);
             }, ReturnAncestorExecuteResult);
         }
         protected virtual DBParameterCollection CreateDBParameters(object parameterObject)
@@ -1066,16 +1067,16 @@ namespace Ancestor.DataAccess.DAO
             if (dataType != null)
             {
                 if (firstOnly)
-                    return _dbAction.QueryFirst(sql, dbParameters, dataType, options);
+                    return DbAction.QueryFirst(sql, dbParameters, dataType, options);
                 else
-                    return _dbAction.Query(sql, dbParameters, dataType, options);
+                    return DbAction.Query(sql, dbParameters, dataType, options);
             }
             else
             {
                 if (firstOnly)
-                    return _dbAction.QueryFirst(sql, dbParameters, options);
+                    return DbAction.QueryFirst(sql, dbParameters, options);
                 else
-                    return _dbAction.Query(sql, dbParameters, options);
+                    return DbAction.Query(sql, dbParameters, options);
             }
         }
 
