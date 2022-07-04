@@ -29,7 +29,13 @@ namespace Ancestor.DataAccess.Factory
         public DAOFactoryEx(System.Data.IDbConnection conn)
         {
             ResetSource(conn);
-        }        
+        }
+        /// <summary>
+        /// Empty factory constructor
+        /// </summary>
+        public DAOFactoryEx()
+        {
+        }
 
         public DAOFactoryEx(DAOFactoryEx otherFactory)
         {
@@ -80,6 +86,9 @@ namespace Ancestor.DataAccess.Factory
 
         public IDataAccessObjectEx GetDataAccessObjectFactory()
         {
+            var source = Source;
+            if (source == null) throw new NullReferenceException("empty source");
+
             if (_daoCache == null)
             {
                 switch (_db)
