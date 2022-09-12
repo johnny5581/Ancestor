@@ -23,7 +23,7 @@ namespace Ancestor.DataAccess.Factory
             if (_dbObject == null)
                 throw new NullReferenceException("no DBObject found");
 
-            var dao = new DAOFactoryEx(_dbObject).GetDataAccessObjectFactory();
+            var dao = new Ancestor.DataAccess.Factory.DAOFactoryEx(_dbObject).GetDataAccessObjectFactory();
             var wrapper = new DataAccessObjectWrapper(dao);
             return wrapper;
         }

@@ -65,7 +65,7 @@ namespace Ancestor.DataAccess.DBAction
                     break;
                 case Factory.DAOFactoryEx.SourceMode.Connection:
                     _connection = CreateConnection((string)dao.Factory.Source, out dsn);
-                    break;                
+                    break;
             }
 
             if (_connection == null)
@@ -280,6 +280,7 @@ namespace Ancestor.DataAccess.DBAction
                 return scalarValue;
             }, queryParameter);
         }
+
         DbActionOptions IDbAction.CreateOptions()
         {
             return CreateOption();

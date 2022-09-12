@@ -40,7 +40,7 @@ namespace Ancestor.DataAccess.DAO
         AncestorResult QueryFromSqlString(string sql, object parameter, Type dataType, bool firstOnly, AncestorOptions options);     
         AncestorResult QueryFromModel(object model, Type dataType, object origin, bool firstOnly, AncestorOptions options);
         AncestorResult QueryFromLambda(LambdaExpression predicate, LambdaExpression selector, IDictionary<Type, object> proxyMap, bool firstOnly, AncestorOptions options);
-        AncestorResult GroupFromLambda(LambdaExpression predicate, LambdaExpression selector, LambdaExpression groupBy, IDictionary<Type, object> proxyMap, AncestorOptions options);
+        AncestorResult GroupFromLambda(LambdaExpression predicate, LambdaExpression selector, LambdaExpression groupBy, IDictionary<Type, object> proxyMap, AncestorOptions options);        
         #endregion
 
         #region Insert
