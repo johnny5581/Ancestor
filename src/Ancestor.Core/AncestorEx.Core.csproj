@@ -24,11 +24,5 @@
 			<Version>5.0.0</Version>
 		</PackageReference>
 	</ItemGroup>
-	<ItemGroup>
-		<PackageReference Include="Dev.Logger.Internal" Version="1.0.11">
-			<PrivateAssets>all</PrivateAssets>
-			<IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-		</PackageReference>
-	</ItemGroup>
 
 </Project>
