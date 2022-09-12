@@ -20,13 +20,13 @@ using System.Threading.Tasks;
 namespace Ancestor.Core.Logging
 {
     [System.Diagnostics.MonitoringDescription("ILogger")]
-    public interface ILogger
+    internal interface ILogger
     {
         void WriteLog(TraceEventType level, string message);
     }
 
     [System.Diagnostics.MonitoringDescription("Logger")]
-    public static class Logger
+    internal static class Logger
     {
         private static ILogFactory _instance;
         private const int Version = 3;
