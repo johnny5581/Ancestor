@@ -7,8 +7,8 @@ namespace Ancestor.DataAccess.DAO
 {
     public class ParameterInfo
     {
-        private readonly string _valueName;
-        private readonly object _value;
+        private string _valueName;
+        private object _value;
         private readonly bool _isSysDateConverted;
         private readonly Core.HardWordAttribute _hardword;
         private readonly string _paraName;
@@ -25,6 +25,7 @@ namespace Ancestor.DataAccess.DAO
         public string ValueName
         {
             get { return _valueName ?? ParameterName; }
+            set { _valueName = value; }
         }
         public object Value
         {
@@ -34,6 +35,7 @@ namespace Ancestor.DataAccess.DAO
                     return null;
                 return _value;
             }
+            set { _value = value; }
         }
 
         public bool IsSysDateConverted

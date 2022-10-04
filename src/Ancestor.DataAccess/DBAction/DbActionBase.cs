@@ -74,18 +74,6 @@ namespace Ancestor.DataAccess.DBAction
             _dao = dao;
 
         }
-        public DbActionBase(DataAccessObjectBase dao, string connStr)
-        {
-            var loggerName = "Ancestor." + GetType().Name;
-            logger = Core.Logging.Logger.CreateInstance(loggerName);
-            sqlLogger = Core.Logging.Logger.CreateInstance(loggerName + ".Sql");
-            string dsn;
-            _connection = CreateConnection(connStr, out dsn);
-            if (_connection == null)
-                throw new InvalidOperationException("no connection found");
-            DataSource = dsn;
-            _dao = dao;
-        }
 
         #region Property
         /// <summary>

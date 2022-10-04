@@ -54,7 +54,7 @@ namespace Ancestor.DataAccess.DBAction
                 { "REFCURSOR", OracleDbType.RefCursor },
                 { "CLOB", OracleDbType.Clob },
                 { "LONG", OracleDbType.Long },
-                { "LONGRAW", OracleDbType.LongRaw },
+                { "LONGRAW", OracleDbType.LongRaw },                
            };
         public OracleAction(DataAccessObjectBase dao) : base(dao)
         {

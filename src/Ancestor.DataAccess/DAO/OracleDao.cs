@@ -45,19 +45,22 @@ namespace Ancestor.DataAccess.DAO
         }
         protected override IDbAction CreateDbAction(string connStr)
         {
-            if (Environment.Is64BitProcess)
+            if(Factory.Arguments != null && "managed".Equals(Factory.Arguments.ElementAtOrDefault(0), StringComparison.OrdinalIgnoreCase))
                 return new ManagedOracleAction(this);
             else
                 return new OracleAction(this);
         }
         protected override IDbAction CreateDbAction(IDbConnection conn)
         {
-            throw new NotImplementedException();
+            if (Factory.Arguments != null && "managed".Equals(Factory.Arguments.ElementAtOrDefault(0), StringComparison.OrdinalIgnoreCase))
+                return new ManagedOracleAction(this);
+            else
+                return new OracleAction(this);
         }
         public override string ConvertFromHardWord(string name, HardWordAttribute attribute)
         {
             return string.Format("RawToHex({0})", name);
-        }
+        }        
         public override string ConvertToHardWord(string name, HardWordAttribute attribute)
         {
             if (attribute.IgnorePrefix)
