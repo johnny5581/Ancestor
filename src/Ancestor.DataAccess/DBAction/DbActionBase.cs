@@ -222,6 +222,20 @@ namespace Ancestor.DataAccess.DBAction
             return ActionWithConnectionHandler(() =>
             {
                 Log("ExecuteNonQuery", sql, dbParameters);
+
+                if (AncestorGlobalOptions.GetBoolean("option.exec_conf"))
+                {
+                    Log("exec sql confirming");
+                    if (!NativeMethods.YesNo("exec sql\n" + sql, "Ancestor"))
+                    {
+                        Log("user deny exec");
+                        return 0; // return if no exec
+                    }
+                    Log("user allow exec");
+                }
+
+
+
                 using (var cmd = _connection.CreateCommand())
                 {
                     cmd.CommandText = sql;
@@ -419,6 +433,10 @@ namespace Ancestor.DataAccess.DBAction
         {
             var message = string.Format("action={0} scalar={1}", action, scalar);
             sqlLogger.WriteLog(System.Diagnostics.TraceEventType.Verbose, message);
+        }
+        protected void Log(string message)
+        {
+            logger.WriteLog(System.Diagnostics.TraceEventType.Verbose, message);
         }
         private void OpenConnection()
         {

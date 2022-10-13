@@ -17,7 +17,7 @@ namespace Ancestor.Core
             SetOption("option.lzpw.node.prefix", "LZPWN_");
             SetOption("option.lzpw.clearpool", "Y");
             SetOption("option.close", "auto");
-
+            SetOption("option.exec_conf", "N");
 
             var settings = System.Configuration.ConfigurationManager.AppSettings;
             foreach (string key in settings.Keys)

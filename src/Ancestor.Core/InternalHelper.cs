@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Ancestor.Core
@@ -98,6 +99,37 @@ namespace Ancestor.Core
                     return false;
             }
         }
+    }
+    internal static class NativeMethods
+    {
+        // Declares managed prototypes for unmanaged functions.
+        [DllImport("User32.dll", EntryPoint = "MessageBox",
+            CharSet = CharSet.Auto)]
+        internal static extern int MessageBox(
+            IntPtr hWnd, string lpText, string lpCaption, uint uType);
 
+        // Causes incorrect output in the message window.
+        [DllImport("User32.dll", EntryPoint = "MessageBoxW",
+            CharSet = CharSet.Ansi)]
+        internal static extern int MessageBox2(
+            IntPtr hWnd, string lpText, string lpCaption, uint uType);
+
+        // Causes an exception to be thrown. EntryPoint, CharSet, and
+        // ExactSpelling fields are mismatched.
+        [DllImport("User32.dll", EntryPoint = "MessageBox",
+            CharSet = CharSet.Ansi, ExactSpelling = true)]
+        internal static extern int MessageBox3(
+            IntPtr hWnd, string lpText, string lpCaption, uint uType);
+
+
+
+        public static bool YesNo(string message, string caption = null)
+        {
+            return MessageBox(IntPtr.Zero, message, caption ?? "", (uint)0x00000001L) == 1;
+        }
+        public static void MsgBox(string message, string caption = null)
+        {
+            MessageBox(IntPtr.Zero, message, caption ?? "", (uint)0x00000000L);
+        }
     }
 }
