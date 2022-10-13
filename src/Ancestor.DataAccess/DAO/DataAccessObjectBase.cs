@@ -663,7 +663,7 @@ namespace Ancestor.DataAccess.DAO
         }
 
 
-        protected ParameterInfo CreateParameter(object value, string parameterNameSeed, bool symbol, string prefix = null, string postfix = null, HardWordAttribute hardWord = null)
+        protected virtual ParameterInfo CreateParameter(object value, string parameterNameSeed, bool symbol, string prefix = null, string postfix = null, HardWordAttribute hardWord = null)
         {
             var pName = CreateParameterName(parameterNameSeed, symbol, prefix, postfix);
             string vName = null;
@@ -674,7 +674,7 @@ namespace Ancestor.DataAccess.DAO
                 value = null;
                 sysDate = true;
             }
-            else if (hardWord != null)
+            else if (hardWord != null && UseHardword())
             {
                 vName = ConvertToHardWord(pName, hardWord);
                 var str = value as string;
@@ -695,10 +695,10 @@ namespace Ancestor.DataAccess.DAO
         {
             return name;
         }
-        //public virtual string GetServerTime()
-        //{
-        //    return "UNDEFINED_SERVER_TIME";
-        //}
+        protected virtual bool UseHardword()
+        {
+            return true;
+        }
         protected string GetReferenceStructName(Tuple<Type, Type, string> tuple)
         {
             // 按照順序回傳: ProxyType => ProxyName => DataType
@@ -1058,7 +1058,7 @@ namespace Ancestor.DataAccess.DAO
                 }
             }
         }
-        private string CreateParameterName(string name, bool symbol, string prefix = null, string postfix = null)
+        protected string CreateParameterName(string name, bool symbol, string prefix = null, string postfix = null)
         {
             return string.Format("{1}{2}{0}{3}", name, symbol ? ParameterSymbol : "", prefix ?? ParameterPrefix, postfix ?? ParameterPostfix);
         }

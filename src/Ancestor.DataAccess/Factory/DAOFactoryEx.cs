@@ -79,6 +79,7 @@ namespace Ancestor.DataAccess.Factory
         {
             get { return _db; }
         }
+        public string[] Arguments { get; set; }
 
 
 
@@ -102,9 +103,11 @@ namespace Ancestor.DataAccess.Factory
                             throw new NotImplementedException("custom factory is empty");
                         _daoCache = CustomDaoFactory(this);
                         break;
+                    case DBObject.DataBase.Access:
+                        _daoCache = new OleDao(this);
+                        break;
                     case DBObject.DataBase.MSSQL:
                     case DBObject.DataBase.MySQL:
-                    case DBObject.DataBase.Access:
                     case DBObject.DataBase.SQLlite:
                     case DBObject.DataBase.Sybase:
                     default:
@@ -147,6 +150,9 @@ namespace Ancestor.DataAccess.Factory
                 case "Oracle.ManagedDataAcess.OracleConnection":
                     ResetSource(conn, DBObject.DataBase.ManagedOracle);
                     break;
+                //case "System.Data.OleDb.OleDbConnection":
+                //    ResetSource(conn, DBObject.DataBase.Access);
+                //    break;
                 default:
                     throw new InvalidOperationException("unknown connection: " + connTypeName);
             }
