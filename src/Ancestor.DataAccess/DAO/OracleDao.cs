@@ -60,7 +60,7 @@ namespace Ancestor.DataAccess.DAO
         public override string ConvertFromHardWord(string name, HardWordAttribute attribute)
         {
             return string.Format("RawToHex({0})", name);
-        }
+        }        
         public override string ConvertToHardWord(string name, HardWordAttribute attribute)
         {
             if (attribute.IgnorePrefix)

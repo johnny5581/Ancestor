@@ -703,11 +703,11 @@ namespace Ancestor.DataAccess.DAO
         {
             // 按照順序回傳: ProxyType => ProxyName => DataType
             if (tuple.Item2 != null)
-                return tuple.Item2.Name;
+                return TableManager.GetTableName(tuple.Item2) ?? tuple.Item2.Name;
             else if (tuple.Item3 != null)
                 return tuple.Item3;
             else if (tuple.Item1 != null)
-                return tuple.Item1.Name;
+                return TableManager.GetTableName(tuple.Item1) ?? tuple.Item1.Name;
             else
                 return null;
         }

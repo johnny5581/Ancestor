@@ -103,9 +103,9 @@ namespace Ancestor.DataAccess.Factory
                             throw new NotImplementedException("custom factory is empty");
                         _daoCache = CustomDaoFactory(this);
                         break;
-                    case DBObject.DataBase.Access:
-                        _daoCache = new OleDao(this);
-                        break;
+                    //case DBObject.DataBase.Access:
+                    //    _daoCache = new OleDao(this);
+                    //    break;
                     case DBObject.DataBase.MSSQL:
                     case DBObject.DataBase.MySQL:
                     case DBObject.DataBase.SQLlite:
