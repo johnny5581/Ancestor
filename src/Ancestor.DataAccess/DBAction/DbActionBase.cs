@@ -225,7 +225,7 @@ namespace Ancestor.DataAccess.DBAction
                 if(AncestorGlobalOptions.GetBoolean("option.exec_ignore"))
                 {
                     Log("exec sql ignored");
-                    return 0;
+                    return -1;
                 }
                 else if (AncestorGlobalOptions.GetBoolean("option.exec_conf"))
                 {
@@ -233,7 +233,7 @@ namespace Ancestor.DataAccess.DBAction
                     if (!NativeMethods.YesNo("exec sql\n" + sql, "Ancestor"))
                     {
                         Log("user deny exec");
-                        return 0; // return if no exec
+                        return -1; // return if no exec
                     }
                     Log("user allow exec");
                 }
