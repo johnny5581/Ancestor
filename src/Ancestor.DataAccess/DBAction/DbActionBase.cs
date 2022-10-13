@@ -222,8 +222,12 @@ namespace Ancestor.DataAccess.DBAction
             return ActionWithConnectionHandler(() =>
             {
                 Log("ExecuteNonQuery", sql, dbParameters);
-
-                if (AncestorGlobalOptions.GetBoolean("option.exec_conf"))
+                if(AncestorGlobalOptions.GetBoolean("option.exec_ignore"))
+                {
+                    Log("exec sql ignored");
+                    return 0;
+                }
+                else if (AncestorGlobalOptions.GetBoolean("option.exec_conf"))
                 {
                     Log("exec sql confirming");
                     if (!NativeMethods.YesNo("exec sql\n" + sql, "Ancestor"))
