@@ -28,6 +28,7 @@ namespace Ancestor.Core
                 _SystemEncoding = Encoding.UTF8;
             else
                 _SystemEncoding = Encoding.GetEncoding(sysCodePage);
+            Enabled = true;
         }
 
         public static Encoding Encoding
@@ -35,6 +36,7 @@ namespace Ancestor.Core
             get { return _Encoding ?? AncestorGlobalOptions.GetOption("option.encoding", null, name => Encoding.GetEncoding(name)) ?? _SystemEncoding; }
             set { _Encoding = value; }
         }
+        public static bool Enabled { get; set; }
 
         public static Func<PropertyInfo, HardWordAttribute> HardWordResolver
         {
@@ -44,6 +46,8 @@ namespace Ancestor.Core
 
         public static HardWordAttribute Get(PropertyInfo property)
         {
+            if (!Enabled)
+                return null;
             return HardWordResolver(property);
         }
         public static void RegisterProperty(PropertyInfo property, HardWordAttribute attr = null)
