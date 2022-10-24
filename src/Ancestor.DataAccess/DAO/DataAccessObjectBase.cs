@@ -1051,7 +1051,7 @@ namespace Ancestor.DataAccess.DAO
             Func<string, string> nameResolver = null;
             object resolver;
             if (options.TryGetValue("NameResolver", out resolver))
-                nameResolver = (Func<string, string>)resolver;
+                nameResolver = resolver as Func<string, string>;
             foreach (var property in properties)
             {
                 if (property.CanRead)
@@ -1156,6 +1156,11 @@ namespace Ancestor.DataAccess.DAO
         {
             return DummyTable;
         }
+        DBParameterCollection IInternalDataAccessObject.CreateDBParameters(object parameterObject, AncestorOptions options)
+        {
+            return CreateDBParameters(parameterObject, options);
+        }
+
 
         #region Expression Resolver
         /// <summary>
@@ -2820,6 +2825,7 @@ namespace Ancestor.DataAccess.DAO
                 _dbAction = null;
             }
         }
+
 
 
         #endregion

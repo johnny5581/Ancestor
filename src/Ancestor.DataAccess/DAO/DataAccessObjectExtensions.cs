@@ -515,7 +515,7 @@ namespace System
         {
             return dao.UpdateEntity(valueObject, predicate, UpdateMode.All, null, exceptRows, null);
         }
-        public static AncestorExecuteResult Update<T>(this IDataAccessObjectEx dao, T model, object whereObject, T refModel, int exceptRows = -1) where T:class, new()
+        public static AncestorExecuteResult Update<T>(this IDataAccessObjectEx dao, T model, object whereObject, T refModel, int exceptRows = -1) where T : class, new()
         {
             return dao.UpdateEntityRef(model, whereObject, refModel, null, exceptRows, null);
         }
@@ -543,9 +543,28 @@ namespace System
         {
             return dao.ExecuteStoredProcedure(procedureName, parameters, new AncestorOptions { { "BindByName", bindbyName } });
         }
-        public static AncestorExecuteResult ExecuteStoredProcedure(this IDataAccessObjectEx dao, string procedureName, object parameterObject, Func<string, string> nameResolver)
+        public static AncestorExecuteResult ExecuteStoredProcedure(this IDataAccessObjectEx dao, string procedureName, object parameterObject, params DBParameter[] parameters)
         {
-            return dao.ExecuteStoredProcedure(procedureName, parameterObject, new AncestorOptions { { "BindByName", true }, { "NameResolver", nameResolver } });
+            return ExecuteStoredProcedure(dao, procedureName, parameterObject, null, (IEnumerable<DBParameter>)parameters);
+        }
+        public static AncestorExecuteResult ExecuteStoredProcedure(this IDataAccessObjectEx dao, string procedureName, object parameterObject, IEnumerable<DBParameter> parameters)
+        {
+            return ExecuteStoredProcedure(dao, procedureName, parameterObject, null, parameters);
+        }
+        public static AncestorExecuteResult ExecuteStoredProcedure(this IDataAccessObjectEx dao, string procedureName, object parameterObject, Func<string, string> nameResolver, params DBParameter[] parameters)
+        {
+            return ExecuteStoredProcedure(dao, procedureName, parameterObject, nameResolver, (IEnumerable<DBParameter>)parameters);
+        }
+        public static AncestorExecuteResult ExecuteStoredProcedure(this IDataAccessObjectEx dao, string procedureName, object parameterObject, Func<string, string> nameResolver, IEnumerable<DBParameter> parameters)
+        {
+            var internalDao = dao as IInternalDataAccessObject;
+            if (internalDao == null)
+                throw new InvalidOperationException("invalid internal dao type");
+            var options = new AncestorOptions { { "BindByName", true }, { "NameResolver", nameResolver } };
+            var @params = internalDao.CreateDBParameters(parameterObject, options);
+            var extraParams = internalDao.CreateDBParameters(parameters, options);
+            @params.AddRange(extraParams);
+            return dao.ExecuteStoredProcedure(procedureName, @params, options);
         }
         public static AncestorExecuteResult Insert(this IDataAccessObjectEx dao, object model, string name)
         {

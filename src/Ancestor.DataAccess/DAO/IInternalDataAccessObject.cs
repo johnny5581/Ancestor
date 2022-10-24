@@ -18,5 +18,9 @@ namespace Ancestor.DataAccess.DAO
         /// Get dummy table name
         /// </summary>        
         string GetDummyTable();
+        /// <summary>
+        /// Create db parameters
+        /// </summary>        
+        Core.DBParameterCollection CreateDBParameters(object parameterObject, AncestorOptions options);
     }
 }
