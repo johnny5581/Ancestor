@@ -37,12 +37,12 @@ namespace Ancestor.DataAccess.DAO
         //private string _connStr;
 
         private DAOFactoryEx _factory;
-        
+
         public DataAccessObjectBase(DAOFactoryEx factory)
-        {             
+        {
             _factory = factory;
         }
-        
+
 
         #region Property
 
@@ -316,7 +316,7 @@ namespace Ancestor.DataAccess.DAO
         {
             return TryCatch(() =>
             {
-                var dbParameters = CreateDBParameters(parameter);
+                var dbParameters = CreateDBParameters(parameter, options);
                 if (options == null)
                     options = new AncestorOptions { };
                 var dbOpts = CreateDbOptions(options);
@@ -619,7 +619,7 @@ namespace Ancestor.DataAccess.DAO
         {
             return TryCatch(() =>
             {
-                var dbParameters = CreateDBParameters(parameter);
+                var dbParameters = CreateDBParameters(parameter, options);
                 var dbOpt = CreateDbOptions(options);
                 return DbAction.ExecuteNonQuery(sql, dbParameters, dbOpt);
             }, ReturnEffectRowResult, exceptRows);
@@ -629,7 +629,7 @@ namespace Ancestor.DataAccess.DAO
         {
             return TryCatch(() =>
             {
-                var dbParameters = CreateDBParameters(parameter);
+                var dbParameters = CreateDBParameters(parameter, options);
                 var dbOpt = CreateDbOptions(options);
                 return DbAction.ExecuteStoreProcedure(name, dbParameters, dbOpt);
             }, ReturnAncestorExecuteResult);
@@ -638,12 +638,12 @@ namespace Ancestor.DataAccess.DAO
         {
             return TryCatch(() =>
             {
-                var dbParameters = CreateDBParameters(parameter);
+                var dbParameters = CreateDBParameters(parameter, options);
                 var dbOpt = CreateDbOptions(options);
                 return DbAction.ExecuteScalar(sql, dbParameters, dbOpt);
             }, ReturnAncestorExecuteResult);
         }
-        protected virtual DBParameterCollection CreateDBParameters(object parameterObject)
+        protected DBParameterCollection CreateDBParameters(object parameterObject, AncestorOptions options)
         {
             var parameters = parameterObject as DBParameterCollection;
             if (parameters != null)
@@ -656,9 +656,9 @@ namespace Ancestor.DataAccess.DAO
             parameters = new DBParameterCollection();
             var parameterDictionary = parameterObject as IDictionary<string, object>;
             if (parameterDictionary != null) // is dictionary 
-                CreateDBParameterFromDictionary(parameterDictionary, ref parameters);
+                CreateDBParameterFromDictionary(parameterDictionary, ref parameters, options);
             else if (parameterObject != null)
-                CreateDBParameterFromProperty(parameterObject, ref parameters);
+                CreateDBParameterFromProperty(parameterObject, ref parameters, options);
             return parameters;
         }
 
@@ -1040,20 +1040,27 @@ namespace Ancestor.DataAccess.DAO
                 parameters.Add(parameter.ParameterName, parameter.Value);
         }
 
-        private void CreateDBParameterFromDictionary(IDictionary<string, object> dic, ref DBParameterCollection collection)
+        protected virtual void CreateDBParameterFromDictionary(IDictionary<string, object> dic, ref DBParameterCollection collection, AncestorOptions options)
         {
             collection.AddRange(dic.Select(r => new DBParameter(r.Key.ToUpper(), r.Value)));
         }
-        private void CreateDBParameterFromProperty(object model, ref DBParameterCollection collection)
+        protected virtual void CreateDBParameterFromProperty(object model, ref DBParameterCollection collection, AncestorOptions options)
         {
             var modelType = model.GetType();
             var properties = modelType.GetProperties();
+            Func<string, string> nameResolver = null;
+            object resolver;
+            if (options.TryGetValue("NameResolver", out resolver))
+                nameResolver = (Func<string, string>)resolver;
             foreach (var property in properties)
             {
                 if (property.CanRead)
                 {
                     var value = property.GetValue(model, null);
-                    var parameter = new DBParameter(property.Name, value);
+                    var pname = property.Name;
+                    if (nameResolver != null)
+                        pname = nameResolver(pname);
+                    var parameter = new DBParameter(pname, value);
                     collection.Add(parameter);
                 }
             }
@@ -2518,7 +2525,7 @@ namespace Ancestor.DataAccess.DAO
                             var pattern = Regex.Escape(extraParameters[i].Name) + "\\s?";
                             var parts = Regex.Split(extraSql, pattern);
                             var sb = new StringBuilder();
-                            for (var j  = 0; j < parts.Length; j++)
+                            for (var j = 0; j < parts.Length; j++)
                             {
                                 WriteToStringBuilder(sb, parts[j], null);
                                 if (j != parts.Length - 1)
@@ -2538,7 +2545,7 @@ namespace Ancestor.DataAccess.DAO
             }
             public static void WriteToStringBuilder(StringBuilder sb, string text, bool? space)
             {
-                var textChecklist = new char[] { ',', '(', ')', ' ' };                
+                var textChecklist = new char[] { ',', '(', ')', ' ' };
                 var lastChecklist = new char[] { ' ', '(' };
                 var flgSpace = false;
                 if (space.HasValue)

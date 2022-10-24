@@ -543,6 +543,10 @@ namespace System
         {
             return dao.ExecuteStoredProcedure(procedureName, parameters, new AncestorOptions { { "BindByName", bindbyName } });
         }
+        public static AncestorExecuteResult ExecuteStoredProcedure(this IDataAccessObjectEx dao, string procedureName, object parameterObject, Func<string, string> nameResolver)
+        {
+            return dao.ExecuteStoredProcedure(procedureName, parameterObject, new AncestorOptions { { "BindByName", true }, { "NameResolver", nameResolver } });
+        }
         public static AncestorExecuteResult Insert(this IDataAccessObjectEx dao, object model, string name)
         {
             return dao.InsertEntity(model, name, null);
