@@ -63,7 +63,8 @@ namespace Ancestor.DataAccess.DAO
         #region Execute
         AncestorExecuteResult ExecuteNonQuery(string sql, object parameter, int exceptRows, AncestorOptions options);
         AncestorExecuteResult ExecuteStoredProcedure(string name, object parameter, AncestorOptions options);
-        AncestorExecuteResult ExecuteScalar(string sql, object parameter, AncestorOptions options);        
+        AncestorExecuteResult ExecuteScalar(string sql, object parameter, AncestorOptions options);
+        AncestorExecuteResult GetSequenceValue(string name, bool moveToNext, AncestorOptions options);
         #endregion
     }
     /// <summary>

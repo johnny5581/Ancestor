@@ -46,5 +46,10 @@ namespace Ancestor.DataAccess.DAO
         {
             throw new NotImplementedException();
         }
+
+        protected override string GetSequenceCommand(string name, bool moveToNext)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

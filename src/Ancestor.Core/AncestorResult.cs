@@ -215,6 +215,8 @@ namespace Ancestor.Core
             return (string)GetClassValue<string>(name);
         }
 
+
+
         public override object ResultScalar()
         {
             return GetValue();
@@ -277,6 +279,15 @@ namespace Ancestor.Core
                 else
                     return null;
             }
+
+            // try use convert
+            try
+            {
+                return Convert.ChangeType(value, typeof(T));
+            }
+            catch { }
+
+            // last, force change the type
             return (T)value;
         }
 

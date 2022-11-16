@@ -162,7 +162,7 @@ namespace Ancestor.DataAccess.Connections
                 }
             }
 
-            //TODO: Replace MaxPoolSize
+            
             connStr = ReplaceConnectionProperty(conn, connStr);
 
             logger.WriteLog(TraceEventType.Verbose,"connStr=" + connStr);

@@ -54,6 +54,11 @@ namespace Ancestor.DataAccess.DAO
             throw new NotImplementedException();
         }
 
+        protected override string GetSequenceCommand(string name, bool moveToNext)
+        {
+            throw new NotImplementedException();
+        }
+
         private class OleExpressionResolver : ExpressionResolver
         {
             public OleExpressionResolver(DataAccessObjectBase dao, ReferenceInfo reference, ExpressionResolveOption option) : base(dao, reference, option)

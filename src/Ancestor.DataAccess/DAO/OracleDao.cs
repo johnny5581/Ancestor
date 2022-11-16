@@ -78,7 +78,11 @@ namespace Ancestor.DataAccess.DAO
             return new OracleExpressionResolver(this, reference, option);
         }
 
-
+        protected override string GetSequenceCommand(string name, bool moveToNext)
+        {
+            var obj = string.Format("{0}.{1}", name, moveToNext ? "NEXTVAL" : "CURRVAL");
+            return string.Format("Select {0} From {1}", obj, DummyTable);
+        }
 
         private class OracleExpressionResolver : ExpressionResolver
         {

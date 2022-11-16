@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Net;
 using System.Text;
 
 namespace System
@@ -263,9 +264,8 @@ namespace System
         }
         public static AncestorResult QueryWithRowid<T>(this IDataAccessObjectEx dao, object objectModel) where T : class, new()
         {
-            return dao.QueryFromModel(objectModel, typeof(T), null, false, new AncestorOptions { { "AddRowId", true } });
+            return dao.QueryFromModel(objectModel,typeof(T), null, false, new AncestorOptions { { "AddRowId", true } });
         }
-
         public static AncestorResult Query<T>(this IDataAccessObjectEx dao, Expression<Func<T, bool>> predicate) where T : class, new()
         {
             return dao.QueryFromLambda(predicate, null, null, false, null);
@@ -380,7 +380,7 @@ namespace System
         }
         public static AncestorResult QueryFirst<T>(this IDataAccessObjectEx dao, object objectModel) where T : class, new()
         {
-            return dao.QueryFromModel(objectModel, typeof(T), null, true, null);
+            return dao.QueryFromModel(objectModel,typeof(T), null, true, null);
         }
         public static AncestorResult QueryFirstWithRowid(this IDataAccessObjectEx dao, object objectModel)
         {
@@ -686,6 +686,15 @@ namespace System
         {
             var map = CreateProxyMap(CreateTuple(typeof(FakeType), name));
             return dao.GroupFromLambda(predicate, selector, groupBy, map, null);
+        }
+
+        public static AncestorExecuteResult GetSequenceNextValue(this IDataAccessObjectEx dao, string name)
+        {
+            return dao.GetSequenceValue(name, true, null);
+        }
+        public static AncestorExecuteResult GetSequenceCurrentValue(this IDataAccessObjectEx dao, string name)
+        {
+            return dao.GetSequenceValue(name, false, null);
         }
     }
 }

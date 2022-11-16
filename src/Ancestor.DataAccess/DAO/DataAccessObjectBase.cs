@@ -22,7 +22,6 @@ namespace Ancestor.DataAccess.DAO
     public abstract class DataAccessObjectBase : IDataAccessObjectEx, IInternalDataAccessObject, IIdentifiable
     {
         private readonly Guid _id = Guid.NewGuid();
-        //private readonly DBObject _dbObject;
         private IDbAction _dbAction;
         private bool _disposed = false;
         private bool? _raiseExp;
@@ -34,7 +33,6 @@ namespace Ancestor.DataAccess.DAO
         private string _updateParameterPrefix;
         private string _parameterPostfix;
         private string _mergeParameterPostfix;
-        //private string _connStr;
 
         private DAOFactoryEx _factory;
 
@@ -257,7 +255,6 @@ namespace Ancestor.DataAccess.DAO
                 var emptyList = new List<object>();
                 return new AncestorResult(emptyList) { QueryParameter = parameters };
             }
-            //throw new InvalidOperationException("can not get AncestorResult");
         }
         protected AncestorExecuteResult ReturnEffectRowResult(object result)
         {
@@ -329,7 +326,6 @@ namespace Ancestor.DataAccess.DAO
             return TryCatch(() =>
             {
                 var dbParameters = new DBParameterCollection();
-
                 var reference = GetReferenceInfo(model, null, dataType, origin);
                 var selector = CreateSelectCommand(reference);
                 var tableName = reference.GetReferenceName();
@@ -574,7 +570,6 @@ namespace Ancestor.DataAccess.DAO
                 return DbAction.ExecuteNonQuery(sql, dbParameters, opt);
             }, ReturnEffectRowResult, exceptRows);
         }
-        // TODO
         public AncestorExecuteResult DeleteEntity(object whereObject, object origin, int exceptRows, AncestorOptions options)
         {
             return TryCatch(() =>
@@ -643,6 +638,20 @@ namespace Ancestor.DataAccess.DAO
                 return DbAction.ExecuteScalar(sql, dbParameters, dbOpt);
             }, ReturnAncestorExecuteResult);
         }
+
+        public AncestorExecuteResult GetSequenceValue(string name, bool moveToNext, AncestorOptions options)
+        {
+            return TryCatch(() =>
+            {
+                var sql = GetSequenceCommand(name, moveToNext);
+                var dbParameters = CreateDBParameters(null, options);
+                var dbOpt = CreateDbOptions(options);
+                return DbAction.ExecuteScalar(sql, dbParameters, dbOpt);
+            }, ReturnAncestorExecuteResult);
+        }
+
+        protected abstract string GetSequenceCommand(string name, bool moveToNext);
+
         protected DBParameterCollection CreateDBParameters(object parameterObject, AncestorOptions options)
         {
             var parameters = parameterObject as DBParameterCollection;
@@ -1631,7 +1640,6 @@ namespace Ancestor.DataAccess.DAO
                 {
                     ProcessTypeConvert(node.Arguments[0].Type, node.Method.DeclaringType, node.Arguments[0], CreateReadOnlyCollection(node.Arguments.Skip(1)));
                 }
-                // TODO: obsoleted
                 else if (node.Method.Name == "Between")
                 {
                     ProcessBetweenMethodCall(node.Arguments[0], node.Arguments[1], node.Arguments[2]);
