@@ -20,13 +20,13 @@ using System.Threading.Tasks;
 namespace Ancestor.Core.Logging
 {
     [System.Diagnostics.MonitoringDescription("ILogger")]
-    internal interface ILogger
+    public interface ILogger
     {
         void WriteLog(TraceEventType level, string message);
     }
 
     [System.Diagnostics.MonitoringDescription("Logger")]
-    internal static class Logger
+    public static class Logger
     {
         private static ILogFactory _instance;
         private const int Version = 3;
@@ -686,7 +686,7 @@ namespace Ancestor.Core.Logging
 
                 public Stream GetStream(string name, bool throwOnError = true)
                 {
-                    if (name == null) 
+                    if (name == null)
                         throw new ArgumentNullException("name");
                     var stream = _assembly.GetManifestResourceStream(name);
                     if (stream == null && throwOnError)
