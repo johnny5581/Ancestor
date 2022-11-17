@@ -112,70 +112,69 @@ namespace Ancestor.DataAccess.DBAction
                     _flgTnsnames = true;
                 }
 
-                if (_LastTnsLocation == null)
-                    throw new NullReferenceException("no tnsnames.ora found");
-
-
-                lock (TnsNamesMap)
+                if (_LastTnsLocation != null)
                 {
-                    // try resolve tnsnames.ora
-                    try
+                    lock (TnsNamesMap)
                     {
-                        TnsNamesMap.Clear();
-                        // parse tnsnames.ora to TnsNamesMap
-                        var stack = new Stack<StringBuilder>();
-                        var sb = new StringBuilder();
-                        int c;
-                        using (var fs = File.OpenRead(_LastTnsLocation))
-                        using (var sr = new StreamReader(fs))
+                        // try resolve tnsnames.ora
+                        try
                         {
-                            while ((c = sr.Read()) != -1)
+                            TnsNamesMap.Clear();
+                            // parse tnsnames.ora to TnsNamesMap
+                            var stack = new Stack<StringBuilder>();
+                            var sb = new StringBuilder();
+                            int c;
+                            using (var fs = File.OpenRead(_LastTnsLocation))
+                            using (var sr = new StreamReader(fs))
                             {
-                                switch ((char)c)
+                                while ((c = sr.Read()) != -1)
                                 {
-                                    case '#':
-                                        sr.ReadLine();
-                                        continue;
-                                    case '(':
-                                        stack.Push(sb);
-                                        sb = new StringBuilder();
-                                        break;
-                                    case ')':
-                                        var t = stack.Pop();
-                                        if (stack.Count == 0)
-                                        {
-                                            var s = t.ToString();
-                                            var splited = s.Split(new[] { '=' }, StringSplitOptions.RemoveEmptyEntries);
-                                            if (splited.Length > 0)
+                                    switch ((char)c)
+                                    {
+                                        case '#':
+                                            sr.ReadLine();
+                                            continue;
+                                        case '(':
+                                            stack.Push(sb);
+                                            sb = new StringBuilder();
+                                            break;
+                                        case ')':
+                                            var t = stack.Pop();
+                                            if (stack.Count == 0)
                                             {
-                                                var name = splited[0].Trim();
-                                                var dns = sb.Insert(0, "(").Append(")").ToString();
-                                                dns = Regex.Replace(dns, @"[\r|\n|\s]", string.Empty);
-                                                TnsNamesMap.AddOrUpdate(name, dns, (n, v) => dns);
+                                                var s = t.ToString();
+                                                var splited = s.Split(new[] { '=' }, StringSplitOptions.RemoveEmptyEntries);
+                                                if (splited.Length > 0)
+                                                {
+                                                    var name = splited[0].Trim();
+                                                    var dns = sb.Insert(0, "(").Append(")").ToString();
+                                                    dns = Regex.Replace(dns, @"[\r|\n|\s]", string.Empty);
+                                                    TnsNamesMap.AddOrUpdate(name, dns, (n, v) => dns);
+                                                }
+                                                sb.Clear();
+
                                             }
-                                            sb.Clear();
+                                            else
+                                            {
+                                                t.Append(sb.Insert(0, "(").Append(")").ToString());
+                                                sb = t;
+                                            }
+                                            break;
+                                        case '\r':
+                                        case '\n':
+                                            continue;
+                                        default:
+                                            sb.Append((char)c);
+                                            break;
+                                    }
 
-                                        }
-                                        else
-                                        {
-                                            t.Append(sb.Insert(0, "(").Append(")").ToString());
-                                            sb = t;
-                                        }
-                                        break;
-                                    case '\r':
-                                    case '\n':
-                                        continue;
-                                    default:
-                                        sb.Append((char)c);
-                                        break;
                                 }
-
                             }
                         }
+                        catch { }
                     }
-                    catch { }
                 }
-                dataSource = FindDataSource(dbObject.Node);
+                dataSource = FindDataSource(dbObject.Node) ?? dbObject.Node;
             }
             logger.WriteLog(System.Diagnostics.TraceEventType.Verbose, "DataSource=" + dataSource);
             connStrBuilder.DataSource = dataSource;
