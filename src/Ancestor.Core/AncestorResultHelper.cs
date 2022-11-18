@@ -130,8 +130,6 @@ namespace Ancestor.Core
                                 list.Add(item);
                                 if (firstOnly)
                                     break;
-                                else if (list.Count >= limit)
-                                    break;
                             }
 
                         }
@@ -146,8 +144,6 @@ namespace Ancestor.Core
                         {
                             list.Add(item);
                             if (firstOnly)
-                                break;
-                            else if (list.Count >= limit)
                                 break;
                         }
                     }
