@@ -148,9 +148,9 @@ namespace Ancestor.Core
 
 
 
-        public List<T> ResultList<T>(Encoding encoding = null) where T : class, new()
+        public List<T> ResultList<T>(Encoding encoding = null, int start = 0, int limit = 0) where T : class, new()
         {
-            return (List<T>)AncestorResultHelper.ResultList(this, typeof(T), null, ResultListMode.All, encoding);
+            return (List<T>)AncestorResultHelper.ResultList(this, typeof(T), null, ResultListMode.All, encoding, start, limit);
         }
         public T ResultFirst<T>(Encoding encoding = null) where T : class, new()
         {
@@ -160,9 +160,9 @@ namespace Ancestor.Core
         {
             return AncestorResultHelper.ResultScalar(this);
         }
-        public virtual List<T> ResultScalarList<T>()
+        public virtual List<T> ResultScalarList<T>(int start = 0, int limit = 0)
         {
-            return AncestorResultHelper.ResultScalarList<T>(this);
+            return AncestorResultHelper.ResultScalarList<T>(this, start, limit);
         }
     }
     /// <summary>

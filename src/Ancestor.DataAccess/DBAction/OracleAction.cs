@@ -240,7 +240,7 @@ namespace Ancestor.DataAccess.DBAction
                         var table = GetRefCursor(oracleParameter.Value);
                         if (dbParameter.ItemType != null) // convert to list                        
                         {
-                            var enumerator = AncestorResultHelper.TableToCollection(table, dbParameter.ItemType, null, false, ResultListMode.All, dbParameter.ItemEncoding);
+                            var enumerator = AncestorResultHelper.TableToCollection(table, dbParameter.ItemType, null, false, ResultListMode.All, dbParameter.ItemEncoding, 0, 0);
                             var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(dbParameter.ItemType));
                             var e = enumerator.GetEnumerator();
                             while (e.MoveNext())
