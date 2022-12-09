@@ -21,6 +21,6 @@ namespace Ancestor.DataAccess.DAO
         /// <summary>
         /// Create db parameters
         /// </summary>        
-        Core.DBParameterCollection CreateDBParameters(object parameterObject, AncestorOptions options);
+        Core.DBParameterCollection CreateDBParameters(object parameterObject, AncestorOption options);
     }
 }

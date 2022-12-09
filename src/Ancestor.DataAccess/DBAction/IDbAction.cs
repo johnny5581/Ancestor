@@ -68,7 +68,7 @@ namespace Ancestor.DataAccess.DBAction
                 return defaultValue;
             }
         }
-        public virtual void Parse(AncestorOptions option)
+        public virtual void Parse(AncestorOption option)
         {
             foreach(var keyValue in option)
             {

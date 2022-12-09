@@ -153,11 +153,11 @@ namespace Ancestor.DataAccess.DAO
                     throw new InvalidOperationException("invalid factory mode:" + factory.Mode);
             }
         }
-        protected DbActionOptions CreateDbOptions(AncestorOptions options)
+        protected DbActionOptions CreateDbOptions(AncestorOption options)
         {
-            return CreateDbOptions(options ?? new AncestorOptions(), DbAction.CreateOptions());
+            return CreateDbOptions(options ?? new AncestorOption(), DbAction.CreateOptions());
         }
-        protected virtual DbActionOptions CreateDbOptions(AncestorOptions options, DbActionOptions dbOptions)
+        protected virtual DbActionOptions CreateDbOptions(AncestorOption options, DbActionOptions dbOptions)
         {
             if (options != null)
                 dbOptions.Parse(options);
@@ -309,19 +309,19 @@ namespace Ancestor.DataAccess.DAO
         {
             DbAction.CloseConnection();
         }
-        public virtual AncestorResult QueryFromSqlString(string sql, object parameter, Type dataType, bool firstOnly, AncestorOptions options)
+        public virtual AncestorResult QueryFromSqlString(string sql, object parameter, Type dataType, bool firstOnly, AncestorOption option)
         {
             return TryCatch(() =>
             {
-                var dbParameters = CreateDBParameters(parameter, options);
-                if (options == null)
-                    options = new AncestorOptions { };
-                var dbOpts = CreateDbOptions(options);
+                var dbParameters = CreateDBParameters(parameter, option);
+                if (option == null)
+                    option = new AncestorOption { };
+                var dbOpts = CreateDbOptions(option);
                 return InternalQuery(sql, dbParameters, dataType, firstOnly, dbOpts);
             }, ReturnAncestorResult);
         }
 
-        public virtual AncestorResult QueryFromModel(object model, Type dataType, object origin, bool firstOnly, AncestorOptions options)
+        public virtual AncestorResult QueryFromModel(object model, Type dataType, object origin, bool firstOnly, AncestorOrderOption orderOpt, AncestorOption option)
         {
             return TryCatch(() =>
             {
@@ -330,13 +330,14 @@ namespace Ancestor.DataAccess.DAO
                 var selector = CreateSelectCommand(reference);
                 var tableName = reference.GetReferenceName();
                 var where = CreateWhereCommand(model, tableName, true, dbParameters);
-                var opt = CreateDbOptions(options);
-                var sql = string.Format("Select {0} From {1} {2}", selector, tableName, where);
+                var order = CreateOrderCommand(orderOpt);
+                var opt = CreateDbOptions(option);
+                var sql = string.Format("Select {0} From {1} {2} {3}", selector, tableName, where, order);
                 return InternalQuery(sql, dbParameters, dataType, firstOnly, opt);
             }, ReturnAncestorResult);
         }
 
-        public virtual AncestorResult QueryFromLambda(LambdaExpression predicate, LambdaExpression selector, IDictionary<Type, object> proxyMap, bool firstOnly, AncestorOptions options)
+        public virtual AncestorResult QueryFromLambda(LambdaExpression predicate, LambdaExpression selector, IDictionary<Type, object> proxyMap, bool firstOnly, AncestorOrderOption orderOpt, AncestorOption option)
         {
             return TryCatch(() =>
             {
@@ -371,14 +372,15 @@ namespace Ancestor.DataAccess.DAO
                 }
 
                 var whereText = mergeResult.Sql2 != null ? ("Where " + mergeResult.Sql2) : "";
-                var sql = string.Format("Select {0} From {1} {2}", selectorText, tableText, whereText);
+                var orderText = CreateOrderCommand(orderOpt, reference);
+                var sql = string.Format("Select {0} From {1} {2} {3}", selectorText, tableText, whereText, orderText);
                 var dataType = selector == null ? mergeResult.Reference.GetReferenceType() : null;
-                var opt = CreateDbOptions(options);
+                var opt = CreateDbOptions(option);
                 return InternalQuery(sql, mergeResult.Parameters, dataType, firstOnly, opt);
             }, ReturnAncestorResult);
         }
 
-        public AncestorResult GroupFromLambda(LambdaExpression predicate, LambdaExpression selector, LambdaExpression groupBy, IDictionary<Type, object> proxyMap, AncestorOptions options)
+        public AncestorResult GroupFromLambda(LambdaExpression predicate, LambdaExpression selector, LambdaExpression groupBy, IDictionary<Type, object> proxyMap, AncestorOption option)
         {
             return TryCatch(() =>
             {
@@ -419,12 +421,12 @@ namespace Ancestor.DataAccess.DAO
                 var groupText = groupResult != null ? groupResult.Sql : selectorResult.GroupBy;
                 var sql = string.Format("Select {0} From {1} {2} Group By {3}", selectorText, tableText, whereText, groupText);
                 var dataType = mergeResult.Reference.GetReferenceType();
-                var opt = CreateDbOptions(options);
+                var opt = CreateDbOptions(option);
                 return InternalQuery(sql, mergeResult.Parameters, null, false, opt);
             }, ReturnAncestorResult);
         }
 
-        public AncestorExecuteResult InsertEntity(object model, object origin, AncestorOptions options)
+        public AncestorExecuteResult InsertEntity(object model, object origin, AncestorOption options)
         {
             return TryCatch(() =>
             {
@@ -442,7 +444,7 @@ namespace Ancestor.DataAccess.DAO
             }, ReturnEffectRowResult);
         }
 
-        public AncestorExecuteResult BulkInsertEntities<T>(IEnumerable<T> models, object origin, AncestorOptions options)
+        public AncestorExecuteResult BulkInsertEntities<T>(IEnumerable<T> models, object origin, AncestorOption options)
         {
             return TryCatch(() =>
             {
@@ -490,7 +492,7 @@ namespace Ancestor.DataAccess.DAO
                 return successed;
             }, ReturnEffectRowResult);
         }
-        public AncestorExecuteResult UpdateEntity(object model, object whereObject, UpdateMode mode, object origin, int exceptRows, AncestorOptions options)
+        public AncestorExecuteResult UpdateEntity(object model, object whereObject, UpdateMode mode, object origin, int exceptRows, AncestorOption options)
         {
             return TryCatch(() =>
             {
@@ -507,7 +509,7 @@ namespace Ancestor.DataAccess.DAO
                 return DbAction.ExecuteNonQuery(sql, dbParameters, opt);
             }, ReturnEffectRowResult, exceptRows);
         }
-        public AncestorExecuteResult UpdateEntity(object model, LambdaExpression predicate, UpdateMode mode, object origin, int exceptRows, AncestorOptions options)
+        public AncestorExecuteResult UpdateEntity(object model, LambdaExpression predicate, UpdateMode mode, object origin, int exceptRows, AncestorOption options)
         {
             return TryCatch(() =>
             {
@@ -529,7 +531,7 @@ namespace Ancestor.DataAccess.DAO
                 return DbAction.ExecuteNonQuery(sql, dbParameters, opt);
             }, ReturnEffectRowResult, exceptRows);
         }
-        public AncestorExecuteResult UpdateEntityRef(object model, object whereObject, object refModel, object origin, int exceptRows, AncestorOptions options)
+        public AncestorExecuteResult UpdateEntityRef(object model, object whereObject, object refModel, object origin, int exceptRows, AncestorOption options)
         {
             return TryCatch(() =>
             {
@@ -547,7 +549,7 @@ namespace Ancestor.DataAccess.DAO
                 return DbAction.ExecuteNonQuery(sql, dbParameters, opt);
             }, ReturnEffectRowResult, exceptRows);
         }
-        public AncestorExecuteResult UpdateEntityRef(object model, LambdaExpression predicate, object refModel, object origin, int exceptRows, AncestorOptions options)
+        public AncestorExecuteResult UpdateEntityRef(object model, LambdaExpression predicate, object refModel, object origin, int exceptRows, AncestorOption options)
         {
             return TryCatch(() =>
             {
@@ -570,7 +572,7 @@ namespace Ancestor.DataAccess.DAO
                 return DbAction.ExecuteNonQuery(sql, dbParameters, opt);
             }, ReturnEffectRowResult, exceptRows);
         }
-        public AncestorExecuteResult DeleteEntity(object whereObject, object origin, int exceptRows, AncestorOptions options)
+        public AncestorExecuteResult DeleteEntity(object whereObject, object origin, int exceptRows, AncestorOption options)
         {
             return TryCatch(() =>
             {
@@ -586,7 +588,7 @@ namespace Ancestor.DataAccess.DAO
                 return DbAction.ExecuteNonQuery(sql, dbParameters, opt);
             }, ReturnEffectRowResult, exceptRows);
         }
-        public AncestorExecuteResult DeleteEntity(LambdaExpression predicate, object origin, int exceptRows, AncestorOptions options)
+        public AncestorExecuteResult DeleteEntity(LambdaExpression predicate, object origin, int exceptRows, AncestorOption options)
         {
             return TryCatch(() =>
             {
@@ -610,7 +612,7 @@ namespace Ancestor.DataAccess.DAO
                 return DbAction.ExecuteNonQuery(sql, dbParameters, opt);
             }, ReturnEffectRowResult, exceptRows);
         }
-        public AncestorExecuteResult ExecuteNonQuery(string sql, object parameter, int exceptRows, AncestorOptions options)
+        public AncestorExecuteResult ExecuteNonQuery(string sql, object parameter, int exceptRows, AncestorOption options)
         {
             return TryCatch(() =>
             {
@@ -620,7 +622,7 @@ namespace Ancestor.DataAccess.DAO
             }, ReturnEffectRowResult, exceptRows);
         }
 
-        public AncestorExecuteResult ExecuteStoredProcedure(string name, object parameter, AncestorOptions options)
+        public AncestorExecuteResult ExecuteStoredProcedure(string name, object parameter, AncestorOption options)
         {
             return TryCatch(() =>
             {
@@ -629,7 +631,7 @@ namespace Ancestor.DataAccess.DAO
                 return DbAction.ExecuteStoreProcedure(name, dbParameters, dbOpt);
             }, ReturnAncestorExecuteResult);
         }
-        public AncestorExecuteResult ExecuteScalar(string sql, object parameter, AncestorOptions options)
+        public AncestorExecuteResult ExecuteScalar(string sql, object parameter, AncestorOption options)
         {
             return TryCatch(() =>
             {
@@ -639,7 +641,7 @@ namespace Ancestor.DataAccess.DAO
             }, ReturnAncestorExecuteResult);
         }
 
-        public AncestorExecuteResult GetSequenceValue(string name, bool moveToNext, AncestorOptions options)
+        public AncestorExecuteResult GetSequenceValue(string name, bool moveToNext, AncestorOption options)
         {
             return TryCatch(() =>
             {
@@ -652,7 +654,7 @@ namespace Ancestor.DataAccess.DAO
 
         protected abstract string GetSequenceCommand(string name, bool moveToNext);
 
-        protected DBParameterCollection CreateDBParameters(object parameterObject, AncestorOptions options)
+        protected DBParameterCollection CreateDBParameters(object parameterObject, AncestorOption options)
         {
             var parameters = parameterObject as DBParameterCollection;
             if (parameters != null)
@@ -1041,6 +1043,37 @@ namespace Ancestor.DataAccess.DAO
             }
             return string.Join(", ", fieldMap.Select(kv => string.Format("{0} = {1}", kv.Key, kv.Value)));
         }
+        protected virtual string CreateOrderCommand(AncestorOrderOption opt, ReferenceInfo reference = null)
+        {
+            string order = null;
+            if (opt != null)
+            {
+                switch (opt.OrderType)
+                {
+                    case 1:
+                        var fields = opt.OrderItem as string[];
+                        order = string.Join(", ", fields);
+                        break;
+                    case 2:
+                        var exp = opt.OrderItem as LambdaExpression;
+                        var resolver = CreateExpressionResolver(reference, ExpressionResolver.ExpressionResolveOption.Selector);
+                        var result = resolver.Resolve(exp);
+                        if (result.Parameters != null && result.Parameters.Count > 0)
+                            throw new InvalidOperationException("order notyet support parameters");
+                        order = result.Sql;
+                        break;
+                    case 9:
+                        break;
+                }
+                if (!string.IsNullOrEmpty(order))
+                {
+                    order = "Order By " + order;
+                    if (opt.IsDescending)
+                        order += " Desc";
+                }
+            }
+            return order;
+        }
         protected void BindParameter(DBParameterCollection parameters, ParameterInfo parameter)
         {
             if (parameter.IsHardword && parameter.Hardword.IgnorePrefix)
@@ -1049,11 +1082,11 @@ namespace Ancestor.DataAccess.DAO
                 parameters.Add(parameter.ParameterName, parameter.Value);
         }
 
-        protected virtual void CreateDBParameterFromDictionary(IDictionary<string, object> dic, ref DBParameterCollection collection, AncestorOptions options)
+        protected virtual void CreateDBParameterFromDictionary(IDictionary<string, object> dic, ref DBParameterCollection collection, AncestorOption options)
         {
             collection.AddRange(dic.Select(r => new DBParameter(r.Key.ToUpper(), r.Value)));
         }
-        protected virtual void CreateDBParameterFromProperty(object model, ref DBParameterCollection collection, AncestorOptions options)
+        protected virtual void CreateDBParameterFromProperty(object model, ref DBParameterCollection collection, AncestorOption options)
         {
             var modelType = model.GetType();
             var properties = modelType.GetProperties();
@@ -1165,7 +1198,7 @@ namespace Ancestor.DataAccess.DAO
         {
             return DummyTable;
         }
-        DBParameterCollection IInternalDataAccessObject.CreateDBParameters(object parameterObject, AncestorOptions options)
+        DBParameterCollection IInternalDataAccessObject.CreateDBParameters(object parameterObject, AncestorOption options)
         {
             return CreateDBParameters(parameterObject, options);
         }

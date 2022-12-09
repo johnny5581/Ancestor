@@ -37,42 +37,42 @@ namespace Ancestor.DataAccess.DAO
         #endregion Connection
 
         #region Query
-        AncestorResult QueryFromSqlString(string sql, object parameter, Type dataType, bool firstOnly, AncestorOptions options);     
-        AncestorResult QueryFromModel(object model, Type dataType, object origin, bool firstOnly, AncestorOptions options);
-        AncestorResult QueryFromLambda(LambdaExpression predicate, LambdaExpression selector, IDictionary<Type, object> proxyMap, bool firstOnly, AncestorOptions options);
-        AncestorResult GroupFromLambda(LambdaExpression predicate, LambdaExpression selector, LambdaExpression groupBy, IDictionary<Type, object> proxyMap, AncestorOptions options);        
+        AncestorResult QueryFromSqlString(string sql, object parameter, Type dataType, bool firstOnly, AncestorOption option);
+        AncestorResult QueryFromModel(object model, Type dataType, object origin, bool firstOnly, AncestorOrderOption orderOpt, AncestorOption option);
+        AncestorResult QueryFromLambda(LambdaExpression predicate, LambdaExpression selector, IDictionary<Type, object> proxyMap, bool firstOnly, AncestorOrderOption orderOpt, AncestorOption option);
+        AncestorResult GroupFromLambda(LambdaExpression predicate, LambdaExpression selector, LambdaExpression groupBy, IDictionary<Type, object> proxyMap, AncestorOption option);
         #endregion
 
         #region Insert
-        AncestorExecuteResult InsertEntity(object model, object origin, AncestorOptions options);
-        AncestorExecuteResult BulkInsertEntities<T>(IEnumerable<T> models, object origin, AncestorOptions options);
+        AncestorExecuteResult InsertEntity(object model, object origin, AncestorOption option);
+        AncestorExecuteResult BulkInsertEntities<T>(IEnumerable<T> models, object origin, AncestorOption options);
         #endregion Insert
 
         #region Update
-        AncestorExecuteResult UpdateEntity(object model, object whereObject, UpdateMode mode, object origin, int exceptRows, AncestorOptions options);
-        AncestorExecuteResult UpdateEntity(object model, LambdaExpression predicate, UpdateMode mode, object origin, int exceptRows, AncestorOptions options);
-        AncestorExecuteResult UpdateEntityRef(object model, object whereObject, object refModel, object origin, int exceptRows, AncestorOptions options);
-        AncestorExecuteResult UpdateEntityRef(object model, LambdaExpression predicate, object refModel, object origin, int exceptRows, AncestorOptions options);
+        AncestorExecuteResult UpdateEntity(object model, object whereObject, UpdateMode mode, object origin, int exceptRows, AncestorOption option);
+        AncestorExecuteResult UpdateEntity(object model, LambdaExpression predicate, UpdateMode mode, object origin, int exceptRows, AncestorOption option);
+        AncestorExecuteResult UpdateEntityRef(object model, object whereObject, object refModel, object origin, int exceptRows, AncestorOption option);
+        AncestorExecuteResult UpdateEntityRef(object model, LambdaExpression predicate, object refModel, object origin, int exceptRows, AncestorOption option);
         #endregion Update
 
         #region Delete 
-        AncestorExecuteResult DeleteEntity(object whereObject, object origin, int exceptRows, AncestorOptions options);
-        AncestorExecuteResult DeleteEntity(LambdaExpression predicate, object origin, int exceptRows, AncestorOptions options);        
+        AncestorExecuteResult DeleteEntity(object whereObject, object origin, int exceptRows, AncestorOption option);
+        AncestorExecuteResult DeleteEntity(LambdaExpression predicate, object origin, int exceptRows, AncestorOption option);
         #endregion Delete
 
         #region Execute
-        AncestorExecuteResult ExecuteNonQuery(string sql, object parameter, int exceptRows, AncestorOptions options);
-        AncestorExecuteResult ExecuteStoredProcedure(string name, object parameter, AncestorOptions options);
-        AncestorExecuteResult ExecuteScalar(string sql, object parameter, AncestorOptions options);
-        AncestorExecuteResult GetSequenceValue(string name, bool moveToNext, AncestorOptions options);
+        AncestorExecuteResult ExecuteNonQuery(string sql, object parameter, int exceptRows, AncestorOption option);
+        AncestorExecuteResult ExecuteStoredProcedure(string name, object parameter, AncestorOption option);
+        AncestorExecuteResult ExecuteScalar(string sql, object parameter, AncestorOption option);
+        AncestorExecuteResult GetSequenceValue(string name, bool moveToNext, AncestorOption option);
         #endregion
     }
     /// <summary>
     /// DataAccessObject command options
     /// </summary>
-    public class AncestorOptions : Dictionary<string, object>
+    public class AncestorOption : Dictionary<string, object>
     {
-        public AncestorOptions() : base(StringComparer.OrdinalIgnoreCase)
+        public AncestorOption() : base(StringComparer.OrdinalIgnoreCase)
         {
             BulkStopWhenError = false;
             IgnoreNullCondition = true;
@@ -85,6 +85,52 @@ namespace Ancestor.DataAccess.DAO
         /// Ignore null condition in predicate
         /// </summary>
         public bool IgnoreNullCondition { get; set; }
+    }
+    /// <summary>
+    /// DataAccessObject query order options
+    /// </summary>
+    public class AncestorOrderOption
+    {
+        private readonly bool _desc;
+        private int _orderType;
+        private object _order;
+
+        public int OrderType
+        {
+            get { return _orderType; }
+        }
+
+        public object OrderItem
+        {
+            get { return _order; }
+        }
+        public bool IsDescending
+        {
+            get { return _desc; }
+        }
+
+        protected AncestorOrderOption(bool desc = false)
+        {
+            _desc = desc;
+        }
+
+        public AncestorOrderOption(string[] fields, bool desc = false) : this(desc)
+        {
+            _orderType = 1;
+            _order = fields;
+        }
+        public AncestorOrderOption(LambdaExpression orderExp, bool desc = false) : this(desc)
+        {
+            _orderType = 2;
+            _order = orderExp;
+        }
+        public AncestorOrderOption(object model, bool desc = false) : this(desc)
+        {
+            _orderType = 9;
+            _order = model;
+        }
+
+
 
     }
 }

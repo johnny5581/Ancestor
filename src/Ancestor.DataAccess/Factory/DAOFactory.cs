@@ -142,44 +142,44 @@ namespace Ancestor.DataAccess.Factory
 
         AncestorResult IDataAccessObject.Query<T>(Expression<Func<T, bool>> predicate, Expression<Func<T, object>> selectCondition)
         {
-            return _dao.QueryFromLambda(predicate, selectCondition, null, false, new AncestorOptions { { "AddRowId", true } });
+            return _dao.QueryFromLambda(predicate, selectCondition, null, false, null, new AncestorOption { { "AddRowId", true } });
         }
 
         AncestorResult IDataAccessObject.Query<T1, T2>(Expression<Func<T1, T2, bool>> predicate, Expression<Func<T1, T2, object>> selectCondition)
         {
-            return _dao.QueryFromLambda(predicate, selectCondition, null, false, new AncestorOptions { { "AddRowId", true } });
+            return _dao.QueryFromLambda(predicate, selectCondition, null, false, null, new AncestorOption { { "AddRowId", true } });
         }
 
         AncestorResult IDataAccessObject.Query<T1, T2, T3>(Expression<Func<T1, T2, T3, bool>> predicate, Expression<Func<T1, T2, T3, object>> selectCondition)
         {
-            return _dao.QueryFromLambda(predicate, selectCondition, null, false, new AncestorOptions { { "AddRowId", true } });
+            return _dao.QueryFromLambda(predicate, selectCondition, null, false, null, new AncestorOption { { "AddRowId", true } });
         }
 
         AncestorResult IDataAccessObject.Query<T1, T2, T3, T4>(Expression<Func<T1, T2, T3, T4, bool>> predicate, Expression<Func<T1, T2, T3, T4, object>> selectCondition)
         {
-            return _dao.QueryFromLambda(predicate, selectCondition, null, false, new AncestorOptions { { "AddRowId", true } });
+            return _dao.QueryFromLambda(predicate, selectCondition, null, false, null, new AncestorOption { { "AddRowId", true } });
         }
 
         AncestorResult IDataAccessObject.Query<T1, T2, T3, T4, T5>(Expression<Func<T1, T2, T3, T4, T5, bool>> predicate, Expression<Func<T1, T2, T3, T4, T5, object>> selectCondition)
         {
-            return _dao.QueryFromLambda(predicate, selectCondition, null, false, new AncestorOptions { { "AddRowId", true } });
+            return _dao.QueryFromLambda(predicate, selectCondition, null, false, null, new AncestorOption { { "AddRowId", true } });
         }
 
         AncestorResult IDataAccessObject.Query<T1, T2, T3, T4, T5, T6>(Expression<Func<T1, T2, T3, T4, T5, T6, bool>> predicate, Expression<Func<T1, T2, T3, T4, T5, T6, object>> selectCondition)
         {
-            return _dao.QueryFromLambda(predicate, selectCondition, null, false, new AncestorOptions { { "AddRowId", true } });
+            return _dao.QueryFromLambda(predicate, selectCondition, null, false, null, new AncestorOption { { "AddRowId", true } });
         }
 
         AncestorResult IDataAccessObject.Query<FakeType>(Expression<Func<FakeType, bool>> predicate, Type realType)
         {
             var map = DataAccessObjectExtensions.CreateProxyMap(DataAccessObjectExtensions.CreateTuple(typeof(FakeType), realType));
-            return _dao.QueryFromLambda(predicate, null, map, false, new AncestorOptions { { "AddRowId", true } });
+            return _dao.QueryFromLambda(predicate, null, map, false, null, new AncestorOption { { "AddRowId", true } });
         }
 
         AncestorResult IDataAccessObject.Query<FakeType>(Expression<Func<FakeType, bool>> predicate, Expression<Func<FakeType, object>> selectCondition, Type realType)
         {
             var map = DataAccessObjectExtensions.CreateProxyMap(DataAccessObjectExtensions.CreateTuple(typeof(FakeType), realType));
-            return _dao.QueryFromLambda(predicate, selectCondition, map, false, new AncestorOptions { { "AddRowId", true } });
+            return _dao.QueryFromLambda(predicate, selectCondition, map, false, null, new AncestorOption { { "AddRowId", true } });
         }
 
         AncestorResult IDataAccessObject.Query<FakeType1, FakeType2>(Expression<Func<FakeType1, FakeType2, bool>> predicate, Expression<Func<FakeType1, FakeType2, object>> selectCondition, Type realType1, Type realType2)
@@ -188,7 +188,7 @@ namespace Ancestor.DataAccess.Factory
                 DataAccessObjectExtensions.CreateTuple(typeof(FakeType1), realType1), 
                 DataAccessObjectExtensions.CreateTuple(typeof(FakeType2), realType2)
             );
-            return _dao.QueryFromLambda(predicate, selectCondition, map, false, new AncestorOptions { { "AddRowId", true } });
+            return _dao.QueryFromLambda(predicate, selectCondition, map, false,null,  new AncestorOption { { "AddRowId", true } });
         }
 
         AncestorResult IDataAccessObject.Query<FakeType1, FakeType2, FakeType3>(Expression<Func<FakeType1, FakeType2, FakeType3, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, object>> selectCondition, Type realType1, Type realType2, Type realType3)
@@ -198,7 +198,7 @@ namespace Ancestor.DataAccess.Factory
                 DataAccessObjectExtensions.CreateTuple(typeof(FakeType2), realType2),
                 DataAccessObjectExtensions.CreateTuple(typeof(FakeType3), realType3)
             );
-            return _dao.QueryFromLambda(predicate, selectCondition, map, false, new AncestorOptions { { "AddRowId", true } });
+            return _dao.QueryFromLambda(predicate, selectCondition, map, false, null, new AncestorOption { { "AddRowId", true } });
         }
 
         AncestorResult IDataAccessObject.Query<FakeType1, FakeType2, FakeType3, FakeType4>(Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, object>> selectCondition, Type realType1, Type realType2, Type realType3, Type realType4)
@@ -209,7 +209,7 @@ namespace Ancestor.DataAccess.Factory
                 DataAccessObjectExtensions.CreateTuple(typeof(FakeType3), realType3),
                 DataAccessObjectExtensions.CreateTuple(typeof(FakeType4), realType4)
             );
-            return _dao.QueryFromLambda(predicate, selectCondition, map, false, new AncestorOptions { { "AddRowId", true } });
+            return _dao.QueryFromLambda(predicate, selectCondition, map, false, null, new AncestorOption { { "AddRowId", true } });
         }
 
         AncestorResult IDataAccessObject.Query<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5>(Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, object>> selectCondition, Type realType1, Type realType2, Type realType3, Type realType4, Type realType5)
@@ -221,7 +221,7 @@ namespace Ancestor.DataAccess.Factory
                 DataAccessObjectExtensions.CreateTuple(typeof(FakeType4), realType4),
                 DataAccessObjectExtensions.CreateTuple(typeof(FakeType5), realType5)
             );
-            return _dao.QueryFromLambda(predicate, selectCondition, map, false, new AncestorOptions { { "AddRowId", true } });
+            return _dao.QueryFromLambda(predicate, selectCondition, map, false, null, new AncestorOption { { "AddRowId", true } });
         }
 
         AncestorResult IDataAccessObject.Query<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6>(Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, object>> selectCondition, Type realType1, Type realType2, Type realType3, Type realType4, Type realType5, Type realType6)
@@ -234,19 +234,19 @@ namespace Ancestor.DataAccess.Factory
                 DataAccessObjectExtensions.CreateTuple(typeof(FakeType5), realType5),
                 DataAccessObjectExtensions.CreateTuple(typeof(FakeType6), realType6)
             );
-            return _dao.QueryFromLambda(predicate, selectCondition, map, false, new AncestorOptions { { "AddRowId", true } });
+            return _dao.QueryFromLambda(predicate, selectCondition, map, false, null, new AncestorOption { { "AddRowId", true } });
         }
 
         AncestorResult IDataAccessObject.Query<FakeType>(Expression<Func<FakeType, bool>> predicate, string name)
         {
             var map = DataAccessObjectExtensions.CreateProxyMap(DataAccessObjectExtensions.CreateTuple(typeof(FakeType), name));
-            return _dao.QueryFromLambda(predicate, null, map, false, new AncestorOptions { { "AddRowId", true } });
+            return _dao.QueryFromLambda(predicate, null, map, false, null, new AncestorOption { { "AddRowId", true } });
         }
 
         AncestorResult IDataAccessObject.Query<FakeType>(Expression<Func<FakeType, bool>> predicate, Expression<Func<FakeType, object>> selectCondition, string name)
         {
             var map = DataAccessObjectExtensions.CreateProxyMap(DataAccessObjectExtensions.CreateTuple(typeof(FakeType), name));
-            return _dao.QueryFromLambda(predicate, selectCondition, map, false, new AncestorOptions { { "AddRowId", true } });
+            return _dao.QueryFromLambda(predicate, selectCondition, map, false, null, new AncestorOption { { "AddRowId", true } });
         }
 
         AncestorResult IDataAccessObject.Query<FakeType1, FakeType2>(Expression<Func<FakeType1, FakeType2, bool>> predicate, Expression<Func<FakeType1, FakeType2, object>> selectCondition, string name1, string name2)
@@ -255,7 +255,7 @@ namespace Ancestor.DataAccess.Factory
                 DataAccessObjectExtensions.CreateTuple(typeof(FakeType1), name1),
                 DataAccessObjectExtensions.CreateTuple(typeof(FakeType2), name2)
             );
-            return _dao.QueryFromLambda(predicate, selectCondition, map, false, new AncestorOptions { { "AddRowId", true } });
+            return _dao.QueryFromLambda(predicate, selectCondition, map, false, null, new AncestorOption { { "AddRowId", true } });
         }
 
         AncestorResult IDataAccessObject.Query<FakeType1, FakeType2, FakeType3>(Expression<Func<FakeType1, FakeType2, FakeType3, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, object>> selectCondition, string name1, string name2, string name3)
@@ -265,7 +265,7 @@ namespace Ancestor.DataAccess.Factory
                 DataAccessObjectExtensions.CreateTuple(typeof(FakeType2), name2),
                 DataAccessObjectExtensions.CreateTuple(typeof(FakeType3), name3)
             );
-            return _dao.QueryFromLambda(predicate, selectCondition, map, false, new AncestorOptions { { "AddRowId", true } });
+            return _dao.QueryFromLambda(predicate, selectCondition, map, false, null, new AncestorOption { { "AddRowId", true } });
         }
 
         AncestorResult IDataAccessObject.Query<FakeType1, FakeType2, FakeType3, FakeType4>(Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, object>> selectCondition, string name1, string name2, string name3, string name4)
@@ -276,7 +276,7 @@ namespace Ancestor.DataAccess.Factory
                 DataAccessObjectExtensions.CreateTuple(typeof(FakeType3), name3),
                 DataAccessObjectExtensions.CreateTuple(typeof(FakeType4), name4)
             );
-            return _dao.QueryFromLambda(predicate, selectCondition, map, false, new AncestorOptions { { "AddRowId", true } });
+            return _dao.QueryFromLambda(predicate, selectCondition, map, false, null, new AncestorOption { { "AddRowId", true } });
         }
 
         AncestorResult IDataAccessObject.Query<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5>(Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, object>> selectCondition, string name1, string name2, string name3, string name4, string name5)
@@ -288,7 +288,7 @@ namespace Ancestor.DataAccess.Factory
                 DataAccessObjectExtensions.CreateTuple(typeof(FakeType4), name4),
                 DataAccessObjectExtensions.CreateTuple(typeof(FakeType5), name5)
             );
-            return _dao.QueryFromLambda(predicate, selectCondition, map, false, new AncestorOptions { { "AddRowId", true } });
+            return _dao.QueryFromLambda(predicate, selectCondition, map, false, null, new AncestorOption { { "AddRowId", true } });
         }
 
         AncestorResult IDataAccessObject.Query<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6>(Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, object>> selectCondition, string name1, string name2, string name3, string name4, string name5, string name6)
@@ -301,7 +301,7 @@ namespace Ancestor.DataAccess.Factory
                 DataAccessObjectExtensions.CreateTuple(typeof(FakeType5), name5),
                 DataAccessObjectExtensions.CreateTuple(typeof(FakeType6), name6)
             );
-            return _dao.QueryFromLambda(predicate, selectCondition, map, false, new AncestorOptions { { "AddRowId", true } });
+            return _dao.QueryFromLambda(predicate, selectCondition, map, false, null, new AncestorOption { { "AddRowId", true } });
         }
 
         AncestorResult IDataAccessObject.QueryNoRowid(IModel objectModel)
