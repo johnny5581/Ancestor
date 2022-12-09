@@ -329,7 +329,10 @@ namespace Ancestor.DataAccess.DAO
                 var reference = GetReferenceInfo(model, null, dataType, origin);
                 var selector = CreateSelectCommand(reference);
                 var tableName = reference.GetReferenceName();
-                var where = CreateWhereCommand(model, tableName, true, dbParameters);
+                var ignoreNull = true;
+                if (option != null)
+                    ignoreNull = option.IgnoreNullCondition;
+                var where = CreateWhereCommand(model, tableName, ignoreNull, dbParameters);
                 var order = CreateOrderCommand(orderOpt);
                 var opt = CreateDbOptions(option);
                 var sql = string.Format("Select {0} From {1} {2} {3}", selector, tableName, where, order);
