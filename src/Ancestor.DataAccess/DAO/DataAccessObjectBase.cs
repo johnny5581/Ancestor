@@ -1095,7 +1095,7 @@ namespace Ancestor.DataAccess.DAO
             var properties = modelType.GetProperties();
             Func<string, string> nameResolver = null;
             object resolver;
-            if (options.TryGetValue("NameResolver", out resolver))
+            if (options != null && options.TryGetValue("NameResolver", out resolver))
                 nameResolver = resolver as Func<string, string>;
             foreach (var property in properties)
             {
