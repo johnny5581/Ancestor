@@ -942,7 +942,7 @@ namespace System
             return dao.DeleteEntity(predicate, realType, exceptRows, null);
         }
 
-        public static AncestorExecuteResult BulkInsert<T>(this IDataAccessObjectEx dao, List<T> ObjList) where T : class, new()
+        public static AncestorBulkExecuteResult BulkInsert<T>(this IDataAccessObjectEx dao, List<T> ObjList) where T : class, new()
         {
             return dao.BulkInsertEntities(ObjList, null, null);
         }

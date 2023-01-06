@@ -297,4 +297,28 @@ namespace Ancestor.Core
             return (T)value;
         }
     }
+    /// <summary>
+    /// Ancestor execute bulk result 
+    /// </summary>
+    public class AncestorBulkExecuteResult : AncestorExecuteResult
+    {
+        public AncestorBulkExecuteResult(Exception exception) : base(exception)
+        {
+        }
+
+        public AncestorBulkExecuteResult(int rows, IEnumerable<DBParameter> parameters) : base(rows, parameters)
+        {
+        }
+
+        public AncestorBulkExecuteResult(object value, IEnumerable<DBParameter> parameters) : base(value, parameters)
+        {
+        }
+
+        public AncestorBulkExecuteResult(int rows, Dictionary<object, Exception> exceptions, IEnumerable<DBParameter> parameters) : base(rows, parameters)
+        {
+            Exceptions = exceptions;
+        }
+
+        public Dictionary<object, Exception> Exceptions { get; private set; }
+    }
 }

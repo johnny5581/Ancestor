@@ -269,6 +269,7 @@ namespace Ancestor.DataAccess.DAO
                 return new AncestorExecuteResult((int)result, parameters.Parameters) { QueryParameter = parameters };
             return new AncestorExecuteResult(result, parameters.Parameters) { QueryParameter = parameters };
         }
+
         protected AncestorExecuteResult ReturnAncestorExecuteResult(object result)
         {
             QueryParameter parameters = new QueryParameter();
@@ -447,7 +448,7 @@ namespace Ancestor.DataAccess.DAO
             }, ReturnEffectRowResult);
         }
 
-        public AncestorExecuteResult BulkInsertEntities<T>(IEnumerable<T> models, object origin, AncestorOption options)
+        public AncestorBulkExecuteResult BulkInsertEntities<T>(IEnumerable<T> models, object origin, AncestorOption options)
         {
             return TryCatch(() =>
             {
@@ -460,9 +461,19 @@ namespace Ancestor.DataAccess.DAO
                     raiseError = options.BulkStopWhenError;
                 var successed = 0;
                 string field = null;
+                var transacting = false;
+                var bulked = false;
+                var faileds = new Dictionary<T, Exception>();
                 try
                 {
-                    DbAction.OpenConnection();
+                    // if transaction isn't begin, begin it
+                    if (!DbAction.IsTransacting)
+                    {
+                        DbAction.BeginTransaction();
+                        transacting = true;
+                    }
+                    //DbAction.OpenConnection();
+                    var index = 0;
                     foreach (var insertInfo in insertInfos)
                     {
                         if (field == null)
@@ -481,19 +492,41 @@ namespace Ancestor.DataAccess.DAO
                         {
                             if (raiseError)
                                 throw;
+                            faileds.Add(models.ElementAt(index), ex);
                         }
+                        index++;
                     }
+                    bulked = true;
+                    return Tuple.Create(successed, faileds);
                 }
                 finally
                 {
-                    if (connCloseFlag)
+                    if (transacting)
                     {
-                        DbAction.CloseConnection();
-                        DbAction.AutoCloseConnection = connCloseFlag;
+                        if (bulked)
+                            DbAction.Commit();
+                        else
+                            DbAction.Rollback();
                     }
                 }
-                return successed;
-            }, ReturnEffectRowResult);
+            }, result =>
+            {
+                QueryParameter parameters = new QueryParameter();
+                var dbResult = result as DbActionResult;
+                if (dbResult != null)
+                {
+                    result = dbResult.Result;
+                    parameters = dbResult.Parameter;
+                }
+                if (result is int)
+                    return new AncestorBulkExecuteResult((int)result, parameters.Parameters) { QueryParameter = parameters };
+
+                var tuple = result as Tuple<int, Dictionary<T, Exception>>;
+                if (tuple != null)                
+                    return new AncestorBulkExecuteResult(tuple.Item1, tuple.Item2.ToDictionary(r => (object)r.Key, r => r.Value), parameters.Parameters) { QueryParameter = parameters };
+
+                return new AncestorBulkExecuteResult(result, parameters.Parameters) { QueryParameter = parameters };
+            });
         }
         public AncestorExecuteResult UpdateEntity(object model, object whereObject, UpdateMode mode, object origin, int exceptRows, AncestorOption options)
         {
@@ -870,19 +903,22 @@ namespace Ancestor.DataAccess.DAO
                     if (dataProperty != null)
                     {
                         var value = dataProperty.GetValue(model, null);
-                        Tuple<string, HardWordAttribute> tuple;
-                        if (!cache.TryGetValue(refProperty, out tuple))
+                        if (value != null)
                         {
-                            var hd = HardWordManager.Get(refProperty);
-                            var fname = TableManager.GetName(refProperty);
-                            tuple = Tuple.Create(fname, hd);
-                            cache.Add(refProperty, tuple);
-                            fields.Add(fname);
+                            Tuple<string, HardWordAttribute> tuple;
+                            if (!cache.TryGetValue(refProperty, out tuple))
+                            {
+                                var hd = HardWordManager.Get(refProperty);
+                                var fname = TableManager.GetName(refProperty);
+                                tuple = Tuple.Create(fname, hd);
+                                cache.Add(refProperty, tuple);
+                                fields.Add(fname);
+                            }
+                            var parameter = CreateParameter(value, tuple.Item1, true, hardWord: tuple.Item2);
+                            values.Add(parameter.ValueName);
+                            if (!parameter.IsSysDateConverted)
+                                BindParameter(parameters, parameter);
                         }
-                        var parameter = CreateParameter(value, tuple.Item1, true, hardWord: tuple.Item2);
-                        values.Add(parameter.ValueName);
-                        if (!parameter.IsSysDateConverted)
-                            BindParameter(parameters, parameter);
                     }
                 }
                 if (field == null)

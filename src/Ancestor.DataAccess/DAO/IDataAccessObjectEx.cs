@@ -45,7 +45,7 @@ namespace Ancestor.DataAccess.DAO
 
         #region Insert
         AncestorExecuteResult InsertEntity(object model, object origin, AncestorOption option);
-        AncestorExecuteResult BulkInsertEntities<T>(IEnumerable<T> models, object origin, AncestorOption options);
+        AncestorBulkExecuteResult BulkInsertEntities<T>(IEnumerable<T> models, object origin, AncestorOption options);
         #endregion Insert
 
         #region Update
