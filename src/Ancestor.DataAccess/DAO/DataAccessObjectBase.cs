@@ -8,6 +8,7 @@ using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Net;
 using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -139,6 +140,8 @@ namespace Ancestor.DataAccess.DAO
         protected virtual IDbAction CreateDbAction()
         {
             var factory = Factory;
+            if (factory.Database == DBObject.DataBase.Custom)
+                return factory.CustomDbFactory(factory, this);
             switch (factory.Mode)
             {
                 case DAOFactoryEx.SourceMode.DBObject:
@@ -147,9 +150,7 @@ namespace Ancestor.DataAccess.DAO
                     return CreateDbAction((string)factory.Source);
                 case DAOFactoryEx.SourceMode.Connection:
                     return CreateDbAction((IDbConnection)factory.Source);
-                default:
-                    if (factory.Database == DBObject.DataBase.Custom)
-                        return factory.CustomDbFactory(factory, this);
+                default:                    
                     throw new InvalidOperationException("invalid factory mode:" + factory.Mode);
             }
         }
@@ -522,7 +523,7 @@ namespace Ancestor.DataAccess.DAO
                     return new AncestorBulkExecuteResult((int)result, parameters.Parameters) { QueryParameter = parameters };
 
                 var tuple = result as Tuple<int, Dictionary<T, Exception>>;
-                if (tuple != null)                
+                if (tuple != null)
                     return new AncestorBulkExecuteResult(tuple.Item1, tuple.Item2.ToDictionary(r => (object)r.Key, r => r.Value), parameters.Parameters) { QueryParameter = parameters };
 
                 return new AncestorBulkExecuteResult(result, parameters.Parameters) { QueryParameter = parameters };
@@ -2156,27 +2157,55 @@ namespace Ancestor.DataAccess.DAO
             #region Members
             protected override Expression VisitMember(MemberExpression node)
             {
-                if (node.Expression != null)
+                if (node.Expression != null)                    
                 {
-                    switch (node.Expression.NodeType)
+                    if (node.Expression.NodeType == ExpressionType.Parameter)
                     {
-                        case ExpressionType.Parameter:
-                            ProcessParameterMember(node.Expression.Type, node.Member);
-                            break;
-                        case ExpressionType.Constant:
-                            ProcessConstantMember(((ConstantExpression)node.Expression).Value, node.Member);
-                            break;
-                        case ExpressionType.MemberAccess:
-                            ProcessMemberAccess(node);
-                            break;
+                        ProcessParameterMember(node.Expression.Type, node.Member);
+                        return node;
+                    }
+                    else if(node.Expression.NodeType == ExpressionType.Constant)
+                    {
+                        ProcessConstantMember(((ConstantExpression)node.Expression).Value, node.Member);
+                        return node;
+                    }
+                    else if(TryResolveValue(node.Expression, out object parentValue))
+                    {
+                        ProcessConstantMember(parentValue, node.Member);
+                        return node;
                     }
                 }
-                else if (node.Member.DeclaringType == typeof(Server))
+                if (node.Member.DeclaringType == typeof(Server))
+                {
                     ProcessServerMemberAccess(node);
+                    return node;
+                }
                 else if (node.Member.DeclaringType == typeof(DateTime))
+                {
                     ProcessDateTimeMemberAccess(node);
-                else
-                    ProcessConstantMember(null, node.Member);
+                    return node;
+                }
+                
+                ProcessMemberAccess(node);
+                //switch (node.Expression.NodeType)
+                //{
+                //    case ExpressionType.Parameter:
+
+                //    case ExpressionType.Constant:
+                //        ProcessConstantMember(((ConstantExpression)node.Expression).Value, node.Member);
+                //        break;
+                //    case ExpressionType.MemberAccess:
+                //        ProcessMemberAccess(node);
+                //        break;
+                //}
+
+
+                //else if (node.Member.DeclaringType == typeof(Server))
+                //    ProcessServerMemberAccess(node);
+                //else if (node.Member.DeclaringType == typeof(DateTime))
+                //    ProcessDateTimeMemberAccess(node);
+                //else
+                //    ProcessConstantMember(null, node.Member);
                 return node;
             }
 
@@ -2220,7 +2249,7 @@ namespace Ancestor.DataAccess.DAO
             protected virtual void ProcessMemberAccess(MemberExpression node)
             {
                 object value;
-                // if parent can be resolved, use constant
+                // if node can be resolved, use constant
                 if (TryResolveValue(node, out value))
                 {
                     var constantExpression = Expression.Constant(value);
