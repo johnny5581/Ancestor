@@ -2225,8 +2225,8 @@ namespace Ancestor.DataAccess.DAO
                     if (hd != null)
                     {
                         value = _dao.ConvertFromHardWord(value, hd);
-                        if (_option.AppendAs)
-                            value = value + " AS " + memberName;
+                        //if (_option.AppendAs)
+                        //    value = value + " As " + memberName;
                     }
                 }
                 Write(value);
@@ -2405,7 +2405,7 @@ namespace Ancestor.DataAccess.DAO
                         Action<StringBuilder, string> action = null;
                         if (_option.NewAs)
                         {
-                            action = (sb, text) => ExpressionScope.AppendText(sb, string.Format("{0} AS {1}", text, property.Name));
+                            action = (sb, text) => ExpressionScope.AppendText(sb, string.Format("{0} As {1}", text, property.Name));
                         }
                         using (var scope = CreateScope())
                         {
