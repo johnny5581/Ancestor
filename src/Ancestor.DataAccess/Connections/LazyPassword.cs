@@ -123,7 +123,7 @@ namespace Ancestor.DataAccess.Connections
             if (user == null)
                 throw new NullReferenceException("user can not be null");
             if (secretKey == null)
-                throw new NullReferenceException("secretKey can not be null");
+                throw new NullReferenceException("secretKey can not be null, user: " + user);
             logger.WriteLog(TraceEventType.Verbose,"schema=" + user);
             logger.WriteLog(TraceEventType.Verbose,"secretKey=" + secretKey);
 
