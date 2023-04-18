@@ -60,9 +60,17 @@ namespace Ancestor.DataAccess.Connections
                 // if 64bit use managed else use legency oracle
                 connFactory = new Func<IDbConnection>(() =>
                 {
-                    var connType = Environment.Is64BitProcess
-                        ? Assembly.Load("Oracle.ManagedDataAccess").GetType("Oracle.ManagedDataAccess.Client.OracleConnection", true, true)
-                        : Assembly.Load("Oracle.DataAccess").GetType("Oracle.DataAccess.Client.OracleConnection", true, true);
+                    Type connType;
+                    if(Environment.Is64BitProcess)
+                    {
+                        logger.WriteLog(TraceEventType.Verbose, "detect x64 process, use managed oracle");
+                        connType = Assembly.Load("Oracle.ManagedDataAccess").GetType("Oracle.ManagedDataAccess.Client.OracleConnection", true, true);
+                    }
+                    else
+                    {
+                        logger.WriteLog(TraceEventType.Verbose, "detect x86 process, use legency oracle");
+                        connType = Assembly.Load("Oracle.DataAccess").GetType("Oracle.DataAccess.Client.OracleConnection", true, true);
+                    }
                     var conn = (IDbConnection)Activator.CreateInstance(connType);
                     return conn;
                 });
