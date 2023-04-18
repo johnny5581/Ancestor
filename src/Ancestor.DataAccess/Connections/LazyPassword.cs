@@ -4,10 +4,8 @@ using System.Configuration;
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
-using System.Drawing.Text;
-using System.Linq;
 using System.Reflection;
-using System.Text;
+
 
 namespace Ancestor.DataAccess.Connections
 {
