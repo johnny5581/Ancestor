@@ -186,18 +186,23 @@ namespace Ancestor.DataAccess.DAO
                         Visit(right);
                         break;
                     case SqlStatement.Joins.Outer:
-                        break;
-                    case SqlStatement.Joins.Left:
                         Visit(left);
                         Write("(+)");
                         Write("=");
                         Visit(right);
+                        Write("(+)");
+                        break;
+                    case SqlStatement.Joins.Left:
+                        Visit(left);                        
+                        Write("=");
+                        Visit(right);
+                        Write("(+)");
                         break;
                     case SqlStatement.Joins.Right:
                         Visit(left);
-                        Write("=");
-                        Visit(right);
                         Write("(+)");
+                        Write("=");
+                        Visit(right);                        
                         break;
                 }
             }
