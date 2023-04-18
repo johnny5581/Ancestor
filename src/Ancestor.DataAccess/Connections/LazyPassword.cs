@@ -4,6 +4,7 @@ using System.Configuration;
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
+using System.Drawing.Text;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -61,16 +62,18 @@ namespace Ancestor.DataAccess.Connections
                 connFactory = new Func<IDbConnection>(() =>
                 {
                     Type connType;
-                    if(Environment.Is64BitProcess)
-                    {
-                        logger.WriteLog(TraceEventType.Verbose, "detect x64 process, use managed oracle");
-                        connType = Assembly.Load("Oracle.ManagedDataAccess").GetType("Oracle.ManagedDataAccess.Client.OracleConnection", true, true);
+                    var prov = Core.AncestorGlobalOptions.GetString("option.lzpw.prov");
+                    if(prov != "oracle" || prov != "managedoracle")
+                    {                        
+                        prov = Environment.Is64BitProcess ? "managedoracle" : "oracle";
+                        logger.WriteLog(TraceEventType.Verbose, "detecting oracle type:" + prov);
                     }
-                    else
-                    {
-                        logger.WriteLog(TraceEventType.Verbose, "detect x86 process, use legency oracle");
+
+                    if (prov == "managedoracle")                    
+                        connType = Assembly.Load("Oracle.ManagedDataAccess").GetType("Oracle.ManagedDataAccess.Client.OracleConnection", true, true);                    
+                    else                    
                         connType = Assembly.Load("Oracle.DataAccess").GetType("Oracle.DataAccess.Client.OracleConnection", true, true);
-                    }
+                    
                     var conn = (IDbConnection)Activator.CreateInstance(connType);
                     return conn;
                 });

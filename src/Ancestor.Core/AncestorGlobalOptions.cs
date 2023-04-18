@@ -19,6 +19,7 @@ namespace Ancestor.Core
             SetOption("option.close", "auto");
             SetOption("option.exec_conf", "N");
             SetOption("option.exec_ignore", "N");
+            SetOption("option.lzpw.prov", "oracle");
 
             var settings = System.Configuration.ConfigurationManager.AppSettings;
             foreach (string key in settings.Keys)
