@@ -28,6 +28,7 @@
     </PackageReference>
     <PackageReference Include="Oracle.ManagedDataAccess.Core">
       <Version>2.18.3</Version>
+			<IncludeAssets>compile</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="System.Data.SqlClient">

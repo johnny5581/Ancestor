@@ -27,7 +27,12 @@ namespace Ancestor.Core
             if (sysCodePage == 0)
                 _SystemEncoding = Encoding.UTF8;
             else
+            {
+#if NETSTANDARD2_0
+                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+#endif
                 _SystemEncoding = Encoding.GetEncoding(sysCodePage);
+            }
             Enabled = true;
         }
 
