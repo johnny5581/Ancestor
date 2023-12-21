@@ -16,9 +16,9 @@ namespace Ancestor.DataAccess.DAO
         {
         }
 
-        public override string ParameterSymbol { get; }
-        public override string ConnectorSymbol { get; }
-        public override string DateTimeSymbol { get; }
+        public override string ParameterSymbol { get { return "@"; } }
+        public override string ConnectorSymbol { get { return "||"; } }
+        public override string DateTimeSymbol { get { return "Date('now')"; } }
 
         protected override IDbAction CreateDbAction(DBObject dbObject)
         {
