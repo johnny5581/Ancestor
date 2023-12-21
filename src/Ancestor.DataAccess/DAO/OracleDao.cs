@@ -289,6 +289,7 @@ namespace Ancestor.DataAccess.DAO
                     if (formatExpression != null)
                     {
                         Write(",");
+
                         object value;
                         if (TryResolveValue(formatExpression, out value) && value is string)
                         {

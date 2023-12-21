@@ -106,9 +106,11 @@ namespace Ancestor.DataAccess.Factory
                     //case DBObject.DataBase.Access:
                     //    _daoCache = new OleDao(this);
                     //    break;
-                    case DBObject.DataBase.MSSQL:
-                    case DBObject.DataBase.MySQL:
                     case DBObject.DataBase.SQLlite:
+                        _daoCache = new SqliteDao(this);
+                        break;
+                    case DBObject.DataBase.MSSQL:
+                    case DBObject.DataBase.MySQL:                        
                     case DBObject.DataBase.Sybase:
                     default:
                         throw new NotImplementedException("database not implement: " + _dbObject.DataBaseType);

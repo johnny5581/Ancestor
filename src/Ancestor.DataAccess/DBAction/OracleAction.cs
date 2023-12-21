@@ -69,9 +69,9 @@ namespace Ancestor.DataAccess.DBAction
             return new OracleOptions();
         }
 
-        protected override IDbConnection CreateConnection(DBObject dbObject, out string dsn)
+        protected override IDbConnection CreateConnection(DBObject dbObject, out string dataSource)
         {
-            string dataSource = null;
+            string dsn = null;
             var connStrBuilder = new OracleConnectionStringBuilder();
             logger.WriteLog(System.Diagnostics.TraceEventType.Verbose, "connection mode: " + dbObject.ConnectedMode);
             if (dbObject.ConnectedMode == DBObject.Mode.Direct)
@@ -79,19 +79,19 @@ namespace Ancestor.DataAccess.DBAction
                 var dataSourceName = dbObject.IP ?? dbObject.Node;
                 var servicePrefix = dbObject.ServicePrefix ?? "SID";
                 var port = dbObject.Port ?? "1521";
-                dataSource = string.Format(ConnectionStringPattern, dataSourceName, dbObject.Node, port, servicePrefix);
+                dsn = string.Format(ConnectionStringPattern, dataSourceName, dbObject.Node, port, servicePrefix);
             }
             else if (dbObject.ConnectedMode == DBObject.Mode.DSN)
             {
-                dataSource = System.Configuration.ConfigurationManager.ConnectionStrings[dbObject.Node].ConnectionString;
+                dsn = System.Configuration.ConfigurationManager.ConnectionStrings[dbObject.Node].ConnectionString;
             }
             else if (dbObject.ConnectedMode == DBObject.Mode.TNSNAME)
             {
-                dataSource = dbObject.Node;
+                dsn = dbObject.Node;
             }
 
-            logger.WriteLog(System.Diagnostics.TraceEventType.Verbose, "DataSource=" + dataSource);
-            connStrBuilder.DataSource = dataSource;
+            logger.WriteLog(System.Diagnostics.TraceEventType.Verbose, "DataSource=" + dsn);
+            connStrBuilder.DataSource = dsn;
             connStrBuilder.UserID = dbObject.ID;
 
             if (LazyPassword.GetLazyPasswordEnabled(dbObject))
@@ -124,7 +124,7 @@ namespace Ancestor.DataAccess.DBAction
                 }
             }
 
-            dsn = dbObject.Node;
+            dataSource = dbObject.Node;
             return new OracleConnection(connStrBuilder.ConnectionString);
         }
         protected override IDbConnection CreateConnection(string connStr, out string dataSource)

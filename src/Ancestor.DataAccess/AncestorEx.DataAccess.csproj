@@ -12,7 +12,12 @@
     <Product>AncestorEx</Product>
 		<RootNamespace>Ancestor.DataAccess</RootNamespace>
   </PropertyGroup>
-
+	<PropertyGroup>
+		<ContentSQLiteInteropFiles>true</ContentSQLiteInteropFiles>
+		<CopySQLiteInteropFiles>false</CopySQLiteInteropFiles>
+		<CleanSQLiteInteropFiles>false</CleanSQLiteInteropFiles>
+		<CollectSQLiteInteropFiles>false</CollectSQLiteInteropFiles>
+	</PropertyGroup>
   <ItemGroup Condition="'$(targetframework)' == 'net40'">
     <Reference Include="System.Data.OracleClient" />
     <Reference Include="Oracle.ManagedDataAccess">
@@ -22,7 +27,7 @@
     </Reference>
     <Reference Include="System.Configuration" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">    
     <PackageReference Include="Microsoft.Win32.Registry">
       <Version>5.0.0</Version>
     </PackageReference>
@@ -32,7 +37,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="System.Data.SqlClient">
-      <Version>4.8.0</Version>
+      <Version>4.8.1</Version>
     </PackageReference>
     <PackageReference Include="System.Linq">
       <Version>4.1.0</Version>
@@ -79,6 +84,9 @@
 		<PackageReference Include="System.Data.OleDb">
 			<Version>6.0.0</Version>
 		</PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Data.SQLite" Version="1.0.118" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Ancestor.Core\AncestorEx.Core.csproj" />
