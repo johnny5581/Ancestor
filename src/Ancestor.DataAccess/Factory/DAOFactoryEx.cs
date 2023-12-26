@@ -107,6 +107,7 @@ namespace Ancestor.DataAccess.Factory
                     //    _daoCache = new OleDao(this);
                     //    break;
                     case DBObject.DataBase.SQLlite:
+                    case DBObject.DataBase.SQLite:
                         _daoCache = new SqliteDao(this);
                         break;
                     case DBObject.DataBase.MSSQL:

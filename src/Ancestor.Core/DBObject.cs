@@ -65,6 +65,7 @@ namespace Ancestor.Core
             Oracle,
             MSSQL,
             SQLlite,
+            SQLite,
             Access,
             MySQL,
             Sybase,
