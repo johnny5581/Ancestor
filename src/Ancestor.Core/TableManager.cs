@@ -17,6 +17,8 @@ namespace Ancestor.Core
             = new ConcurrentDictionary<PropertyInfo, bool>();
         private static readonly ConcurrentDictionary<Type, PropertyInfo[]> BrowsableProps
             = new ConcurrentDictionary<Type, PropertyInfo[]>();
+
+        public static Func<string, string> TableNameFactory { get; set; }
         public static string GetTableName(object value, bool raiseError = true)
         {
             if (value != null)
@@ -51,6 +53,8 @@ namespace Ancestor.Core
                 var attr = type.GetCustomAttributes(typeof(System.ComponentModel.DataAnnotations.Schema.TableAttribute), false).FirstOrDefault() as System.ComponentModel.DataAnnotations.Schema.TableAttribute;
                 name = attr != null ? attr.Name.ToUpper() : type.Name.ToUpper();
 #endif
+                if (TableNameFactory != null)
+                    name = TableNameFactory(name);
                 TableNames.AddOrUpdate(type, name, (k, v) => name);
             }
             return name;

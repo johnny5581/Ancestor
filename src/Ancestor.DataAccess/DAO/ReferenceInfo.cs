@@ -1,4 +1,5 @@
-﻿using Microsoft.SqlServer.Server;
+﻿using Ancestor.Core;
+using Microsoft.SqlServer.Server;
 using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
@@ -90,7 +91,7 @@ namespace Ancestor.DataAccess.DAO
                 var tuple = _referenceMap.First().Value;
                 var name = tuple.ReferenceName;
                 if (name == null)
-                    name = tuple.SourceType.Name;
+                    name = TableManager.GetName(tuple.SourceType);
                 return name;                
             }
             return null;
