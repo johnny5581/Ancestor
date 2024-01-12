@@ -179,7 +179,7 @@ namespace Ancestor.DataAccess.DAO
                         actualRows = ((DbActionResult<int>)data).Result;
 
                     if (actualRows != exceptRows)
-                        throw new AncestorException(90001, "effect rows(" + data + ") not except(" + exceptRows + ")");
+                        throw new AncestorException(90001, "effect rows(" + actualRows + ") not except(" + exceptRows + ")");
                 }
                 return resultFactory(data);
             }
@@ -189,7 +189,7 @@ namespace Ancestor.DataAccess.DAO
                 var innerException = ex.InnerException;
                 if (RaiseException)
                     throw innerException;
-                var result = (TResult)Activator.CreateInstance(typeof(TResult), innerException);
+                var result = (TResult)Activator.CreateInstance(typeof(TResult), innerException ?? ex);
                 result.QueryParameter = QueryParameter.Parse(ex.Data["QueryParameter"]);
                 return result;
             }
