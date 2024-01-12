@@ -177,8 +177,8 @@ namespace Ancestor.DataAccess.DAO
                         actualRows = (int)data;
                     else if (data is DbActionResult<int>)
                         actualRows = ((DbActionResult<int>)data).Result;
-
-                    if (actualRows != exceptRows)
+                    
+                    if (actualRows != exceptRows && !AncestorGlobalOptions.GetBoolean("option.exec_ignore") && !AncestorGlobalOptions.GetBoolean("option.exec_conf"))
                         throw new AncestorException(90001, "effect rows(" + actualRows + ") not except(" + exceptRows + ")");
                 }
                 return resultFactory(data);
