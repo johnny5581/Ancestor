@@ -431,6 +431,55 @@ namespace Ancestor.DataAccess.DAO
             }, ReturnAncestorResult);
         }
 
+        public AncestorExecuteResult CountFromModel(object model, Type dataType, object origin, AncestorOption option)
+        {
+            return TryCatch(() =>
+            {
+                var dbParameters = new DBParameterCollection();
+                var reference = GetReferenceInfo(model, null, dataType, origin);
+                var selector = "Count(*)";
+                var tableName = reference.GetReferenceName();
+                var ignoreNull = true;
+                if (option != null)
+                    ignoreNull = option.IgnoreNullCondition;
+                var where = CreateWhereCommand(model, tableName, ignoreNull, dbParameters);
+                var opt = CreateDbOptions(option);
+                var sql = string.Format("Select {0} From {1} {2}", selector, tableName, where);
+                return DbAction.ExecuteScalar(sql, dbParameters, opt);               
+            }, ReturnAncestorExecuteResult);
+        }
+        public AncestorExecuteResult CountFromLambda(LambdaExpression predicate, IDictionary<Type, object> proxyMap, AncestorOption option)
+        {
+            return TryCatch(() =>
+            {
+                var predicateParameterTypes = predicate == null ? new Type[0] : predicate.Parameters.Select(p => p.Type);
+                var parameterTypes = predicateParameterTypes.Distinct();
+                var reference = GetReferenceInfo(parameterTypes, proxyMap);
+
+                ExpressionResolver.ExpressionResolveResult predicateResult = null;
+                if (predicate != null)
+                {
+                    var resolver = CreateExpressionResolver(reference, null);
+                    predicateResult = resolver.Resolve(predicate);
+                }                
+                if (predicateResult == null)
+                    throw new ArgumentNullException("no predicate");
+
+
+                var selectorText = "Count(*)";
+                var tuples = predicateResult.Reference.GetStructs();
+                var tableText = string.Join(", ", tuples.Select(r => GetReferenceStructName(r)));
+
+                var whereText = predicateResult.Sql != null ? ("Where " + predicateResult.Sql) : "";
+                var sql = string.Format("Select {0} From {1} {2}", selectorText, tableText, whereText);
+                var dataType = predicateResult.Reference.GetReferenceType();
+                var opt = CreateDbOptions(option);
+                return DbAction.ExecuteScalar(sql, predicateResult.Parameters, opt);                
+            }, ReturnAncestorExecuteResult);
+        }
+
+
+
         public AncestorExecuteResult InsertEntity(object model, object origin, AncestorOption options)
         {
             return TryCatch(() =>

@@ -39,8 +39,11 @@ namespace Ancestor.DataAccess.DAO
         #region Query
         AncestorResult QueryFromSqlString(string sql, object parameter, Type dataType, bool firstOnly, AncestorOption option);
         AncestorResult QueryFromModel(object model, Type dataType, object origin, bool firstOnly, AncestorOrderOption orderOpt, AncestorOption option);
-        AncestorResult QueryFromLambda(LambdaExpression predicate, LambdaExpression selector, IDictionary<Type, object> proxyMap, bool firstOnly, AncestorOrderOption orderOpt, AncestorOption option);
+        AncestorResult QueryFromLambda(LambdaExpression predicate, LambdaExpression selector, IDictionary<Type, object> proxyMap, bool firstOnly, AncestorOrderOption orderOpt, AncestorOption option);        
         AncestorResult GroupFromLambda(LambdaExpression predicate, LambdaExpression selector, LambdaExpression groupBy, IDictionary<Type, object> proxyMap, AncestorOption option);
+
+        AncestorExecuteResult CountFromModel(object model, Type dataType, object origin, AncestorOption option);
+        AncestorExecuteResult CountFromLambda(LambdaExpression predicate, IDictionary<Type, object> proxyMap, AncestorOption option);
         #endregion
 
         #region Insert
