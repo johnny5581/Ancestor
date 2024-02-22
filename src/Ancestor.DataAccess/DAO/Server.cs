@@ -53,7 +53,11 @@ namespace Ancestor.DataAccess.DAO
 
             var serverTimeSql = internalDao.GetServerTime();
             var dummyTable = internalDao.GetDummyTable();
-            var res = dao.ExecuteScalar("Select " + serverTimeSql + " FROM " + dummyTable, null, null);
+            var sql = string.IsNullOrEmpty(dummyTable)
+                ? string.Format("Select {0}", serverTimeSql)
+                : string.Format("Select {0} From {1}", serverTimeSql, dummyTable);
+                
+            var res = dao.ExecuteScalar(sql, null, null);
             if (!res.IsSuccess)
             {
                 message = res.Message;

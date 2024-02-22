@@ -92,10 +92,7 @@ namespace Ancestor.DataAccess.DAO
         /// <summary>
         /// Dummy table name
         /// </summary>
-        public virtual string DummyTable
-        {
-            get { return "Dual"; }
-        }
+        public virtual string DummyTable { get; }
         /// <summary>
         /// Date time symbol
         /// </summary>

@@ -29,6 +29,10 @@ namespace Ancestor.DataAccess.DAO
         {
             get { return "Sysdate"; }
         }
+        public override string DummyTable
+        {
+            get { return "Dual"; }
+        }
 
 
         protected override IDbAction CreateDbAction(DBObject dbObject)
@@ -38,14 +42,14 @@ namespace Ancestor.DataAccess.DAO
                 case DBObject.DataBase.Oracle:
                     return new OracleAction(this);
                 case DBObject.DataBase.ManagedOracle:
-                    return new ManagedOracleAction(this);                
+                    return new ManagedOracleAction(this);
                 default:
                     return null;
             }
         }
         protected override IDbAction CreateDbAction(string connStr)
         {
-            if(Factory.Arguments != null && "managed".Equals(Factory.Arguments.ElementAtOrDefault(0), StringComparison.OrdinalIgnoreCase))
+            if (Factory.Arguments != null && "managed".Equals(Factory.Arguments.ElementAtOrDefault(0), StringComparison.OrdinalIgnoreCase))
                 return new ManagedOracleAction(this);
             else
                 return new OracleAction(this);
@@ -60,7 +64,7 @@ namespace Ancestor.DataAccess.DAO
         public override string ConvertFromHardWord(string name, HardWordAttribute attribute)
         {
             return string.Format("RawToHex({0})", name);
-        }        
+        }
         public override string ConvertToHardWord(string name, HardWordAttribute attribute)
         {
             if (attribute.IgnorePrefix)
@@ -81,6 +85,9 @@ namespace Ancestor.DataAccess.DAO
         protected override string GetSequenceCommand(string name, bool moveToNext)
         {
             var obj = string.Format("{0}.{1}", name, moveToNext ? "NEXTVAL" : "CURRVAL");
+            var dummy = DummyTable;
+            if (string.IsNullOrEmpty(dummy))
+                return string.Format("Select {0}", obj);
             return string.Format("Select {0} From {1}", obj, DummyTable);
         }
 
@@ -193,7 +200,7 @@ namespace Ancestor.DataAccess.DAO
                         Write("(+)");
                         break;
                     case SqlStatement.Joins.Left:
-                        Visit(left);                        
+                        Visit(left);
                         Write("=");
                         Visit(right);
                         Write("(+)");
@@ -202,7 +209,7 @@ namespace Ancestor.DataAccess.DAO
                         Visit(left);
                         Write("(+)");
                         Write("=");
-                        Visit(right);                        
+                        Visit(right);
                         break;
                 }
             }
