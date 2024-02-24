@@ -147,7 +147,7 @@ namespace Ancestor.DataAccess.DAO
                     return CreateDbAction((string)factory.Source);
                 case DAOFactoryEx.SourceMode.Connection:
                     return CreateDbAction((IDbConnection)factory.Source);
-                default:                    
+                default:
                     throw new InvalidOperationException("invalid factory mode:" + factory.Mode);
             }
         }
@@ -174,7 +174,7 @@ namespace Ancestor.DataAccess.DAO
                         actualRows = (int)data;
                     else if (data is DbActionResult<int>)
                         actualRows = ((DbActionResult<int>)data).Result;
-                    
+
                     if (actualRows != exceptRows && !AncestorGlobalOptions.GetBoolean("option.exec_ignore") && !AncestorGlobalOptions.GetBoolean("option.exec_conf"))
                         throw new AncestorException(90001, "effect rows(" + actualRows + ") not except(" + exceptRows + ")");
                 }
@@ -207,10 +207,12 @@ namespace Ancestor.DataAccess.DAO
             catch (AncestorException ex)
             {
                 var code = ex.Code;
-                var innerException = ex.InnerException;
+                var exception = ex.IsUnknwonCode
+                    ? ex.InnerException
+                    : ex; ;
                 if (RaiseException)
-                    throw innerException;
-                var result = (TResult)Activator.CreateInstance(typeof(TResult), innerException);
+                    throw exception;
+                var result = (TResult)Activator.CreateInstance(typeof(TResult), exception);
                 result.QueryParameter = QueryParameter.Parse(ex.Data["QueryParameter"]);
                 return result;
             }
@@ -442,7 +444,7 @@ namespace Ancestor.DataAccess.DAO
                 var where = CreateWhereCommand(model, tableName, ignoreNull, dbParameters);
                 var opt = CreateDbOptions(option);
                 var sql = string.Format("Select {0} From {1} {2}", selector, tableName, where);
-                return DbAction.ExecuteScalar(sql, dbParameters, opt);               
+                return DbAction.ExecuteScalar(sql, dbParameters, opt);
             }, ReturnAncestorExecuteResult);
         }
         public AncestorExecuteResult CountFromLambda(LambdaExpression predicate, IDictionary<Type, object> proxyMap, AncestorOption option)
@@ -458,7 +460,7 @@ namespace Ancestor.DataAccess.DAO
                 {
                     var resolver = CreateExpressionResolver(reference, null);
                     predicateResult = resolver.Resolve(predicate);
-                }                
+                }
                 if (predicateResult == null)
                     throw new ArgumentNullException("no predicate");
 
@@ -471,7 +473,7 @@ namespace Ancestor.DataAccess.DAO
                 var sql = string.Format("Select {0} From {1} {2}", selectorText, tableText, whereText);
                 var dataType = predicateResult.Reference.GetReferenceType();
                 var opt = CreateDbOptions(option);
-                return DbAction.ExecuteScalar(sql, predicateResult.Parameters, opt);                
+                return DbAction.ExecuteScalar(sql, predicateResult.Parameters, opt);
             }, ReturnAncestorExecuteResult);
         }
 
@@ -977,39 +979,124 @@ namespace Ancestor.DataAccess.DAO
         {
             var fieldMap = new Dictionary<string, string>();
             var referenceType = info.GetReferenceType();
-            IDictionary<string, object> map = model as IDictionary<string, object>;
+            var map = model as IDictionary<string, object>;
+            var nullModel = model as DBNullModel;
             if (map != null)
             {
-                if (referenceType != null && typeof(IDictionary<string, object>).IsAssignableFrom(referenceType))
+                if (referenceType != null)
                 {
-                    foreach (var key in map.Keys)
+                    if (typeof(IDictionary<string, object>).IsAssignableFrom(referenceType))
                     {
-                        var value = map[key];
-                        var fname = key;
-                        if (value != null)
+                        foreach (var key in map.Keys)
                         {
-                            var parameter = CreateParameter(value, fname, true, UpdateParameterPrefix);
-                            fieldMap.Add(fname, parameter.ValueName);
-                            if (!parameter.IsSysDateConverted)
-                                BindParameter(parameters, parameter);
+                            var value = map[key];
+                            var fname = key;
+                            if (value != null)
+                            {
+                                var parameter = CreateParameter(value, fname, true, UpdateParameterPrefix);
+                                fieldMap.Add(fname, parameter.ValueName);
+                                if (!parameter.IsSysDateConverted)
+                                    BindParameter(parameters, parameter);
+                            }
+                            else
+                            {
+                                fieldMap.Add(fname, "NULL");
+                            }
                         }
-                        else if (mode == UpdateMode.All)
+                    }
+                    else
+                    {
+                        var properties = TableManager.GetBrowsableProperties(referenceType);
+                        foreach (var key in map.Keys)
                         {
-                            fieldMap.Add(fname, "NULL");
+                            var value = map[key];
+                            var fname = key;
+                            var property = properties.FirstOrDefault(p => string.Equals(p.Name, fname, StringComparison.OrdinalIgnoreCase));
+                            HardWordAttribute hd = null;
+                            if (property != null)
+                                hd = HardWordManager.Get(property);
+
+                            if (value != null)
+                            {
+                                var parameter = CreateParameter(value, fname, true, UpdateParameterPrefix, null, hd);
+                                fieldMap.Add(fname, parameter.ValueName);
+                                if (!parameter.IsSysDateConverted)
+                                    BindParameter(parameters, parameter);
+
+                            }
+                            else
+                            {
+                                fieldMap.Add(fname, "NULL");
+                            }
+                        }
+                    }
+                }
+                else
+                    throw new InvalidOperationException("no reference info");
+            }
+            else if (nullModel != null)
+            {
+                if (referenceType != null)
+                {
+                    if (nullModel.ModelType != referenceType)
+                    {
+                        var properties = TableManager.GetBrowsableProperties(referenceType);
+                        var srcProperties = nullModel.ModelType.GetProperties();
+                        foreach (var property in properties)
+                        {
+                            var srcProperty = srcProperties.FirstOrDefault(r => r.Name == property.Name && r.PropertyType == property.PropertyType);
+                            if (srcProperty != null)
+                            {
+                                var value = srcProperty.GetValue(nullModel.Model, null);
+                                var fname = TableManager.GetName(property);
+                                var hd = HardWordManager.Get(property);
+
+                                if (value != null)
+                                {
+                                    var parameter = CreateParameter(value, fname, true, UpdateParameterPrefix, null, hd);
+                                    fieldMap.Add(fname, parameter.ValueName);
+                                    if (!parameter.IsSysDateConverted)
+                                        BindParameter(parameters, parameter);
+
+                                }
+                                else if (mode == UpdateMode.All || nullModel.IsNull(srcProperty.Name))
+                                {
+                                    fieldMap.Add(fname, "NULL");
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        var properties = TableManager.GetBrowsableProperties(referenceType);
+                        foreach (var property in properties)
+                        {
+                            var value = property.GetValue(nullModel.Model, null);
+                            var fname = TableManager.GetName(property);
+                            var hd = HardWordManager.Get(property);
+
+                            if (value != null)
+                            {
+                                var parameter = CreateParameter(value, fname, true, UpdateParameterPrefix, null, hd);
+                                fieldMap.Add(fname, parameter.ValueName);
+                                if (!parameter.IsSysDateConverted)
+                                    BindParameter(parameters, parameter);
+                            }
+                            else if (mode == UpdateMode.All || nullModel.IsNull(property.Name))
+                            {
+                                fieldMap.Add(fname, "NULL");
+                            }
                         }
                     }
                 }
                 else
                 {
-                    var properties = TableManager.GetBrowsableProperties(referenceType);
-                    foreach (var key in map.Keys)
+                    var properties = TableManager.GetBrowsableProperties(nullModel.ModelType);
+                    foreach (var property in properties)
                     {
-                        var value = map[key];
-                        var fname = key;
-                        var property = properties.FirstOrDefault(p => string.Equals(p.Name, fname, StringComparison.OrdinalIgnoreCase));
-                        HardWordAttribute hd = null;
-                        if (property != null)
-                            hd = HardWordManager.Get(property);
+                        var value = property.GetValue(nullModel.Model, null);
+                        var fname = TableManager.GetName(property);
+                        var hd = HardWordManager.Get(property);
 
                         if (value != null)
                         {
@@ -1018,7 +1105,7 @@ namespace Ancestor.DataAccess.DAO
                             if (!parameter.IsSysDateConverted)
                                 BindParameter(parameters, parameter);
                         }
-                        else if (mode == UpdateMode.All)
+                        else if (mode == UpdateMode.All || nullModel.IsNull(property.Name))
                         {
                             fieldMap.Add(fname, "NULL");
                         }
@@ -1046,6 +1133,7 @@ namespace Ancestor.DataAccess.DAO
                                 fieldMap.Add(fname, parameter.ValueName);
                                 if (!parameter.IsSysDateConverted)
                                     BindParameter(parameters, parameter);
+
                             }
                             else if (mode == UpdateMode.All)
                             {
@@ -1249,7 +1337,11 @@ namespace Ancestor.DataAccess.DAO
         private static Tuple<Type, Type, string> CreateReferenceTuple(object model, Type modelType, Type dataType, object origin)
         {
             if (modelType == null && model != null)
+            {                
                 modelType = model.GetType();
+                if (typeof(DBNullModel).IsAssignableFrom(modelType))
+                    modelType = ((DBNullModel)model).ModelType;
+            }
             var originType = origin as Type;
             var originName = origin as string;
             //var refType = GetReferenceType(modelType, dataType, originType);
@@ -2203,19 +2295,19 @@ namespace Ancestor.DataAccess.DAO
             #region Members
             protected override Expression VisitMember(MemberExpression node)
             {
-                if (node.Expression != null)                    
+                if (node.Expression != null)
                 {
                     if (node.Expression.NodeType == ExpressionType.Parameter)
                     {
                         ProcessParameterMember(node.Expression.Type, node.Member);
                         return node;
                     }
-                    else if(node.Expression.NodeType == ExpressionType.Constant)
+                    else if (node.Expression.NodeType == ExpressionType.Constant)
                     {
                         ProcessConstantMember(((ConstantExpression)node.Expression).Value, node.Member);
                         return node;
                     }
-                    else if(TryResolveValue(node.Expression, out object parentValue))
+                    else if (TryResolveValue(node.Expression, out object parentValue))
                     {
                         ProcessConstantMember(parentValue, node.Member);
                         return node;
@@ -2231,7 +2323,7 @@ namespace Ancestor.DataAccess.DAO
                     ProcessDateTimeMemberAccess(node);
                     return node;
                 }
-                
+
                 ProcessMemberAccess(node);
                 //switch (node.Expression.NodeType)
                 //{
