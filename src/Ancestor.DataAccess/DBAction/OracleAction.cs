@@ -54,11 +54,14 @@ namespace Ancestor.DataAccess.DBAction
                 { "REFCURSOR", OracleDbType.RefCursor },
                 { "CLOB", OracleDbType.Clob },
                 { "LONG", OracleDbType.Long },
-                { "LONGRAW", OracleDbType.LongRaw },                
+                { "LONGRAW", OracleDbType.LongRaw },
+                { "BLOB", OracleDbType.Blob },
+                { "BFILE", OracleDbType.BFile },
            };
         public OracleAction(DataAccessObjectBase dao) : base(dao)
         {
         }
+
         #region Protected / Private
         protected override IDbDataAdapter CreateAdapter(IDbCommand command)
         {

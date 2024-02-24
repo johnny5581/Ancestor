@@ -50,6 +50,8 @@ namespace Ancestor.DataAccess.DBAction
                 { "CLOB", OracleDbType.Clob },
                 { "LONG", OracleDbType.Long },
                 { "LONGRAW", OracleDbType.LongRaw },
+                { "BLOB", OracleDbType.Blob },
+                { "BFILE", OracleDbType.BFile },
            };
         private static readonly string ConnectionStringPattern = @"(DESCRIPTION = 
     (ADDRESS_LIST = 
@@ -327,7 +329,7 @@ namespace Ancestor.DataAccess.DBAction
 
         protected override SqlMapper.IDynamicParameters CreateDynamicParameters(IEnumerable<DBParameter> parameters)
         {
-            var dynamicParameters = new OracleDynamicParameters();
+            var dynamicParameters = new ManagedOracleDynamicParameters();
             OracleDbType dbType;
             foreach (var p in parameters)
             {
@@ -560,7 +562,7 @@ namespace Ancestor.DataAccess.DBAction
 
 
 
-        private class OracleDynamicParameters : SqlMapper.IDynamicParameters
+        private class ManagedOracleDynamicParameters : SqlMapper.IDynamicParameters
         {
             private readonly DynamicParameters _dynamicParameters = new DynamicParameters();
 

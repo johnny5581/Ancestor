@@ -69,5 +69,19 @@ namespace Ancestor.DataAccess.DBAction
             p.Direction = parameter.ParameterDirection;
             return p;
         }
+
+        protected override AncestorException CreateAncestorException(Exception innerException, QueryParameter parameter)
+        {
+            if(innerException is SQLiteException)
+            {
+                var exception = innerException as SQLiteException;
+                switch(exception.ErrorCode)
+                {
+                    case 19:
+                        return CreateAncestorException(AncestorException.CodeUniqueConstraintDuplicated, "unique constraint duplicated", exception, parameter);                        
+                }
+            }
+            return base.CreateAncestorException(innerException, parameter);
+        }
     }
 }
