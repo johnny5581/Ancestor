@@ -32,12 +32,22 @@ namespace Ancestor.Core
         public static IList<Tuple<T1, T2>> ResultList<T1, T2>(this IAncestorResult result, Func<Tuple<T1, T2>> objectFactory = null, ResultListMode? mode = null, Encoding hardwordEncoding = null)
         {
             var m = mode ?? (objectFactory != null ? ResultListMode.Value : ResultListMode.All);
-            return (IList<Tuple<T1, T2>>)AncestorResultHelper.ResultList(result, new Type[] { typeof(T1), typeof(T2) }, objectFactory, m, hardwordEncoding);
+            return (IList<Tuple<T1, T2>>)AncestorResultHelper.ResultList(result, new Type[] { typeof(T1), typeof(T2) }, objectFactory, m, hardwordEncoding, true);
         }
         public static Tuple<T1, T2> ResultFirst<T1, T2>(this IAncestorResult result, Func<Tuple<T1, T2>> objectFactory = null, ResultListMode? mode = null, Encoding hardwordEncoding = null)
         {
             var m = mode ?? (objectFactory != null ? ResultListMode.Value : ResultListMode.All);
-            return (Tuple<T1, T2>)AncestorResultHelper.ResultFirst(result, new Type[] { typeof(T1), typeof(T2) }, objectFactory, m, hardwordEncoding);
+            return (Tuple<T1, T2>)AncestorResultHelper.ResultFirst(result, new Type[] { typeof(T1), typeof(T2) }, objectFactory, m, hardwordEncoding, true);
+        }
+        public static IList<object[]> ResultList(this IAncestorResult result, Type[] daatTypes, ResultListMode? mode = null, Encoding hardwordEncoding = null)
+        {
+            var m = mode ?? ResultListMode.All;
+            return (IList<object[]>)AncestorResultHelper.ResultList(result, daatTypes, null, m, hardwordEncoding, false);
+        }
+        public static object[] ResultFirst(this IAncestorResult result, Type[] daatTypes, ResultListMode? mode = null, Encoding hardwordEncoding = null)
+        {
+            var m = mode ?? ResultListMode.All;
+            return (object[])AncestorResultHelper.ResultFirst(result, daatTypes, null, m, hardwordEncoding, false);
         }
         #endregion
 
@@ -55,7 +65,7 @@ namespace Ancestor.Core
 
         public static T ThrowIfError<T>(this T result) where T : IAncestorResult
         {
-            if(!result.IsSuccess)
+            if (!result.IsSuccess)
             {
                 if (result.Exception != null)
                     throw result.Exception;

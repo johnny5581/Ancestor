@@ -28,9 +28,9 @@ namespace Ancestor.Core
             var list = InternalResultList(result, dataType, objectFactory, true, mode, hardwordEncoding);
             return list.Count == 0 ? null : list[0];
         }
-        public static object ResultFirst(IAncestorResult result, Type[] dataTypes, Delegate objectFactory, ResultListMode mode, Encoding hardwordEncoding)
+        public static object ResultFirst(IAncestorResult result, Type[] dataTypes, Delegate objectFactory, ResultListMode mode, Encoding hardwordEncoding, bool useTuple)
         {
-            var list = InternalResultList(result, dataTypes, objectFactory, true, mode, hardwordEncoding);
+            var list = InternalResultList(result, dataTypes, objectFactory, true, mode, hardwordEncoding, useTuple);
             return list.Count == 0 ? null : list[0];
         }
         public static object ResultScalar(IAncestorResult result)
@@ -96,9 +96,9 @@ namespace Ancestor.Core
         {
             return InternalResultList(result, dataType, objectFactory, false, mode, hardwordEncoding, start, limit);
         }
-        public static IList ResultList(IAncestorResult result, Type[] dataTypes, Delegate objectFactory, ResultListMode mode, Encoding hardwordEncoding, int start = 0, int limit = 0)
+        public static IList ResultList(IAncestorResult result, Type[] dataTypes, Delegate objectFactory, ResultListMode mode, Encoding hardwordEncoding, bool useTuple, int start = 0, int limit = 0)
         {
-            return InternalResultList(result, dataTypes, objectFactory, false, mode, hardwordEncoding, start, limit);
+            return InternalResultList(result, dataTypes, objectFactory, false, mode, hardwordEncoding, useTuple, start, limit);
         }
         internal static IList InternalResultList(IAncestorResult result, Type dataType, Delegate objectFactory, bool firstOnly, ResultListMode mode, Encoding hardwordEncoding, int start = 0, int limit = 0)
         {
@@ -158,12 +158,20 @@ namespace Ancestor.Core
             }
             return list;
         }
-        internal static IList InternalResultList(IAncestorResult result, Type[] dataTypes, Delegate objectFactory, bool firstOnly, ResultListMode mode, Encoding hardwordEncoding, int start = 0, int limit = 0)
-        {
+        internal static IList InternalResultList(IAncestorResult result, Type[] dataTypes, Delegate objectFactory, bool firstOnly, ResultListMode mode, Encoding hardwordEncoding, bool useTuple, int start = 0, int limit = 0)
+        {            
             var baseTupleType = Type.GetType("System.Tuple`" + dataTypes.Length);
             var tupleType = baseTupleType.MakeGenericType(dataTypes);
-            IList list = Activator.CreateInstance(typeof(List<>).MakeGenericType(tupleType)) as IList;
-
+            IList list;
+            if (useTuple)
+            {
+                
+                list = Activator.CreateInstance(typeof(List<>).MakeGenericType(tupleType)) as IList;
+            }
+            else
+            {
+                list = Activator.CreateInstance(typeof(List<>).MakeGenericType(typeof(object).MakeArrayType())) as IList;
+            }
             switch (result.DataType)
             {
                 case AncestorResultDataType.List:
@@ -193,7 +201,9 @@ namespace Ancestor.Core
                                         map.Add(dataTypes[i], propertyMap);
                                     args[i] = ins;
                                 }
-                                return Activator.CreateInstance(tupleType, args);
+                                if(useTuple)
+                                    return Activator.CreateInstance(tupleType, args);
+                                return args;
                             }, start, limit);
                         foreach (var item in itemList)
                         {
@@ -201,7 +211,6 @@ namespace Ancestor.Core
                             if (firstOnly)
                                 break;
                         }
-
                     }
                     break;
                 case AncestorResultDataType.DataTable:
