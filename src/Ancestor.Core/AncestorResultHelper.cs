@@ -223,8 +223,10 @@ namespace Ancestor.Core
                     var enumerators = listArray.Select(r => r.GetEnumerator()).ToArray();
 
                     while (enumerators.All(r => r.MoveNext()))
-                    {
-                        var listItem = Activator.CreateInstance(tupleType, enumerators.Select(r => r.Current).ToArray());
+                    {                        
+                        var listItem = useTuple 
+                            ? Activator.CreateInstance(tupleType, enumerators.Select(r => r.Current).ToArray())
+                            : enumerators.Select(r => r.Current).ToArray();
                         list.Add(listItem);
                     }
                     break;
