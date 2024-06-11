@@ -1835,7 +1835,7 @@ namespace Ancestor.DataAccess.DAO
                 {
                     return VisitCollectionStaticMethodCall(node);
                 }
-                else if (node.Method.DeclaringType == typeof(SqlStatement))
+                else if (node.Method.DeclaringType.Name == "SqlStatement") // for all method from SqlStatement
                 {
                     return VisitSqlStatementMethodCall(node);
                 }
