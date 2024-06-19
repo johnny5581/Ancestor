@@ -331,12 +331,17 @@ namespace Ancestor.DataAccess.DAO
                 var selector = CreateSelectCommand(reference);
                 var tableName = reference.GetReferenceName();
                 var ignoreNull = true;
+                var distinct = false;
                 if (option != null)
+                {
                     ignoreNull = option.IgnoreNullCondition;
+                    distinct = option.Distinct;
+                }
                 var where = CreateWhereCommand(model, tableName, ignoreNull, dbParameters);
                 var order = CreateOrderCommand(orderOpt);
                 var opt = CreateDbOptions(option);
-                var sql = string.Format("Select {0} From {1} {2} {3}", selector, tableName, where, order);
+                var distinctText = distinct ? "Distinct" : "";
+                var sql = string.Format("Select {4} {0} From {1} {2} {3}", selector, tableName, where, order, distinctText);
                 return InternalQuery(sql, dbParameters, dataType, firstOnly, opt);
             }, ReturnAncestorResult);
         }
@@ -375,9 +380,14 @@ namespace Ancestor.DataAccess.DAO
                     selectorText = CreateSelectCommand(mergeResult.Reference);
                 }
 
+                var distinct = false;
+                if (option != null)
+                    distinct = option.Distinct;
+
                 var whereText = mergeResult.Sql2 != null ? ("Where " + mergeResult.Sql2) : "";
                 var orderText = CreateOrderCommand(orderOpt, reference);
-                var sql = string.Format("Select {0} From {1} {2} {3}", selectorText, tableText, whereText, orderText);
+                var distinctText = distinct ? "Distinct" : "";
+                var sql = string.Format("Select {4} {0} From {1} {2} {3}", selectorText, tableText, whereText, orderText, distinctText);
                 var dataType = selector == null ? mergeResult.Reference.GetReferenceType() : null;
                 var opt = CreateDbOptions(option);
                 return InternalQuery(sql, mergeResult.Parameters, dataType, firstOnly, opt);

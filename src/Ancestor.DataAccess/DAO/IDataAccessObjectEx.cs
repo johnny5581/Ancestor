@@ -88,6 +88,10 @@ namespace Ancestor.DataAccess.DAO
         /// Ignore null condition in predicate
         /// </summary>
         public bool IgnoreNullCondition { get; set; }
+        /// <summary>
+        /// distinct results
+        /// </summary>
+        public bool Distinct { get; set; }
     }
     /// <summary>
     /// DataAccessObject query order options
