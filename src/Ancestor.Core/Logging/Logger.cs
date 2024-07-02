@@ -1,35 +1,31 @@
 ﻿/**
  * History:
- *   [3] 20210930
- *     新增log4net工具包
+ *   [12] 20240702
+ *     調整appconf存取方式
  *     
  **/
 
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Ancestor.Core.Logging
 {
-    [System.Diagnostics.MonitoringDescription("ILogger")]
-    public interface ILogger
+    /// #src#
+    internal interface ILogger
     {
         void WriteLog(TraceEventType level, string message);
     }
 
-    [System.Diagnostics.MonitoringDescription("Logger")]
-    public static class Logger
+    /// #src#
+    internal static class Logger
     {
         private static ILogFactory _instance;
-        private const int Version = 3;
+        public const int Version = 12;
         private static string _logName;
         private static string _logType;
         public static string LogType
@@ -57,16 +53,16 @@ namespace Ancestor.Core.Logging
                 {
                     // 沒有工廠
                     _instance = new LogFactory();
-                    AppDomain.CurrentDomain.SetData("Logger", instance);
+                    AppDomain.CurrentDomain.SetData("Logger", _instance);
                 }
                 else
                 {
                     // 版本檢查
-                    var versionMember = instance.GetType().GetField("Version", BindingFlags.NonPublic | BindingFlags.Static);
+                    var versionMember = instance.GetType().GetProperty("Version", BindingFlags.Public | BindingFlags.Instance);
                     var obsoleted = false;
                     if (versionMember == null)
                         obsoleted = true;
-                    else if ((int)versionMember.GetValue(instance) < Version)
+                    else if ((int)versionMember.GetValue(instance, null) < Version)
                         obsoleted = true;
 
                     if (obsoleted)
@@ -115,6 +111,7 @@ namespace Ancestor.Core.Logging
         {
             return new Instance(name);
         }
+        #region Basic 
         public static void Critical(this ILogger logger, string message, params object[] args)
         {
             logger.WriteLog(TraceEventType.Critical, GetMessage(message, args));
@@ -135,6 +132,36 @@ namespace Ancestor.Core.Logging
         {
             logger.WriteLog(TraceEventType.Verbose, GetMessage(message, args));
         }
+        #endregion Basic
+
+        #region Condition 
+        public static void WriteLogIf(this ILogger logger, TraceEventType eventType, bool condition, string message)
+        {
+            if (condition)
+                logger.WriteLog(eventType, message);
+        }
+
+        public static void DebugIf(this ILogger logger, bool condition, string message, params object[] args)
+        {
+            if (condition)
+                logger.Debug(message, args);
+        }
+        public static void InformationIf(this ILogger logger, bool condition, string message, params object[] args)
+        {
+            if (condition)
+                logger.Information(message, args);
+        }
+        public static void WarningIf(this ILogger logger, bool condition, string message, params object[] args)
+        {
+            if (condition)
+                logger.Warning(message, args);
+        }
+        public static void ErrorIf(this ILogger logger, bool condition, string message, params object[] args)
+        {
+            if (condition)
+                logger.Error(message, args);
+        }
+        #endregion Condition
         private class Instance : ILogger
         {
             private readonly string _name;
@@ -157,8 +184,11 @@ namespace Ancestor.Core.Logging
         }
         abstract class BasicLogFactory : ILogFactory, IDisposable
         {
+            public BasicLogFactory()
+            {
+                Version = Logger.Version;
+            }
             protected bool _disposed;
-            public static readonly int Version = Logger.Version;
             public virtual void Obsolete(object newInstance)
             {
                 // 將這個實例的物件取代為 Proxy
@@ -170,6 +200,7 @@ namespace Ancestor.Core.Logging
 
             public abstract void WriteLog(string name, int level, string message);
 
+            public int Version { get; }
             #region Dispose
             public void Dispose()
             {
@@ -327,106 +358,87 @@ namespace Ancestor.Core.Logging
 
             private void InitializeAssembly()
             {
-                var libPath = System.Configuration.ConfigurationManager.AppSettings["logger.log4net.dll"];
-                if (string.IsNullOrEmpty(libPath))
-                    libPath = "log4net.dll";
-
-                // 使用資源檔案來設定
-                if (libPath.StartsWith("res://"))
-                {
-                    var resName = libPath.Substring(6);
-                    Assembly asm = null;
-                    if (resName.Contains(";"))
+                _assembly = AppConfigHelper.Get("logger.log4net.dll", "logger.log4net.dll.resolve",
+                    (asm, res, type) =>
                     {
-                        var tmp = resName.Split(';');
-                        resName = tmp[0];
-                        asm = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(r => string.Equals(r.GetName().Name, tmp[1], StringComparison.OrdinalIgnoreCase));
-                    }
-                    var resolveTypeSetting = System.Configuration.ConfigurationManager.AppSettings["logger.log4net.dll.resolve"];
-                    int resolveType;
-                    int.TryParse(resolveTypeSetting, out resolveType);
-                    var lib = LogResManager.GetResourceBytes(asm, resName, throwOnError: false, nameResolveType: resolveType);
-                    if (lib != null)
-                        _assembly = Assembly.Load(lib);
-                }
-                else if (System.IO.File.Exists(libPath))
-                {
-                    libPath = System.IO.Path.GetFullPath(libPath);
-                    _assembly = Assembly.LoadFile(libPath);
-                }
+                        var lib = LogResManager.GetResourceBytes(asm, res, throwOnError: false, nameResolveType: type);
+                        if (lib != null)
+                            return Assembly.Load(lib);
+                        return null;
+                    },
+                    (name) =>
+                    {
+                        if (name.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)) // 檔案
+                        {
+                            var libPath = System.IO.Path.GetFullPath(name);
+                            if (System.IO.File.Exists(libPath))
+                                return Assembly.LoadFile(libPath);
+                            var libFolder = System.IO.Path.GetDirectoryName(typeof(LogResManager).Assembly.Location);
+                            libPath = System.IO.Path.Combine(libFolder, name);
+                            if (System.IO.File.Exists(libPath))
+                                return Assembly.LoadFile(libPath);
+                        }
+                        // 非檔案類，嘗試直接載入
+                        return AppDomain.CurrentDomain.Load(name);
+                    });
+
                 if (_assembly == null)
                     throw new NullReferenceException("no log4net dll found");
             }
             private void InitializeConfiguration()
             {
-                var confPath = System.Configuration.ConfigurationManager.AppSettings["logger.log4net.conf"];
-                var flgConf = false;
-                // 從config讀取設定
-                if (!string.IsNullOrEmpty(confPath))
-                {
-                    var configuratorType = _assembly.GetType("log4net.Config.XmlConfigurator");
-                    // 使用資源檔案來設定
-                    if (confPath.StartsWith("res://"))
+                var configuratorType = _assembly.GetType("log4net.Config.XmlConfigurator");
+                var flgConf = AppConfigHelper.Get("logger.log4net.conf", "logger.log4net.conf.resolve",
+                    (asm, res, type) =>
                     {
-                        var resName = confPath.Substring(6);
-                        Assembly asm = null;
-                        if (resName.Contains(";"))
-                        {
-                            var tmp = resName.Split(';');
-                            resName = tmp[0];
-                            asm = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(r => string.Equals(r.GetName().Name, tmp[1], StringComparison.OrdinalIgnoreCase));
-                        }
-                        var resolveTypeSetting = System.Configuration.ConfigurationManager.AppSettings["logger.log4net.conf.resolve"];
-                        int resolveType;
-                        int.TryParse(resolveTypeSetting, out resolveType);
-                        var stream = LogResManager.GetResourceStream(asm, resName, throwOnError: false, nameResolveType: resolveType);
+                        var stream = LogResManager.GetResourceStream(asm, res, throwOnError: false, nameResolveType: type);
                         if (stream != null)
                         {
                             var mConfStream = configuratorType.GetMethod("Configure", BindingFlags.Public | BindingFlags.Static, null, new Type[] { typeof(Stream) }, null);
                             if (mConfStream != null)
                             {
                                 mConfStream.Invoke(null, new object[] { stream });
-                                flgConf = true;
+                                return true;
                             }
                         }
-                    }
-                    else if (System.IO.File.Exists(confPath))
+                        return false;
+                    },
+                    (name) =>
                     {
-                        confPath = System.IO.Path.GetFullPath(confPath);
-                        var file = new FileInfo(confPath);
-                        var mConfFile = configuratorType.GetMethod("Configure", BindingFlags.Public | BindingFlags.Static, null, new Type[] { typeof(System.IO.FileInfo) }, null);
-                        if (mConfFile != null)
+                        var paths = new List<string>();
+                        paths.Add(Path.GetFullPath(name));
+                        paths.Add(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, name));
+                        paths.Add(Path.GetFullPath("log4net.config"));
+                        paths.Add(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "log4net.config"));
+
+                        foreach (var confPath in paths)
                         {
-                            mConfFile.Invoke(null, new object[] { file });
-                            flgConf = true;
+                            if (File.Exists(confPath))
+                            {
+                                var fileInfo = new FileInfo(confPath);
+                                var mConfFile = configuratorType.GetMethod("Configure", BindingFlags.Public | BindingFlags.Static, null, new Type[] { typeof(FileInfo) }, null);
+                                if (mConfFile != null)
+                                {
+                                    mConfFile.Invoke(null, new object[] { fileInfo });
+                                    return true;
+                                }
+                            }
                         }
-                    }
-                }
-                else
+                        return false;
+                    });
+
+                if (!flgConf) // 無法設定
                 {
-                    // 嘗試找看看 log4net.config 的設定
-                    confPath = System.IO.Path.GetFullPath("log4net.config");
-                    if (System.IO.File.Exists(confPath))
+                    try
                     {
-                        var xmlConfiguratorType = _assembly.GetType("log4net.Config.XmlConfigurator");
-                        var file = new FileInfo(confPath);
-                        var mConfFile = xmlConfiguratorType.GetMethod("Configure", BindingFlags.Public | BindingFlags.Static, null, new Type[] { typeof(System.IO.FileInfo) }, null);
-                        if (mConfFile != null)
-                        {
-                            mConfFile.Invoke(null, new object[] { file });
-                            flgConf = true;
-                        }
-                    }
-                    else
-                    {
-                        var configuratorType = _assembly.GetType("log4net.Config.BasicConfigurator");
-                        var mConf = configuratorType.GetMethod("Configure", BindingFlags.Public | BindingFlags.Static, null, Type.EmptyTypes, null);
+                        var mConf = _assembly.GetType("log4net.Config.BasicConfigurator").GetMethod("Configure", BindingFlags.Public | BindingFlags.Static, null, Type.EmptyTypes, null);
                         if (mConf != null)
                         {
                             mConf.Invoke(null, new object[0]);
                             flgConf = true;
                         }
                     }
+                    catch { }
                 }
 
                 if (!flgConf)
@@ -459,6 +471,7 @@ namespace Ancestor.Core.Logging
         private class LogFactory : BasicLogFactory
         {
             private List<LogHandler> _handlers = new List<LogHandler>();
+
             public LogFactory()
             {
                 string[] configLoggerTypes = null;
@@ -488,7 +501,6 @@ namespace Ancestor.Core.Logging
                 {
                     _handlers.Add(new Log4NetHandler());
                 }
-
             }
             public override void WriteLog(string name, int level, string message)
             {
@@ -588,7 +600,74 @@ namespace Ancestor.Core.Logging
             }
             #endregion
         }
+        internal static class AppConfigHelper
+        {
+            private const string PREF_RES = "res://";
 
+            public static T Resolve<T>(string value, Func<Assembly, string, int, T> resResolver, Func<string, T> fileResolver)
+            {
+                if (string.IsNullOrEmpty(value))
+                    return default(T);
+                else if (value.StartsWith(PREF_RES, StringComparison.OrdinalIgnoreCase))
+                {
+                    var resName = value.Substring(PREF_RES.Length);
+                    Assembly asm = null;
+                    if (resName.Contains(";"))
+                    {
+                        var tmp = resName.Split(';');
+                        resName = tmp[0];
+                        asm = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(r => string.Equals(r.GetName().Name, tmp[1], StringComparison.OrdinalIgnoreCase));
+                    }
+                    int resType = 0;
+                    if (resName.Contains(','))
+                    {
+                        var tmp = resName.Split(',');
+                        resName = tmp[0];
+                        int.TryParse(tmp[1], out resType);
+                    }
+                    return resResolver(asm, resName, resType);
+                }
+                else
+                {
+                    return fileResolver(value);
+                }
+            }
+            public static T Resolve<T>(string value, int resType, Func<Assembly, string, int, T> resResolver, Func<string, T> fileResolver)
+            {
+                if (string.IsNullOrEmpty(value))
+                    return default(T);
+                else if (value.StartsWith(PREF_RES, StringComparison.OrdinalIgnoreCase))
+                {
+                    var resName = value.Substring(PREF_RES.Length);
+                    Assembly asm = null;
+                    if (resName.Contains(";"))
+                    {
+                        var tmp = resName.Split(';');
+                        resName = tmp[0];
+                        asm = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(r => string.Equals(r.GetName().Name, tmp[1], StringComparison.OrdinalIgnoreCase));
+                    }
+                    return resResolver(asm, resName, resType);
+                }
+                else
+                {
+                    return fileResolver(value);
+                }
+            }
+            public static T Get<T>(string key, Func<Assembly, string, int, T> resResolver, Func<string, T> fileResolver)
+            {
+                var config = System.Configuration.ConfigurationManager.AppSettings[key];
+                return Resolve(key, resResolver, fileResolver);
+            }
+
+            public static T Get<T>(string key, string resTypeKey, Func<Assembly, string, int, T> resResolver, Func<string, T> fileResolver)
+            {
+                var config = System.Configuration.ConfigurationManager.AppSettings[key];
+                int resType;
+                var resTypeConf = System.Configuration.ConfigurationManager.AppSettings[resTypeKey];
+                int.TryParse(resTypeConf, out resType);
+                return Resolve(config, resType, resResolver, fileResolver);
+            }
+        }
         internal static class LogResManager
         {
             private static readonly string _baseNs;
