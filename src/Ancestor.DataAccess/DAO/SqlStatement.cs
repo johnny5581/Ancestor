@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 
 namespace Ancestor.DataAccess.DAO
@@ -81,6 +82,27 @@ namespace Ancestor.DataAccess.DAO
         public static T Func<T>(string name, params object[] args)
         {
             return default(T);
+        }
+        /// <summary>
+        /// use iif func
+        /// </summary>        
+        public static T If<TObj, T>(bool condition, T positive, T negative)
+        {
+            return default(T);
+        }
+        /// <summary>
+        /// use like statement
+        /// </summary>        
+        public static bool Like(string value, string likePattern)
+        {
+            return true;
+        }
+        /// <summary>
+        /// use not like statement
+        /// </summary>        
+        public static bool NotLike(string value, string likePattern)
+        {
+            return false;
         }
     }
 }

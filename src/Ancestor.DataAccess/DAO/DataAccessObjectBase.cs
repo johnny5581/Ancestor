@@ -1347,7 +1347,7 @@ namespace Ancestor.DataAccess.DAO
         private static Tuple<Type, Type, string> CreateReferenceTuple(object model, Type modelType, Type dataType, object origin)
         {
             if (modelType == null && model != null)
-            {                
+            {
                 modelType = model.GetType();
                 if (typeof(DBNullModel).IsAssignableFrom(modelType))
                     modelType = ((DBNullModel)model).ModelType;
@@ -1953,6 +1953,15 @@ namespace Ancestor.DataAccess.DAO
                         var arrExp = node.Arguments[1] as NewArrayExpression;
                         ProcessFuncMethodCall(name, arrExp.Expressions);
                         break;
+                    case "If":
+                        ProcessIifMethodCall(node.Arguments[0], node.Arguments[1], node.Arguments[2]);
+                        break;
+                    case "Like":
+                        ProcessStringLike(node.Arguments[0], node.Arguments[1], 0);
+                        break;
+                    case "NotLike":
+                        ProcessStringLike(node.Arguments[0], node.Arguments[1], 0, false);
+                        break;
                 }
                 return node;
             }
@@ -2121,6 +2130,18 @@ namespace Ancestor.DataAccess.DAO
                 Write(name);
                 Write("(");
                 ProcessParameters(parameters);
+                Write(")");
+            }
+            protected virtual void ProcessIifMethodCall(Expression condition, Expression positive, Expression negative)
+            {
+                Write("Decode(");
+                Visit(condition);
+                Write(",");
+                Write("TRUE");
+                Write(",");
+                Visit(positive);
+                Write(",");
+                Visit(negative);
                 Write(")");
             }
             protected virtual void ProcessGroupBy(Expression nodeObject, string symbol)
