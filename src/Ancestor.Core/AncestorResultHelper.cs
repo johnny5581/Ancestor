@@ -8,6 +8,7 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Ancestor.Core
@@ -159,13 +160,13 @@ namespace Ancestor.Core
             return list;
         }
         internal static IList InternalResultList(IAncestorResult result, Type[] dataTypes, Delegate objectFactory, bool firstOnly, ResultListMode mode, Encoding hardwordEncoding, bool useTuple, int start = 0, int limit = 0)
-        {            
+        {
             var baseTupleType = Type.GetType("System.Tuple`" + dataTypes.Length);
             var tupleType = baseTupleType.MakeGenericType(dataTypes);
             IList list;
             if (useTuple)
             {
-                
+
                 list = Activator.CreateInstance(typeof(List<>).MakeGenericType(tupleType)) as IList;
             }
             else
@@ -201,7 +202,7 @@ namespace Ancestor.Core
                                         map.Add(dataTypes[i], propertyMap);
                                     args[i] = ins;
                                 }
-                                if(useTuple)
+                                if (useTuple)
                                     return Activator.CreateInstance(tupleType, args);
                                 return args;
                             }, start, limit);
@@ -223,8 +224,8 @@ namespace Ancestor.Core
                     var enumerators = listArray.Select(r => r.GetEnumerator()).ToArray();
 
                     while (enumerators.All(r => r.MoveNext()))
-                    {                        
-                        var listItem = useTuple 
+                    {
+                        var listItem = useTuple
                             ? Activator.CreateInstance(tupleType, enumerators.Select(r => r.Current).ToArray())
                             : enumerators.Select(r => r.Current).ToArray();
                         list.Add(listItem);
@@ -461,7 +462,15 @@ namespace Ancestor.Core
         public static string GetValueFormHex(string hex, Encoding encoding)
         {
             if (hex == null) return null;
-            var byteArray = ConvertFromHex(hex).ToArray();
+            byte[] byteArray;
+            try
+            {
+                byteArray = ConvertFromHex(hex).ToArray();
+            }
+            catch (FormatException ex)
+            {
+                throw new InvalidCastException("unable to convert hex to byte: " + hex, ex);
+            }
             return encoding.GetString(byteArray);
         }
         internal struct RowPropertyWrapper
