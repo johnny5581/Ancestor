@@ -50,3 +50,9 @@ jobs:
           ignoreSource: true
           publishToArtifact: ${{ parameters.publishToArtifact }}
           generateNupkg: true
+      - task: NuGetCommand@2
+        inputs:
+          command: 'push'
+          packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
+          nuGetFeedType: 'external'
+          publishFeedCredentials: 'CGMHv2'
