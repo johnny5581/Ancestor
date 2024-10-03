@@ -1,51 +1,52 @@
-# Azure DevOps src-nupkg yaml template
-
-trigger:
-- master
-- release
+trigger: 
+  branches:
+    include:
+      - master      
+  tags: 
+    include:
+      - 'v*'
   
-
-
 pool:
-  name: 'default'
+  name: 'Dev4'
 
-parameters:
-  - name: ignoreBuild
-    displayName: Ignore build process
-    type: boolean
-    default: false
-    
-
-variables:      
-  - group: Environments
-  - group: Versions
+variables:
+  - group: Paths
+  - name: tag
+    value: $[replace(variables['Build.SourceBranch'], 'refs/tags/v', '')]    
+  - name: releaseBuild
+    value: 'false'
   - name: solution
     value: '**/*.sln'
   - name: buildPlatform
     value: 'Any CPU'
   - name: buildConfiguration
     value: 'Release'
-  - name: version
-    value: '1.0.0.0'
-  - name: updatorBuildDate
-    value: ''
-  - name: updatorVersionBuild
-    value: ''
-  - name: updatorVersionRev
-    value: ''
+  - name: versionMajor
+    value: '1'
+  - name: versionMinor
+    value: '5'
+  - name: versionPatch
+    value: '0'
 
 resources:
   repositories: 
     - repository: PipelineTemplate
       type: git
-      name: PipelineTemplate
+      name: Dev4_Libs\AzurePipelineTemplate
+
+parameters:
+  - name: publishToArtifact
+    type: boolean
+    default: true
+      
 jobs:
-  - job: BuildNupkg     
+  - job: pipeline
     workspace:
-      clean: all      
-    steps:
-      - template: azure-pipeline-build.yml@PipelineTemplate  
+      clean: all
+    steps:         
+      - template: make.yml@PipelineTemplate    
         parameters:
-          id: 'johnny5581.Ancestor'
-          ignoreBuild: ${{ parameters.ignoreBuild }}
-      - template: azure-pipeline-artifact.yml@PipelineTemplate
+          ignoreBuild: false
+          ignoreSource: true
+          publishToArtifact: ${{ parameters.publishToArtifact }}
+          generateNupkg: true
