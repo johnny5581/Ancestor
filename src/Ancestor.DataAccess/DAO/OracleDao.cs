@@ -49,14 +49,14 @@ namespace Ancestor.DataAccess.DAO
         }
         protected override IDbAction CreateDbAction(string connStr)
         {
-            if (Factory.Arguments != null && "managed".Equals(Factory.Arguments.ElementAtOrDefault(0), StringComparison.OrdinalIgnoreCase))
+            if(Factory.Database == DBObject.DataBase.ManagedOracle)            
                 return new ManagedOracleAction(this);
             else
                 return new OracleAction(this);
         }
         protected override IDbAction CreateDbAction(IDbConnection conn)
         {
-            if (Factory.Arguments != null && "managed".Equals(Factory.Arguments.ElementAtOrDefault(0), StringComparison.OrdinalIgnoreCase))
+            if (Factory.Database == DBObject.DataBase.ManagedOracle)
                 return new ManagedOracleAction(this);
             else
                 return new OracleAction(this);

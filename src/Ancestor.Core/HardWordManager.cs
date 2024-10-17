@@ -5,7 +5,6 @@ using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Ancestor.Core
@@ -28,7 +27,7 @@ namespace Ancestor.Core
                 _SystemEncoding = Encoding.UTF8;
             else
             {
-#if NETSTANDARD2_0
+#if NETCOREAPP
                 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 #endif
                 _SystemEncoding = Encoding.GetEncoding(sysCodePage);

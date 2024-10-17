@@ -46,10 +46,10 @@ namespace Ancestor.Core
             string name;
             if (!TableNames.TryGetValue(type, out name))
             {
-#if NET40
+#if NET40_OR_GREATER
                 var attr = type.GetCustomAttributes(typeof(System.Data.Linq.Mapping.TableAttribute), false).FirstOrDefault() as System.Data.Linq.Mapping.TableAttribute;
                 name = attr != null ? attr.Name : type.Name;
-#elif NETSTANDARD2_0
+#else
                 var attr = type.GetCustomAttributes(typeof(System.ComponentModel.DataAnnotations.Schema.TableAttribute), false).FirstOrDefault() as System.ComponentModel.DataAnnotations.Schema.TableAttribute;
                 name = attr != null ? attr.Name.ToUpper() : type.Name.ToUpper();
 #endif
@@ -65,10 +65,10 @@ namespace Ancestor.Core
             string name;
             if (!FieldNames.TryGetValue(property, out name))
             {
-#if NET40
+#if NET40_OR_GREATER
                 var attr = property.GetCustomAttributes(typeof(System.Data.Linq.Mapping.ColumnAttribute), false).FirstOrDefault() as System.Data.Linq.Mapping.ColumnAttribute;
                 name = attr != null ? attr.Name.ToUpper() : property.Name.ToUpper();
-#elif NETSTANDARD2_0
+#else
                 var attr = property.GetCustomAttributes(typeof(System.ComponentModel.DataAnnotations.Schema.ColumnAttribute), false).FirstOrDefault() as System.ComponentModel.DataAnnotations.Schema.ColumnAttribute;
                 name = attr != null ? attr.Name.ToUpper() : property.Name.ToUpper();
 #endif

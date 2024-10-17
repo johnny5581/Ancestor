@@ -79,10 +79,6 @@ namespace Ancestor.DataAccess.Factory
         {
             get { return _db; }
         }
-        public string[] Arguments { get; set; }
-
-
-
 
 
         public IDataAccessObjectEx GetDataAccessObjectFactory()
