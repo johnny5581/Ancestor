@@ -2881,7 +2881,7 @@ namespace Ancestor.DataAccess.DAO
                 /// <summary>
                 /// Group by string
                 /// </summary>
-                public string GroupBy { get; set; }
+                public string GroupBy { get; set; }                
             }
             public class MergedExpressionResolveResult
             {

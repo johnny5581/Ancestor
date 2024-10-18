@@ -106,6 +106,9 @@ namespace Ancestor.DataAccess.Factory
                     case DBObject.DataBase.SQLite:
                         _daoCache = new SqliteDao(this);
                         break;
+                    case DBObject.DataBase.PostgreSql:
+                        _daoCache = new PostgreSqlDao(this);
+                        break;
                     case DBObject.DataBase.MSSQL:
                     case DBObject.DataBase.MySQL:                        
                     case DBObject.DataBase.Sybase:

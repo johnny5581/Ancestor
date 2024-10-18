@@ -71,6 +71,7 @@ namespace Ancestor.Core
             Sybase,
             ManagedOracle,
             OracleClient,
+            PostgreSql,
             Custom,
         }
         /// <summary>
