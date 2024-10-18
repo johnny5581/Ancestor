@@ -30,8 +30,8 @@ namespace Ancestor.DataAccess.DBAction
             connStrBuilder.Username = dbObject.ID;
 #endif
             connStrBuilder.Password = dbObject.Password;
-            connStrBuilder.Host = dbObject.IP ?? dbObject.Node;
-            connStrBuilder.Database = dbObject.Hostname;
+            connStrBuilder.Host = dbObject.IP ?? dbObject.Hostname;
+            connStrBuilder.Database = dbObject.Node;
 
 
             if (!int.TryParse(dbObject.Port, out int port))
